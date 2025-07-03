@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiTrash2, FiShield } from "react-icons/fi";
+import { leg1CopyIcon } from "../../../assets";
 
 const Leg1 = () => {
   const [position, setPosition] = useState("BUY");
@@ -177,7 +178,7 @@ const Leg1 = () => {
 
       <div className="flex justify-end space-x-4 text-xl text-gray-400 dark:text-gray-500">
         <FiTrash2 className="text-red-500 cursor-pointer" />
-        <FiShield className="text-yellow-500 cursor-pointer" />
+        <img src={leg1CopyIcon} />
       </div>
 
       <div className="text-center text-sm text-gray-500 dark:text-gray-400 font-medium">

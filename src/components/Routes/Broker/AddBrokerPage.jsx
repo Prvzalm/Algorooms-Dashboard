@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { upStox } from "../../../assets";
+import { searchIcon, upStox } from "../../../assets";
 import { FaYoutube } from "react-icons/fa";
 
 const popularBrokers = Array(12).fill({
@@ -28,7 +28,10 @@ const AddBrokerPage = () => {
               placeholder="Search broker"
               className="w-full px-4 py-2 pl-10 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
             />
-            <span className="absolute left-3 top-2.5 text-[#718EBF]">🔍</span>
+            <span className="absolute left-3 top-2 text-[#718EBF]">
+              {" "}
+              <img src={searchIcon} alt="" />
+            </span>
           </div>
 
           <h3 className="font-medium text-[#2E3A59] dark:text-white mb-3">

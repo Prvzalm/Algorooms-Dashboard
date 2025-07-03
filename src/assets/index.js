@@ -46,6 +46,9 @@ import selectedSubscriptionIcon from "./selectedSubscriptionIcon.svg";
 import selectedTradingIcon from "./selectedTradingIcon.svg";
 import shrinkLogo from "./shrinkLogo.svg";
 import shareSimulatorIcon from "./shareSimulatorIcon.svg";
+import searchIcon from "./searchIcon.svg";
+import leg1CopyIcon from "./leg1CopyIcon.svg";
+import infoIcon from "./infoIcon.svg";
 
 export {
   tutorialIcon,
@@ -96,4 +99,7 @@ export {
   selectedTradingIcon,
   shrinkLogo,
   shareSimulatorIcon,
+  searchIcon,
+  leg1CopyIcon,
+  infoIcon,
 };

@@ -1,6 +1,7 @@
 // components/InstrumentModal.jsx
 
 import { useEffect, useRef } from "react";
+import { searchIcon } from "../../../assets";
 
 const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
   const modalRef = useRef(null);
@@ -29,7 +30,7 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
         className="bg-white rounded-2xl p-6 w-[90%] max-w-md dark:bg-[#15171C] relative"
       >
         <div className="flex items-center gap-2 border rounded-lg px-3 py-2 mb-4 bg-[#F5F8FA] dark:bg-[#1E2027]">
-          🔍
+          <img src={searchIcon} alt="" />
           <input
             type="text"
             placeholder="Search scripts: i.e. State Bank of India, Banknifty, Crudeoil"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { infoIcon } from "../../../assets";
 
 const RiskAndAdvance = () => {
   const [noTradeAfter, setNoTradeAfter] = useState("15:14");
@@ -47,13 +48,13 @@ const RiskAndAdvance = () => {
         <input
           type="text"
           placeholder="Exit When Over All Profit In Amount (INR)"
-          className="w-full placeholder:text-center bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+          className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
         />
 
         <input
           type="text"
           placeholder="Exit When Over All Loss In Amount (INR)"
-          className="w-full placeholder:text-center bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+          className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
         />
 
         <div className="space-y-2">
@@ -101,15 +102,12 @@ const RiskAndAdvance = () => {
         <div className="p-4 border rounded-2xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-lg text-black dark:text-white">
-                Advance Features
+              <h2 className="flex gap-2 items-center font-semibold text-lg text-black dark:text-white">
+                Advance Features <img src={infoIcon} alt="" />
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Lorem Ipsum donor
               </p>
-            </div>
-            <div className="text-gray-500 text-xl font-bold dark:text-gray-300">
-              i
             </div>
           </div>
 

@@ -10,7 +10,14 @@ import { FiChevronDown } from "react-icons/fi";
 import NoticeModal from "../../NoticeModal";
 
 const Dashboard = () => {
-  const [showNotice, setShowNotice] = useState(true);
+  const [showNotice, setShowNotice] = useState(() => {
+    return !localStorage.getItem("noticeAccepted");
+  });
+
+  const handleCloseNotice = () => {
+    localStorage.setItem("noticeAccepted", "true");
+    setShowNotice(false);
+  };
 
   const brokers = [
     { name: "Upstox", code: "3CCF6C", logo: upStox, amount: "7584" },
@@ -125,7 +132,7 @@ const Dashboard = () => {
 
   return (
     <>
-      {showNotice && <NoticeModal onClose={() => setShowNotice(false)} />}
+      {showNotice && <NoticeModal onClose={handleCloseNotice} />}
       <div className="flex justify-between relative text-black dark:text-white">
         <div className="flex md:text-lg md:font-semibold font-bold items-center w-2/3">
           My Dashboard
