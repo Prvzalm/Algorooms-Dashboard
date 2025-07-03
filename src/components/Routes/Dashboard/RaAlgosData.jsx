@@ -19,7 +19,7 @@ const RaAlgosData = ({ algos }) => {
       {algos.map((algo, idx) => (
         <div
           key={idx}
-          className="bg-white dark:bg-[#15171C] p-4 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+          className="bg-white dark:bg-[#15171C] rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div className="flex items-center gap-4 md:w-1/3 w-full">
             <img

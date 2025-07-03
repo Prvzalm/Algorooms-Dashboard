@@ -44,12 +44,17 @@ const RiskAndAdvance = () => {
           </div>
         </div>
 
-        <button className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium dark:bg-[#1E2027] dark:text-white">
-          Exit When Over All Profit In Amount (INR)
-        </button>
-        <button className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium dark:bg-[#1E2027] dark:text-white">
-          Exit When Over All Loss In Amount (INR)
-        </button>
+        <input
+          type="text"
+          placeholder="Exit When Over All Profit In Amount (INR)"
+          className="w-full placeholder:text-center bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+        />
+
+        <input
+          type="text"
+          placeholder="Exit When Over All Loss In Amount (INR)"
+          className="w-full placeholder:text-center bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+        />
 
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-700 dark:text-white">

@@ -12,8 +12,8 @@ const AddBrokerPage = () => {
   const [brokerId, setBrokerId] = useState("");
 
   return (
-    <div className="w-full px-4 py-6">
-      <div className="flex flex-col lg:flex-row gap-6 border border-[#E4EAF0] dark:border-[#2D2F36] rounded-2xl p-6 bg-white dark:bg-[#1F1F24]">
+    <div className="w-full md:p-4">
+      <div className="flex flex-col lg:flex-row gap-6 border border-[#E4EAF0] dark:border-[#2D2F36] rounded-2xl p-4 md:p-6 bg-white dark:bg-[#1F1F24]">
         <div className="w-full lg:w-2/3">
           <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
             Add Your Broker
@@ -55,7 +55,7 @@ const AddBrokerPage = () => {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/3 border-l border-[#E4EAF0] dark:border-[#2D2F36] pl-6">
+        <div className="w-full lg:w-1/3 md:border-l border-[#E4EAF0] dark:border-[#2D2F36] md:pl-6">
           <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
             Add Your Broker Detail
           </h2>

@@ -127,12 +127,14 @@ const Dashboard = () => {
     <>
       {showNotice && <NoticeModal onClose={() => setShowNotice(false)} />}
       <div className="flex justify-between relative text-black dark:text-white">
-        <div className="flex md:text-lg md:font-semibold items-center w-2/3">
+        <div className="flex md:text-lg md:font-semibold font-bold items-center w-2/3">
           My Dashboard
         </div>
 
-        <div className="flex flex-col md:flex-row md:text-lg md:font-semibold items-center justify-evenly w-full md:w-1/3 space-y-2 md:space-y-0">
-          <p className="text-sm md:text-base text-center">Strategy Deployed</p>
+        <div className="md:flex hidden md:flex-row md:text-lg md:font-semibold items-center justify-evenly w-full md:w-1/3 space-y-2 md:space-y-0">
+          <p className="text-sm md:text-base font-bold md:font-semibold text-center">
+            Strategy Deployed
+          </p>
 
           <div
             className="relative cursor-pointer"
@@ -187,7 +189,7 @@ const Dashboard = () => {
           accountImg={upStoxJas}
         />
         <BrokerCard brokers={brokers} />
-        <StrategyDeployed strategies={strategies} />
+        <StrategyDeployed strategies={strategies} brokers={brokers} />
       </div>
 
       <StrategyTemplates templates={templates} />

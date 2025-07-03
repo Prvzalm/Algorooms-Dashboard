@@ -30,6 +30,22 @@ import simulatorAddOnIcon from "./simulatorAddOnIcon.svg";
 import sharePopupIcon from "./sharePopupIcon.svg";
 import savePopupIcon from "./savePopupIcon.svg";
 import googleIcon from "./googleIcon.svg";
+import playIcon from "./playIcon.svg";
+import hideIcon from "./hideIcon.svg";
+import shareChartIcon from "./shareChartIcon.svg";
+import bellHeaderIcon from "./bellHeaderIcon.svg";
+import darkModeHeaderIcon from "./darkModeHeaderIcon.svg";
+import walletHeaderIcon from "./walletHeaderIcon.svg";
+import lightHeaderIcon from "./lightHeaderIcon.svg";
+import selectedBackTestingIcon from "./selectedBackTestingIcon.svg";
+import selectedBrokerIcon from "./selectedBrokerIcon.svg";
+import selectedDashboardIcon from "./selectedDashboardIcon.svg";
+import selectedRaAlgosIcon from "./selectedRaAlgosIcon.svg";
+import selectedStrategyIcon from "./selectedStrategyIcon.svg";
+import selectedSubscriptionIcon from "./selectedSubscriptionIcon.svg";
+import selectedTradingIcon from "./selectedTradingIcon.svg";
+import shrinkLogo from "./shrinkLogo.svg";
+import shareSimulatorIcon from "./shareSimulatorIcon.svg";
 
 export {
   tutorialIcon,
@@ -64,4 +80,20 @@ export {
   sharePopupIcon,
   savePopupIcon,
   googleIcon,
+  playIcon,
+  hideIcon,
+  shareChartIcon,
+  bellHeaderIcon,
+  darkModeHeaderIcon,
+  walletHeaderIcon,
+  lightHeaderIcon,
+  selectedBackTestingIcon,
+  selectedBrokerIcon,
+  selectedDashboardIcon,
+  selectedRaAlgosIcon,
+  selectedStrategyIcon,
+  selectedSubscriptionIcon,
+  selectedTradingIcon,
+  shrinkLogo,
+  shareSimulatorIcon,
 };

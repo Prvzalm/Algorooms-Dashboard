@@ -1,5 +1,11 @@
-import { useRef, useState } from "react";
-import { FiMenu, FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
+import {
+  FiMenu,
+  FiX,
+  FiChevronDown,
+  FiChevronRight,
+  FiChevronLeft,
+} from "react-icons/fi";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   accountHolder,
@@ -8,14 +14,38 @@ import {
   brokerIcon,
   dashboardIcon,
   raAlgosIcon,
+  selectedBackTestingIcon,
+  selectedBrokerIcon,
+  selectedDashboardIcon,
+  selectedRaAlgosIcon,
+  selectedStrategyIcon,
+  selectedSubscriptionIcon,
+  selectedTradingIcon,
+  shrinkLogo,
   strategiesIcon,
   subscriptionIcon,
   tradingIcon,
 } from "../../assets";
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState({});
   const hideTimeout = useRef(null);
+  const location = useLocation();
+
+  const isMobile = window.innerWidth < 768;
+  const sidebarExpanded = isMobile ? true : !isCollapsed || isHovered;
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved !== null) setIsCollapsed(saved === "true");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", isCollapsed);
+  }, [isCollapsed]);
 
   const handleMouseEnter = () => {
     clearTimeout(hideTimeout.current);
@@ -28,19 +58,16 @@ const Sidebar = () => {
     }, 200);
   };
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [openMenus, setOpenMenus] = useState({});
-  const location = useLocation();
-  const isSimulator = location.pathname.startsWith("/backtesting/simulator");
-
   const navItems = [
     {
       icon: dashboardIcon,
+      selectedIcon: selectedDashboardIcon,
       name: "Dashboard",
       path: "/",
     },
     {
       icon: tradingIcon,
+      selectedIcon: selectedTradingIcon,
       name: "Trading",
       isParent: true,
       children: [
@@ -50,16 +77,19 @@ const Sidebar = () => {
     },
     {
       icon: strategiesIcon,
+      selectedIcon: selectedStrategyIcon,
       name: "Strategies",
       path: "/strategies",
     },
     {
       icon: raAlgosIcon,
+      selectedIcon: selectedRaAlgosIcon,
       name: "Ra Algos",
       path: "/raalgo",
     },
     {
       icon: backTestingIcon,
+      selectedIcon: selectedBackTestingIcon,
       name: "Backtesting",
       isParent: true,
       children: [
@@ -69,11 +99,13 @@ const Sidebar = () => {
     },
     {
       icon: brokerIcon,
+      selectedIcon: selectedBrokerIcon,
       name: "Broker",
       path: "/broker",
     },
     {
       icon: subscriptionIcon,
+      selectedIcon: selectedSubscriptionIcon,
       name: "Subscription",
       path: "/subscription",
     },
@@ -83,153 +115,195 @@ const Sidebar = () => {
     <>
       <div className="md:hidden p-4 fixed top-0 left-0 z-50">
         <button onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+          <FiMenu size={24} />
         </button>
       </div>
-
-      <aside
-        className={`${
+      <div
+        className={`fixed inset-0 z-50 md:static md:inset-auto md:z-40 ${
           isOpen ? "block" : "hidden"
-        } md:block bg-white dark:bg-[#15171C] ${
-          isSimulator ? "w-16" : "w-64"
-        } fixed border-r border-[#26272F33] dark:border-[#1E2027] h-full z-40 transition-all duration-200`}
+        } md:block`}
       >
-        <div className="w-full p-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-center">
-          <img src={algoLogo} alt="Logo" />
-        </div>
-
-        <ul
-          className={`mt-4 text-sm space-y-2 text-gray-700 dark:text-gray-300 ${
-            isSimulator ? "px-2" : "px-6"
-          }`}
+        <aside
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={`bg-white dark:bg-[#15171C] transition-all duration-300
+            ${sidebarExpanded ? "w-64" : "w-16"}
+            fixed h-full z-40 border-r border-[#26272F33] dark:border-[#1E2027]`}
         >
-          {navItems.map((item) => {
-            const isParentActive = item.children?.some(
-              (child) => location.pathname === child.path
-            );
+          {isOpen && (
+            <button
+              className="absolute top-4 right-4 z-50 md:hidden"
+              onClick={() => setIsOpen(false)}
+            >
+              <FiX size={24} />
+            </button>
+          )}
+          <div className="w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
+            <img
+              src={sidebarExpanded ? algoLogo : shrinkLogo}
+              alt="Logo"
+              className={`${sidebarExpanded ? "w-auto" : "w-6 h-6"}`}
+            />
+            {!isOpen && (
+              <button
+                onClick={() =>
+                  setIsCollapsed((prev) => {
+                    localStorage.setItem("sidebar-collapsed", !prev);
+                    return !prev;
+                  })
+                }
+                className="ml-auto bg-white dark:bg-[#15171C] border rounded-full shadow p-1"
+              >
+                {isCollapsed ? (
+                  <FiChevronRight size={16} />
+                ) : (
+                  <FiChevronLeft size={16} />
+                )}
+              </button>
+            )}
+          </div>
 
-            if (item.children) {
+          <ul
+            className={`mt-4 text-sm space-y-2 text-gray-700 dark:text-gray-300 ${
+              sidebarExpanded ? "px-6" : "px-2"
+            }`}
+          >
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const isParentActive = item.children?.some(
+                (child) => location.pathname === child.path
+              );
+
               return (
                 <li key={item.name}>
-                  <button
-                    className={`flex items-center w-full ml-2 space-x-3 py-2 focus:outline-none relative group ${
-                      isParentActive
-                        ? "text-blue-600 dark:text-blue-400 font-semibold"
-                        : "text-gray-700 dark:text-gray-400"
-                    }`}
-                    onClick={() =>
-                      !isSimulator &&
-                      setOpenMenus((prev) => ({
-                        ...prev,
-                        [item.name]: !prev[item.name],
-                      }))
-                    }
-                  >
-                    <div className="relative group">
-                      <img
-                        src={item.icon}
-                        alt={item.name}
-                        className="w-5 h-5 cursor-pointer"
-                      />
-                      {isSimulator && (
-                        <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
-                          {item.name}
-                        </span>
-                      )}
-                    </div>
-
-                    {!isSimulator && (
-                      <>
-                        <span className="flex-1 text-left">{item.name}</span>
-                        {openMenus[item.name] ? (
-                          <FiChevronDown size={14} />
-                        ) : (
-                          <FiChevronRight size={14} />
+                  {item.children ? (
+                    <>
+                      <button
+                        className={`flex items-center w-full ml-2 space-x-3 py-2 focus:outline-none relative group ${
+                          isParentActive
+                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
+                            : "text-gray-700 dark:text-gray-400"
+                        }`}
+                        onClick={() =>
+                          setOpenMenus((prev) => ({
+                            ...prev,
+                            [item.name]: !prev[item.name],
+                          }))
+                        }
+                      >
+                        <div className="relative group">
+                          <img
+                            src={isParentActive ? item.selectedIcon : item.icon}
+                            alt={item.name}
+                            className="w-5 h-5"
+                          />
+                          {!sidebarExpanded && (
+                            <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                              {item.name}
+                            </span>
+                          )}
+                        </div>
+                        {sidebarExpanded && (
+                          <>
+                            <span className="flex-1 text-left">
+                              {item.name}
+                            </span>
+                            {openMenus[item.name] ? (
+                              <FiChevronDown size={14} />
+                            ) : (
+                              <FiChevronRight size={14} />
+                            )}
+                          </>
                         )}
-                      </>
-                    )}
-                  </button>
-
-                  {openMenus[item.name] && !isSimulator && (
-                    <ul className="ml-8 mt-2 space-y-1">
-                      {item.children.map((sub) => (
-                        <li key={sub.name}>
-                          <NavLink
-                            to={sub.path}
-                            onClick={() => setIsOpen(false)}
-                            className={({ isActive }) =>
-                              `block py-1 text-sm ${
-                                isActive
-                                  ? "text-blue-600 dark:text-blue-400 font-semibold"
-                                  : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
-                              }`
-                            }
-                          >
-                            • {sub.name}
-                          </NavLink>
-                        </li>
-                      ))}
-                    </ul>
+                      </button>
+                      {openMenus[item.name] && sidebarExpanded && (
+                        <ul className="ml-8 mt-2 space-y-1">
+                          {item.children.map((sub) => (
+                            <li key={sub.name}>
+                              <NavLink
+                                to={sub.path}
+                                onClick={() => setIsOpen(false)}
+                                className={({ isActive }) =>
+                                  `block py-1 text-sm ${
+                                    isActive
+                                      ? "text-[#0096FF] dark:text-blue-400 font-semibold"
+                                      : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
+                                  }`
+                                }
+                              >
+                                • {sub.name}
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  ) : (
+                    <NavLink
+                      to={item.path}
+                      onClick={() => setIsOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center space-x-3 ml-2 py-2 transition-colors group ${
+                          isActive
+                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
+                            : "hover:text-blue-500 dark:hover:text-blue-300 text-gray-700 dark:text-gray-400"
+                        }`
+                      }
+                    >
+                      <div className="relative">
+                        <img
+                          src={
+                            location.pathname === item.path
+                              ? item.selectedIcon
+                              : item.icon
+                          }
+                          alt={item.name}
+                          className="w-5 h-5"
+                        />
+                        {!sidebarExpanded && (
+                          <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                            {item.name}
+                          </span>
+                        )}
+                      </div>
+                      {sidebarExpanded && <span>{item.name}</span>}
+                    </NavLink>
                   )}
                 </li>
               );
-            }
+            })}
+          </ul>
 
-            return (
-              <li key={item.name}>
-                <NavLink
-                  to={item.path}
-                  onClick={() => setIsOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center space-x-3 ml-2 py-2 transition-colors group ${
-                      isActive
-                        ? "text-blue-600 dark:text-blue-400 font-semibold"
-                        : "hover:text-blue-500 dark:hover:text-blue-300 text-gray-700 dark:text-gray-400"
-                    }`
-                  }
-                >
-                  <div className="relative">
-                    <img src={item.icon} alt={item.name} className="w-5 h-5" />
-                    {isSimulator && (
-                      <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
-                        {item.name}
-                      </span>
-                    )}
-                  </div>
-                  {!isSimulator && <span>{item.name}</span>}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div
-          className={`absolute bottom-4 ${
-            isSimulator ? "left-2" : "left-6"
-          } group`}
-        >
-          <div className="relative">
-            {!isSimulator && (
-              <div
-                className="flex items-center space-x-3 cursor-pointer"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <img
-                  src={accountHolder}
-                  alt="User"
-                  className="w-10 h-10 rounded-full"
-                />
+          <div
+            className={`absolute bottom-4 left-0 w-full ${
+              sidebarExpanded ? "px-6" : "px-2"
+            } group`}
+          >
+            <div
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              className={`relative ${
+                sidebarExpanded
+                  ? "flex space-x-3 items-center"
+                  : "flex justify-center"
+              }`}
+            >
+              <img
+                src={accountHolder}
+                alt="User"
+                className="w-10 h-10 rounded-full"
+              />
+              {sidebarExpanded && (
                 <div className="flex flex-col text-sm">
                   <span className="text-gray-400">Hello</span>
                   <span className="font-semibold text-black dark:text-white">
                     Jasnek Singh
                   </span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {isVisible && !isSimulator && (
+            {isVisible && sidebarExpanded && (
               <div
                 className="absolute bottom-full left-0 mb-4 z-50"
                 onMouseEnter={handleMouseEnter}
@@ -271,8 +345,8 @@ const Sidebar = () => {
               </div>
             )}
           </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </>
   );
 };

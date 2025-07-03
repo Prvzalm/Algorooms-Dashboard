@@ -141,7 +141,7 @@ const SubscriptionsPage = () => {
   };
 
   return (
-    <div className="p-6 text-[#2E3A59] dark:text-white space-y-8">
+    <div className="md:p-6 text-[#2E3A59] dark:text-white space-y-8">
       <div className="text-xl font-semibold">My Subscription</div>
 
       <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-4">

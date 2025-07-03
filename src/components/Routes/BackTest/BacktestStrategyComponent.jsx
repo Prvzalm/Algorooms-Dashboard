@@ -52,7 +52,7 @@ const BacktestStrategyComponent = () => {
   }, []);
 
   return (
-    <div className="w-full p-6 text-[#2E3A59] dark:text-white">
+    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
       <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
       <p className="text-sm text-gray-400 mb-6">Lorem Ipsum donor</p>
 

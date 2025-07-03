@@ -128,7 +128,7 @@ const StrategySelector = () => {
             onClick={() => setActiveTab(tab)}
             className={`pb-1 border-b-2 ${
               activeTab === tab
-                ? "text-blue-600 border-blue-500"
+                ? "text-[#0096FF] border-[#0096FF]"
                 : "text-gray-400 border-transparent"
             }`}
           >
@@ -146,7 +146,7 @@ const StrategySelector = () => {
                 onClick={() => setActiveType(type)}
                 className={`px-4 py-1 rounded-md text-sm border ${
                   activeType === type
-                    ? "bg-blue-100 text-blue-600 border-blue-400"
+                    ? "bg-blue-100 text-[#0096FF] border-[#0096FF]"
                     : "text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600"
                 }`}
               >

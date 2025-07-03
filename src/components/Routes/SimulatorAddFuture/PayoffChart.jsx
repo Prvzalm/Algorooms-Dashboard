@@ -12,7 +12,7 @@ import {
 import { Line } from "react-chartjs-2";
 import RollingStraddleChart from "../Simulator/RollingStraddleChart";
 import { FiChevronDown } from "react-icons/fi";
-import { simulatorAddOnIcon } from "../../../assets";
+import { hideIcon, shareChartIcon, simulatorAddOnIcon } from "../../../assets";
 import SharePopup from "./SharePopup";
 import SavePopup from "./SavePopup";
 
@@ -28,8 +28,9 @@ ChartJS.register(
 
 const tabs = ["Payoff Chart", "MTM", "Strategy", "OI", "Rolling Straddle"];
 
-const TabContent = ({ tab }) => {
-  if (tab === "Payoff Chart") return <PayoffChartContent />;
+const TabContent = ({ tab, showPayOffChart }) => {
+  if (tab === "Payoff Chart")
+    return <PayoffChartContent showPayOffChart={showPayOffChart} />;
   if (tab === "MTM") return <div className="p-4">MTM content goes here...</div>;
   if (tab === "Strategy")
     return <div className="p-4">Strategy content here...</div>;
@@ -40,33 +41,56 @@ const TabContent = ({ tab }) => {
 
 const PayoffChart = () => {
   const [activeTab, setActiveTab] = useState("Payoff Chart");
+  const [payoffSettingsEnabled, setPayoffSettingsEnabled] = useState(false);
+  const [showPayOffChart, setShowPayOffChart] = useState(true);
 
   return (
     <div className="md:w-[60%] bg-white dark:bg-[#15171C] rounded-xl border border-gray-200 dark:border-[#2D2F36] p-4 text-sm">
-      <div className="flex items-center gap-6 mb-4 text-sm font-medium border-b border-gray-200 dark:border-[#2D2F36]">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2 ${
-              activeTab === tab
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-400"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-gray-200 dark:border-[#2D2F36]">
+        <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2 ${
+                activeTab === tab
+                  ? "border-b-2 border-[#0096FF] text-[#0096FF]"
+                  : "text-gray-400"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "Payoff Chart" && (
+          <div className="flex flex-wrap items-center gap-3 pb-2">
+            <label className="flex items-center gap-1 rounded">
+              <input type="checkbox" className="accent-blue-500" />
+              <span className="text-gray-600 dark:text-gray-300 text-sm">
+                Payoff Settings
+              </span>
+            </label>
+
+            <button
+              onClick={() => setShowPayOffChart(!showPayOffChart)}
+              className="flex items-center gap-1 text-[#0096FF] px-2 py-1 text-sm"
+            >
+              <img src={hideIcon} alt="" />
+              Hide
+            </button>
+          </div>
+        )}
       </div>
 
-      <TabContent tab={activeTab} />
+      <TabContent tab={activeTab} showPayOffChart={showPayOffChart} />
     </div>
   );
 };
 
 export default PayoffChart;
 
-const PayoffChartContent = () => {
+const PayoffChartContent = ({ showPayOffChart }) => {
   const labels = [24250, 24500, 24750, 25000, 25153.3, 25500, 25750, 26000];
   const actualPayoff = [-50000, -40000, -20000, 0, 0, -20000, -40000, -50000];
   const targetPayoff = [
@@ -159,35 +183,39 @@ const PayoffChartContent = () => {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+      {showPayOffChart && (
         <div>
-          Est. Margin: <b>₹2.26L</b>
-        </div>
-        <div>
-          P&L: <span className="text-green-600 font-semibold">₹0 (0.0%)</span>
-        </div>
-        <div>
-          Max Profit: <span className="text-gray-500">Undefined</span>
-        </div>
-        <div>
-          Max Loss: <span className="text-red-500">Undefined</span>
-        </div>
-        <div>
-          POP: <span className="text-black dark:text-white">48.84%</span>
-        </div>
-        <div>
-          Net Credit: <span className="text-black dark:text-white">₹0</span>
-        </div>
-        <div>
-          Breakevens:{" "}
-          <span className="text-black dark:text-white">25721 (0.4%)</span>
-        </div>
-      </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <div>
+              Est. Margin: <b>₹2.26L</b>
+            </div>
+            <div>
+              P&L:{" "}
+              <span className="text-green-600 font-semibold">₹0 (0.0%)</span>
+            </div>
+            <div>
+              Max Profit: <span className="text-gray-500">Undefined</span>
+            </div>
+            <div>
+              Max Loss: <span className="text-red-500">Undefined</span>
+            </div>
+            <div>
+              POP: <span className="text-black dark:text-white">48.84%</span>
+            </div>
+            <div>
+              Net Credit: <span className="text-black dark:text-white">₹0</span>
+            </div>
+            <div>
+              Breakevens:{" "}
+              <span className="text-black dark:text-white">25721 (0.4%)</span>
+            </div>
+          </div>
 
-      <div className="bg-gray-50 dark:bg-[#15171C] h-64 p-3 rounded mb-4">
-        <Line data={data} options={options} />
-      </div>
-
+          <div className="bg-gray-50 dark:bg-[#15171C] h-64 p-3 rounded mb-4">
+            <Line data={data} options={options} />
+          </div>
+        </div>
+      )}
       <div className="text-xs font-medium text-gray-700 dark:text-gray-300 rounded-xl overflow-visible border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center px-4 py-2 border-b dark:border-gray-600 bg-gray-50 dark:bg-[#15171C]">
           <div className="flex gap-6">
@@ -195,7 +223,7 @@ const PayoffChartContent = () => {
               onClick={() => handleTabChange("positions")}
               className={`pb-1 ${
                 activeTab === "positions"
-                  ? "text-blue-600 border-b-2 border-blue-600"
+                  ? "text-[#0096FF] border-b-2 border-[#0096FF]"
                   : "text-gray-400"
               }`}
             >
@@ -205,7 +233,7 @@ const PayoffChartContent = () => {
               onClick={() => handleTabChange("greeks")}
               className={`pb-1 ${
                 activeTab === "greeks"
-                  ? "text-blue-600 border-b-2 border-blue-600"
+                  ? "text-[#0096FF] border-b-2 border-[#0096FF]"
                   : "text-gray-400"
               }`}
             >
@@ -215,7 +243,7 @@ const PayoffChartContent = () => {
               onClick={() => handleTabChange("pnl")}
               className={`pb-1 ${
                 activeTab === "pnl"
-                  ? "text-blue-600 border-b-2 border-blue-600"
+                  ? "text-[#0096FF] border-b-2 border-[#0096FF]"
                   : "text-gray-400"
               }`}
             >
@@ -240,7 +268,7 @@ const PayoffChartContent = () => {
                       type="checkbox"
                       checked={addsDropDown.entryExitDate}
                       onChange={() => toggleAddsDropDownOption("entryExitDate")}
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">Entry/Exit Date</span>
                   </label>
@@ -251,7 +279,7 @@ const PayoffChartContent = () => {
                       onChange={() =>
                         toggleAddsDropDownOption("entryExitDateTime")
                       }
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">Entry/Exit Date Time</span>
                   </label>
@@ -260,7 +288,7 @@ const PayoffChartContent = () => {
                       type="checkbox"
                       checked={addsDropDown.delta}
                       onChange={() => toggleAddsDropDownOption("delta")}
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">Delta</span>
                   </label>
@@ -269,7 +297,7 @@ const PayoffChartContent = () => {
                       type="checkbox"
                       checked={addsDropDown.multiplyByLot}
                       onChange={() => toggleAddsDropDownOption("multiplyByLot")}
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">
                       Multiply Greeks by Lot Size
@@ -280,7 +308,7 @@ const PayoffChartContent = () => {
                       type="checkbox"
                       checked={addsDropDown.showFullPnL}
                       onChange={() => toggleAddsDropDownOption("showFullPnL")}
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">Show Full P&L</span>
                   </label>
@@ -289,7 +317,7 @@ const PayoffChartContent = () => {
                       type="checkbox"
                       checked={addsDropDown.mergeLegs}
                       onChange={() => toggleAddsDropDownOption("mergeLegs")}
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#0096FF] w-4 h-4"
                     />
                     <span className="font-medium">
                       Merge CE PE Legs together
@@ -553,20 +581,18 @@ function PositionsTable() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-blue-600">Add Alert</button>
+          <button className="text-[#0096FF]">Add Alert</button>
           <button
             onClick={() => setShowSavePopup(true)}
-            className="text-blue-600 border border-blue-500 px-3 py-1 rounded"
+            className="text-[#0096FF] border border-blue-500 px-3 py-1 rounded"
           >
             Save
           </button>
           <button
             onClick={() => setShowShare(true)}
-            className="text-blue-600 border border-blue-500 px-3 py-1 rounded flex items-center gap-1"
+            className="text-[#0096FF] border border-blue-500 px-3 py-1 rounded flex items-center gap-1"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M15 8a3 3 0 00-2.995 2.824L12 11v1H5a1 1 0 00-.993.883L4 13a1 1 0 00.883.993L5 14h7v1a3 3 0 002.824 2.995L15 18a3 3 0 000-6zm0 2a1 1 0 010 2 1 1 0 010-2z" />
-            </svg>
+            <img src={shareChartIcon} alt="" />
             Share
           </button>
           <span className="text-gray-500">-0.02</span>

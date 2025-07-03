@@ -17,7 +17,7 @@ const BrokerSection = () => {
   ];
 
   return (
-    <div className="w-full px-4 py-6">
+    <div className="w-full md:p-4">
       <div className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
           <div>

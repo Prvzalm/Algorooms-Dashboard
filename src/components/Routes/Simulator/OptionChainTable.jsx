@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { simulatorAddOnIcon } from "../../../assets";
 
 const expiryTabs = [
@@ -7,6 +7,9 @@ const expiryTabs = [
   { label: "26 JUN’25", note: "CM: 16 DTE" },
   { label: "3 JUL’25" },
   { label: "10 JUL’25" },
+  { label: "15 JUL’25" },
+  { label: "21 JUL’25" },
+  { label: "28 JUL’25" },
 ];
 
 const mockData = [
@@ -39,9 +42,21 @@ const OptionChainTable = () => {
     ATM: true,
   });
 
+  const addonRef = useRef();
+
   const toggleAddon = (key) => {
     setAddons({ ...addons, [key]: !addons[key] });
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (addonRef.current && !addonRef.current.contains(e.target)) {
+        setShowAddOns(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="bg-white md:w-[40%] dark:bg-[#15171C] rounded-2xl border border-gray-200 dark:border-[#2D2F36] p-4 relative">
@@ -50,7 +65,7 @@ const OptionChainTable = () => {
           Option Chain
         </h2>
 
-        <div className="relative">
+        <div className="relative" ref={addonRef}>
           <button
             className="text-sm text-gray-500 dark:text-gray-300 flex items-center gap-1"
             onClick={() => setShowAddOns((prev) => !prev)}
@@ -70,7 +85,7 @@ const OptionChainTable = () => {
                     type="checkbox"
                     checked={addons[label]}
                     onChange={() => toggleAddon(label)}
-                    className="accent-blue-600"
+                    className="accent-[#0096FF]"
                   />
                   {label}
                 </label>
@@ -82,61 +97,79 @@ const OptionChainTable = () => {
 
       <div className="flex gap-2 overflow-x-auto mb-4">
         {expiryTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setSelectedExpiry(tab.label)}
-            className={`px-3 py-1.5 rounded-lg border text-sm whitespace-nowrap ${
-              selectedExpiry === tab.label
-                ? "bg-blue-100 text-blue-600 border-blue-500"
-                : "bg-white text-gray-700 border-gray-300 dark:bg-[#2A2A2E] dark:text-gray-300 dark:border-gray-600"
-            }`}
-          >
-            {tab.label}
-          </button>
+          <div className="flex flex-col items-center">
+            <button
+              key={tab.label}
+              onClick={() => setSelectedExpiry(tab.label)}
+              className={`px-3 py-1.5 rounded-lg border text-sm whitespace-nowrap ${
+                selectedExpiry === tab.label
+                  ? "bg-blue-100 text-[#0096FF] border-[#0096FF]"
+                  : "bg-white text-gray-700 border-gray-300 dark:bg-[#2A2A2E] dark:text-gray-300 dark:border-gray-600"
+              }`}
+            >
+              {tab.label}
+            </button>
+            <span className="text-opacity-50 text-[#212121] text-xs">
+              {tab.note && `(${tab.note})`}
+            </span>
+          </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between mb-3 text-sm text-[#2E3A59] dark:text-gray-300">
-        <div>
-          <span className="font-semibold">ATM IV:</span>{" "}
-          <span className="font-bold">15.9</span>
+      <div className="flex flex-col w-full text-sm text-[#2E3A59] dark:text-gray-300 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full mb-2">
+          <div>
+            <span className="text-opacity-50 text-[#212121]">ATM IV:</span>{" "}
+            <span className="font-bold">15.9</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-opacity-50 text-[#212121]">ATM:</span>
+            {["Spot", "Fut", "Synth Fut"].map((type) => (
+              <label
+                key={type}
+                className="flex text-opacity-50 text-[#212121] items-center gap-1"
+              >
+                <input
+                  type="radio"
+                  name="atmType"
+                  value={type}
+                  checked={selectedType === type}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                />
+                {type}
+              </label>
+            ))}
+          </div>
+
+          <div>
+            <span className="text-opacity-50 text-[#212121]">
+              Straddle Prem:
+            </span>{" "}
+            <span className="font-bold">252</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="font-semibold">ATM:</span>
-          {["Spot", "Fut", "Synth Fut"].map((type) => (
-            <label key={type} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="atmType"
-                value={type}
-                checked={selectedType === type}
-                onChange={(e) => setSelectedType(e.target.value)}
-              />
-              {type}
-            </label>
-          ))}
-        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+          <div>
+            <span className="text-opacity-50 text-[#212121]">PCR:</span>{" "}
+            <span className="font-bold">0.95</span>
+          </div>
 
-        <div>
-          <span className="font-semibold">Straddle Prem:</span>{" "}
-          <span className="font-bold">252</span>
-        </div>
+          <div>
+            <span>
+              14.7 Cr <span className="text-green-500">(+4.67L)</span>
+            </span>{" "}
+            - <span className="text-opacity-50 text-[#212121]">OI:</span>{" "}
+            <span>
+              13.7 Cr <span className="text-green-500">(+2.67L)</span>
+            </span>
+          </div>
 
-        <div>
-          <span className="font-semibold">PCR:</span>{" "}
-          <span className="font-bold">0.95</span>
-        </div>
-
-        <div>
-          <span className="font-semibold">OI:</span>{" "}
-          <span className="text-green-500">14.7 Cr (+4.67L)</span> -{" "}
-          <span className="text-green-500">13.7 Cr (+2.67L)</span>
-        </div>
-
-        <div>
-          <span className="font-semibold">Max Pain:</span>{" "}
-          <span className="font-bold">25000</span>
+          <div>
+            <span className="text-opacity-50 text-[#212121]">Max Pain:</span>{" "}
+            <span className="font-bold">25000</span>
+          </div>
         </div>
       </div>
 

@@ -16,11 +16,16 @@ import AddBrokerPage from "./components/Routes/Broker/AddBrokerPage";
 import SimulatorPage from "./components/Routes/Simulator/SimulatorPage";
 import SimulatorAddFuture from "./components/Routes/SimulatorAddFuture/SimulatorAddFuture";
 import Auth from "./components/Auth";
+import { useState } from "react";
 
 function App() {
   const location = useLocation();
-  const isSimulator = location.pathname.startsWith("/backtesting/simulator");
   const isAuthPage = location.pathname === "/signin";
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    localStorage.getItem("sidebar-collapsed") === "true"
+  );
+
+  const sidebarWidth = isSidebarCollapsed ? "md:ml-16" : "md:ml-64";
 
   if (isAuthPage) {
     return (
@@ -32,12 +37,13 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <Sidebar />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+      />
       <Header />
       <main
-        className={`pt-20 p-4 space-y-6 transition-all duration-200 ${
-          isSimulator ? "md:ml-16" : "md:ml-64"
-        }`}
+        className={`pt-20 p-4 space-y-6 transition-all duration-200 ${sidebarWidth}`}
       >
         <Routes>
           <Route path="/" element={<DashboardPage />} />
@@ -46,7 +52,7 @@ function App() {
             element={<StrategyBuilder />}
           />
           <Route path="/trading/signals" element={<TradingviewSignalsPage />} />
-          <Route path="/subscription" element={<div>Subscription Page</div>} />
+          <Route path="/subscription" element={<SubscriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/subscriptions" element={<SubscriptionsPage />} />

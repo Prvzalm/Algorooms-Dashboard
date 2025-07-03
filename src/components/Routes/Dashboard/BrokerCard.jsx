@@ -28,7 +28,7 @@ const BrokerCard = ({ brokers = [] }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#15171C] p-4 border-2 border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white">
+    <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white">
       <div className="text-sm text-[#718EBF] dark:text-gray-400 mb-2">
         Broker
       </div>

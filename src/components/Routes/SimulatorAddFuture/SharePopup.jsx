@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { FiCopy } from "react-icons/fi";
-import { sharePopupIcon } from "../../../assets";
+import { sharePopupIcon, shareSimulatorIcon } from "../../../assets";
 
 const SharePopup = ({
   url = "https://www.algorooms.in/#!/share/bflbvk;fvfv",
@@ -40,7 +40,7 @@ const SharePopup = ({
             onClose?.();
           }}
         >
-          <FiCopy size={16} />
+          <img src={shareSimulatorIcon} />
           Copy link
         </button>
       </div>

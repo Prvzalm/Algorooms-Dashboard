@@ -106,9 +106,9 @@ const StrategiesPage = () => {
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
                 activeSubTab === tab
-                  ? "bg-[#0096FF] text-white"
+                  ? "bg-blue-100 text-[#0096FF] border border-[#0096FF]"
                   : "bg-gray-200 dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
               }`}
             >
@@ -264,13 +264,13 @@ const StrategiesPage = () => {
   };
 
   return (
-    <div className="w-full h-full px-4 md:px-6 py-6 text-[#2E3A59] dark:text-white">
-      <div className="flex space-x-6 mb-6 border-b border-gray-200 dark:border-[#2D2F36]">
+    <div className="w-full h-full md:p-6 text-[#2E3A59] dark:text-white">
+      <div className="flex mb-6 border-b border-gray-200 dark:border-[#2D2F36] overflow-x-auto whitespace-nowrap no-scrollbar">
         {mainTabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 font-medium ${
+            className={`px-4 pb-2 font-medium md:text-base text-sm flex-shrink-0 ${
               activeTab === tab
                 ? "text-[#0096FF] border-b-2 border-[#0096FF]"
                 : "text-[#718EBF] dark:text-gray-400"

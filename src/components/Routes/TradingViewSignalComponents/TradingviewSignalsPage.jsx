@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import StrategyBuilderLeg from "../StrategyBuilderComponents/Leg1";
 import OrderType from "../StrategyBuilderComponents/OrderType";
 import RiskAndAdvance from "../StrategyBuilderComponents/RiskAndAdvance";
+import InstrumentModal from "../StrategyBuilderComponents/InstrumentModal";
 
-const TradingviewSignalsPage = ({ data }) => {
+const TradingviewSignalsPage = () => {
   const [selectedSignals, setSelectedSignals] = useState([]);
+  const [showInstrumentModal, setShowInstrumentModal] = useState(false);
+  const [selectedInstrument, setSelectedInstrument] = useState("");
 
   const sampleData = {
     signalTypes: [
@@ -25,7 +28,7 @@ const TradingviewSignalsPage = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6 text-sm text-gray-700 dark:text-gray-200 px-4 md:px-0 overflow-hidden">
+    <div className="space-y-6 text-sm text-gray-700 dark:text-gray-200 overflow-hidden">
       <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
         <h2 className="font-semibold dark:text-white">Select Signal From</h2>
         <div className="flex flex-wrap gap-4">
@@ -59,10 +62,28 @@ const TradingviewSignalsPage = ({ data }) => {
               <h2 className="font-semibold dark:text-white">
                 Select Instruments
               </h2>
-              <div className="border-dashed border dark:border-[#1E2027] rounded-lg min-h-[6rem] flex items-center justify-center">
-                <span className="text-gray-400 dark:text-gray-500">+ Add</span>
+              <div
+                onClick={() => setShowInstrumentModal(true)}
+                className="border-dashed border dark:border-[#1E2027] rounded-lg min-h-[6rem] flex items-center justify-center cursor-pointer dark:bg-[#1E2027]"
+              >
+                <span className="text-gray-400 dark:text-gray-500 text-xl">
+                  + Add
+                </span>
               </div>
+              {selectedInstrument && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs break-words dark:bg-[#1E2027] dark:text-blue-400">
+                    {selectedInstrument}
+                  </span>
+                </div>
+              )}
             </div>
+            <InstrumentModal
+              visible={showInstrumentModal}
+              onClose={() => setShowInstrumentModal(false)}
+              selected={selectedInstrument}
+              setSelected={setSelectedInstrument}
+            />
           </div>
 
           <OrderType />

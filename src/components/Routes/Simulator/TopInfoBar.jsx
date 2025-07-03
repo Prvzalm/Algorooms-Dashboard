@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { importIcon, simulatorCameraIcon } from "../../../assets";
+import { importIcon, playIcon, simulatorCameraIcon } from "../../../assets";
 import { useNavigate } from "react-router-dom";
 
 const TopInfoBar = () => {
@@ -36,7 +36,7 @@ const TopInfoBar = () => {
           </select>
         </div>
 
-        <div className="flex-1 flex justify-center overflow-x-auto">
+        <div className="w-full md:flex md:justify-center overflow-x-auto">
           <div className="flex items-center gap-1 w-fit">
             <button className="px-3 py-1 rounded bg-gray-100 text-gray-400 dark:bg-[#2F2F35] dark:text-gray-500 text-xs cursor-default">
               «DAY
@@ -90,8 +90,13 @@ const TopInfoBar = () => {
           </div>
         </div>
 
+        <div className="flex-shrink-0">
+          <button>
+            <img src={playIcon} alt="Camera" />
+          </button>
+        </div>
         <div className="flex-shrink-0 ml-2">
-          <button className="px-2">
+          <button>
             <img src={simulatorCameraIcon} alt="Camera" />
           </button>
         </div>
@@ -102,14 +107,14 @@ const TopInfoBar = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={() => navigate("/backtesting/simulator/addfuture")}
-          className="text-blue-500 text-sm font-medium"
+          className="text-[#0096FF] text-sm font-medium"
         >
           +Add Futures
         </button>
 
         <div className="flex-1 flex justify-evenly flex-wrap gap-2 text-[#2E3A59] dark:text-gray-300">
           <div>
-            Day Open:{" "}
+            <span className="text-opacity-50 text-[#212121]">Day Open: </span>
             <span className="font-medium">{priceData.dayOpen.value}</span>{" "}
             <span
               className={
@@ -121,24 +126,28 @@ const TopInfoBar = () => {
           </div>
 
           <div>
-            Spot:{" "}
+            <span className="text-opacity-50 text-[#212121]">Spot: </span>
+            <span className="font-medium">{priceData.spot.value} </span>{" "}
             <span
               className={`font-medium ${
                 priceData.spot.isUp ? "text-green-500" : "text-red-500"
               }`}
             >
-              {priceData.spot.value} ({priceData.spot.change})
+              ({priceData.spot.change})
             </span>
           </div>
 
           <div>
-            Fut: <span className="font-medium">{priceData.fut}</span>
+            <span className="text-opacity-50 text-[#212121]">Fut:</span>{" "}
+            <span className="font-medium">{priceData.fut}</span>
           </div>
 
           <div>
-            Synth Fut:{" "}
-            <span className="font-medium">{priceData.synthFut.value}</span> (
-            {priceData.synthFut.expiry})
+            <span className="text-opacity-50 text-[#212121]">Synth Fut: </span>
+            <span className="font-medium">{priceData.synthFut.value}</span>{" "}
+            <span className="text-opacity-50 text-[#212121]">
+              ({priceData.synthFut.expiry})
+            </span>
           </div>
         </div>
 

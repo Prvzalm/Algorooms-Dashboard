@@ -1,5 +1,5 @@
 const Tutorials = ({ tutorials }) => (
-  <div className="bg-white dark:bg-darkbg p-4 rounded-xl text-black dark:text-white">
+  <div className="bg-white dark:bg-darkbg rounded-xl text-black dark:text-white">
     <h3 className="font-semibold text-lg mb-4">Our Tutorials</h3>
     <div className="space-y-4">
       {tutorials.map((t, i) => (
