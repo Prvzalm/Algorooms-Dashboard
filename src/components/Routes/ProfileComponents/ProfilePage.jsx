@@ -27,6 +27,7 @@ const ProfilePage = () => {
     endDate: "25/08/2025",
     expiresIn: 20,
   });
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div className="p-6 text-sm text-gray-800 dark:text-white space-y-6">
@@ -51,22 +52,60 @@ const ProfilePage = () => {
               </div>
               <div className="font-semibold">{user.userId}</div>
             </div>
+
             <div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Mail id
               </div>
-              <div className="font-semibold">{user.email}</div>
+              {isEditing ? (
+                <input
+                  type="email"
+                  className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
+                  value={user.email}
+                  onChange={(e) =>
+                    setUser((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                />
+              ) : (
+                <div className="font-semibold">{user.email}</div>
+              )}
             </div>
+
             <div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Mobile Number
               </div>
-              <div className="font-semibold">{user.mobile}</div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
+                  value={user.mobile}
+                  onChange={(e) =>
+                    setUser((prev) => ({ ...prev, mobile: e.target.value }))
+                  }
+                />
+              ) : (
+                <div className="font-semibold">{user.mobile}</div>
+              )}
             </div>
-            <button className="text-blue-500 flex items-center space-x-1 mt-1 hover:underline">
-              <FiEdit2 size={14} />
-              <span>Edit</span>
-            </button>
+
+            {isEditing ? (
+              <button
+                onClick={() => setIsEditing(false)}
+                className="text-green-600 flex items-center space-x-1 mt-1 hover:underline"
+              >
+                <FiEdit2 size={14} />
+                <span>Save</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-blue-500 flex items-center space-x-1 mt-1 hover:underline"
+              >
+                <FiEdit2 size={14} />
+                <span>Edit</span>
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap justify-between items-start gap-6 pt-4">
@@ -169,6 +208,12 @@ const ProfilePage = () => {
                 className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
+            <button
+              className="mt-4 py-2 px-4 w-1/2 bg-[#0096FF] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all"
+              onClick={() => alert("Password changed successfully")}
+            >
+              Change
+            </button>
           </div>
         </div>
 

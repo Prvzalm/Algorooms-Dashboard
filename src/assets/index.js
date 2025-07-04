@@ -49,6 +49,10 @@ import shareSimulatorIcon from "./shareSimulatorIcon.svg";
 import searchIcon from "./searchIcon.svg";
 import leg1CopyIcon from "./leg1CopyIcon.svg";
 import infoIcon from "./infoIcon.svg";
+import paymentDetailsIcon from "./paymentDetailsIcon.svg";
+import successPaymentIcon from "./successPaymentIcon.svg";
+import failurePaymentIcon from "./failurePaymentIcon.svg";
+import confirmPaymentIcon from "./confirmPaymentIcon.svg";
 
 export {
   tutorialIcon,
@@ -102,4 +106,8 @@ export {
   searchIcon,
   leg1CopyIcon,
   infoIcon,
+  paymentDetailsIcon,
+  successPaymentIcon,
+  failurePaymentIcon,
+  confirmPaymentIcon,
 };

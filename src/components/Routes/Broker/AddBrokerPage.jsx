@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { searchIcon, upStox } from "../../../assets";
+import { infoIcon, searchIcon, upStox } from "../../../assets";
 import { FaYoutube } from "react-icons/fa";
 
 const popularBrokers = Array(12).fill({
@@ -10,6 +10,25 @@ const popularBrokers = Array(12).fill({
 const AddBrokerPage = () => {
   const [selectedBroker, setSelectedBroker] = useState(popularBrokers[0]);
   const [brokerId, setBrokerId] = useState("");
+  const [appName, setAppName] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+
+  const handleSubmit = () => {
+    console.log({
+      brokerId,
+      appName,
+      apiKey,
+      apiSecret,
+      selectedBroker,
+    });
+
+    alert(`Broker info submitted:
+Broker ID: ${brokerId}
+App Name: ${appName}
+API Key: ${apiKey}
+API Secret: ${apiSecret}`);
+  };
 
   return (
     <div className="w-full md:p-4">
@@ -79,7 +98,7 @@ const AddBrokerPage = () => {
                 </p>
                 <p className="flex items-center text-xs text-[#718EBF] dark:text-[#A0AEC0]">
                   How to add {selectedBroker.name} broker?{" "}
-                  <FaYoutube className="text-red-500 text-xl" />
+                  <FaYoutube className="text-red-500 text-xl ml-1" />
                 </p>
               </div>
             </div>
@@ -93,9 +112,45 @@ const AddBrokerPage = () => {
             className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
           />
 
+          <input
+            type="text"
+            placeholder="App Name (Any)"
+            value={appName}
+            onChange={(e) => setAppName(e.target.value)}
+            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+          />
+
+          <input
+            type="text"
+            placeholder="API Key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+          />
+
+          <input
+            type="text"
+            placeholder="API Secret Key"
+            value={apiSecret}
+            onChange={(e) => setApiSecret(e.target.value)}
+            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+          />
+
+          <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
+            Redirect Url: <img width={14} height={14} src={infoIcon} alt="" />
+          </div>
+          <a
+            href="https://web.algorooms.com/connect-broker"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-500 mb-4 block break-all"
+          >
+            https://web.algorooms.com/connect-broker
+          </a>
+
           <button
             className="w-full py-2 rounded-lg bg-[#0096FF] text-white font-medium"
-            onClick={() => alert(`Broker ID submitted: ${brokerId}`)}
+            onClick={handleSubmit}
           >
             Submit
           </button>

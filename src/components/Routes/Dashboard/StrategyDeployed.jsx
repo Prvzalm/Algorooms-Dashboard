@@ -70,7 +70,7 @@ const StrategyDeployed = ({ strategies, brokers }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-full text-black dark:text-white">
+      <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-full text-black dark:text-white">
         {strategies.map((s, i) => {
           const Icon = icons[i % icons.length];
           const isNegative = s.pnl.startsWith("-");

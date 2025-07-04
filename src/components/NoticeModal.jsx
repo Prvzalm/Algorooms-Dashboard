@@ -63,7 +63,7 @@ const NoticeModal = ({ onClose }) => {
         <button
           disabled={!accepted}
           onClick={onClose}
-          className={`w-full py-2 rounded-md text-white font-semibold ${
+          className={`w-full py-3 rounded-md text-white font-semibold ${
             accepted
               ? "bg-[#0096FF] hover:bg-blue-600"
               : "bg-blue-300 cursor-not-allowed"

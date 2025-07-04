@@ -110,11 +110,9 @@ export default function Auth() {
             className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
             onClick={() => {
               if (mode === "login") {
-                // handle login
               } else if (mode === "signup") {
                 setMode("verify");
               } else {
-                // handle OTP verify
               }
             }}
           >

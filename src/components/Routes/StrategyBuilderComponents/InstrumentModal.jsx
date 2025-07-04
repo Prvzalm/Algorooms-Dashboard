@@ -1,5 +1,3 @@
-// components/InstrumentModal.jsx
-
 import { useEffect, useRef } from "react";
 import { searchIcon } from "../../../assets";
 
