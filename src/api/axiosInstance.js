@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://core-api.algorooms.com/api",
+  baseURL: "/api",
   headers: {
     "Content-Type": "application/json-patch+json",
     Accept: "*/*",
