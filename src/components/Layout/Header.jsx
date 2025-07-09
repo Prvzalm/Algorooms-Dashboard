@@ -1,12 +1,6 @@
 import { useTheme } from "../../context/ThemeContext";
 import { Link } from "react-router-dom";
 import {
-  MdOutlineAccountBalanceWallet,
-  MdOutlineDarkMode,
-  MdOutlineLightMode,
-  MdOutlineNotificationsActive,
-} from "react-icons/md";
-import {
   bellHeaderIcon,
   darkModeHeaderIcon,
   lightHeaderIcon,
