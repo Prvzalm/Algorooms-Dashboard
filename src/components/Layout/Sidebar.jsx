@@ -27,6 +27,7 @@ import {
   tradingIcon,
 } from "../../assets";
 import { useAuth } from "../../context/AuthContext";
+import { useProfileQuery } from "../../hooks/profileHooks";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -37,6 +38,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { data: profile, isLoading } = useProfileQuery();
 
   const isMobile = window.innerWidth < 768;
   const sidebarExpanded = isMobile ? true : !isCollapsed || isHovered;
@@ -297,21 +299,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               }`}
             >
               <img
-                src={accountHolder}
+                src={profile?.AvtarURL}
                 alt="User"
                 className="w-10 h-10 rounded-full"
               />
               {sidebarExpanded && (
                 <div className="flex flex-col text-sm">
-                  <span className="text-gray-400">Hello</span>
+                  <span className="text-gray-400">
+                    {profile?.ProfileDescription}
+                  </span>
                   <span className="font-semibold text-black dark:text-white">
-                    Jasnek Singh
+                    {profile?.Name}
                   </span>
                 </div>
               )}
             </div>
 
-            {isVisible && sidebarExpanded && (
+            {isVisible && sidebarExpanded && !isLoading && (
               <div
                 className="absolute bottom-full left-0 mb-4 z-50"
                 onMouseEnter={handleMouseEnter}
@@ -320,17 +324,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 space-y-4">
                   <div className="flex items-center space-x-4">
                     <img
-                      src={accountHolder}
+                      src={profile?.AvtarURL}
                       alt="User"
                       className="w-14 h-14 rounded-full"
                     />
                     <div>
-                      <div className="text-xs text-gray-500">AR1001</div>
+                      <div className="text-xs text-gray-500">
+                        {profile?.UserId}
+                      </div>
                       <div className="text-base font-semibold text-[#2E3A59] dark:text-white">
-                        Jasnek Singh
+                        {profile?.Name}
                       </div>
                       <span className="inline-block mt-1 px-2 py-1 text-xs text-green-700 bg-green-100 rounded-full">
-                        Pro
+                        {profile?.ProfileDescription}
                       </span>
                     </div>
                   </div>
