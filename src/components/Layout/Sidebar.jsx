@@ -6,7 +6,7 @@ import {
   FiChevronRight,
   FiChevronLeft,
 } from "react-icons/fi";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   accountHolder,
   algoLogo,
@@ -26,6 +26,7 @@ import {
   subscriptionIcon,
   tradingIcon,
 } from "../../assets";
+import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,6 +35,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [openMenus, setOpenMenus] = useState({});
   const hideTimeout = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const isMobile = window.innerWidth < 768;
   const sidebarExpanded = isMobile ? true : !isCollapsed || isHovered;
@@ -56,6 +59,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     hideTimeout.current = setTimeout(() => {
       setIsVisible(false);
     }, 200);
+  };
+
+  const handleSignOut = () => {
+    logout();
+    navigate("/signin");
   };
 
   const navItems = [
@@ -337,7 +345,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     >
                       My Subscription
                     </NavLink>
-                    <button className="block hover:underline text-left w-full">
+                    <button
+                      onClick={handleSignOut}
+                      className="block hover:underline text-left w-full"
+                    >
                       Sign Out
                     </button>
                   </div>

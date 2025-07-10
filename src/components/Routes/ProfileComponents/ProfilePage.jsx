@@ -6,42 +6,117 @@ import {
   profileMan,
   profileWalletIcon,
 } from "../../../assets";
+import {
+  useProfileQuery,
+  useSubscriptionQuery,
+  useUpdateProfile,
+  useWalletQuery,
+} from "../../../hooks/profileHooks";
+import { useChangePasswordMutation } from "../../../hooks/loginHooks";
+import { toast } from "react-toastify";
 
 const ProfilePage = () => {
-  const [user, setUser] = useState({
-    name: "Jasnek Singh",
-    userId: "AR1001",
-    email: "jasneksingh@gmail.com",
-    mobile: "+91-9876543210",
-    wallet: 0.0,
-    credit: 0.0,
-    plan: "Limited",
-    joined: "02/05/2025",
-    referral: "https://web.algorooms.com/login?referral_code=AR85105",
-  });
+  const { data: profile, isLoading } = useProfileQuery();
+  const { data: wallet } = useWalletQuery();
+  const { data: subscriptionData } = useSubscriptionQuery();
+  const { mutate: updateProfile, isPending, error } = useUpdateProfile();
+  const { mutate: changePasswordMutation } = useChangePasswordMutation();
 
-  const [subscription, setSubscription] = useState({
-    type: "Broker",
-    name: "Unlimited",
-    startDate: "21/05/2025",
-    endDate: "25/08/2025",
-    expiresIn: 20,
+  const [form, setForm] = useState({
+    Name: "",
+    EmailAddress: "",
+    Mobile_Number: "",
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  if (isLoading || !profile) return <div>Loading...</div>;
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setForm({
+      Name: profile.Name,
+      EmailAddress: profile.EmailAddress,
+      Mobile_Number: profile.Mobile_Number,
+    });
+  };
+
+  const handleSave = () => {
+    updateProfile(
+      {
+        Name: form.Name || profile.Name,
+        EmailAddress: form.EmailAddress,
+        Mobile_Number: form.Mobile_Number,
+        Address: profile.Address,
+        ProfileDescription: profile.ProfileDescription,
+      },
+      {
+        onSuccess: (res) => {
+          toast.success(res?.Message || "Profile updated successfully");
+          setIsEditing(false);
+        },
+        onError: (err) => {
+          toast.error(err?.message || "Failed to update profile");
+        },
+      }
+    );
+    setIsEditing(false);
+  };
+
+  const handleChangePassword = () => {
+    if (!oldPassword || !newPassword) {
+      toast.error("Both fields are required");
+      return;
+    }
+
+    changePasswordMutation(
+      {
+        OldPassword: oldPassword,
+        NewPassword: newPassword,
+      },
+      {
+        onSuccess: (data) => {
+          toast.success(data.Message || "Password changed successfully");
+          setOldPassword("");
+          setNewPassword("");
+        },
+        onError: (err) => {
+          toast.error(err.message || "Failed to change password");
+        },
+      }
+    );
+  };
+
+  const subscription = subscriptionData?.[0];
 
   return (
-    <div className="p-6 text-sm text-gray-800 dark:text-white space-y-6">
+    <div className="text-sm text-gray-800 dark:text-white space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
         <div className="relative w-full md:w-1/3 rounded-2xl overflow-hidden">
           <img
-            src={profileMan}
-            alt={user.name}
-            className="w-full h-full object-cover"
+            src={profile.AvtarURL || profileMan}
+            alt={profile.Name}
+            className="w-full h-64 object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#343C6A] to-[#343C6A00]" />
-          <div className="absolute bottom-3 left-4 text-white font-semibold text-lg z-10">
-            {user.name}
-          </div>
+          {isEditing ? (
+            <input
+              type="text"
+              className="absolute bottom-3 left-4 bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1 z-10"
+              value={form.Name}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  Name: e.target.value,
+                }))
+              }
+            />
+          ) : (
+            <div className="absolute bottom-3 left-4 text-white font-semibold text-lg z-10">
+              {profile.Name}
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-6 w-full space-y-4 text-sm text-[#2E3A59] dark:text-white">
@@ -50,7 +125,7 @@ const ProfilePage = () => {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 User Id
               </div>
-              <div className="font-semibold">{user.userId}</div>
+              <div className="font-semibold">{profile.UserId}</div>
             </div>
 
             <div>
@@ -61,13 +136,16 @@ const ProfilePage = () => {
                 <input
                   type="email"
                   className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
-                  value={user.email}
+                  value={form.EmailAddress}
                   onChange={(e) =>
-                    setUser((prev) => ({ ...prev, email: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      EmailAddress: e.target.value,
+                    }))
                   }
                 />
               ) : (
-                <div className="font-semibold">{user.email}</div>
+                <div className="font-semibold">{profile.EmailAddress}</div>
               )}
             </div>
 
@@ -79,19 +157,22 @@ const ProfilePage = () => {
                 <input
                   type="text"
                   className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
-                  value={user.mobile}
+                  value={form.Mobile_Number}
                   onChange={(e) =>
-                    setUser((prev) => ({ ...prev, mobile: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      Mobile_Number: e.target.value,
+                    }))
                   }
                 />
               ) : (
-                <div className="font-semibold">{user.mobile}</div>
+                <div className="font-semibold">{profile.Mobile_Number}</div>
               )}
             </div>
 
             {isEditing ? (
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={handleSave}
                 className="text-green-600 flex items-center space-x-1 mt-1 hover:underline"
               >
                 <FiEdit2 size={14} />
@@ -99,7 +180,7 @@ const ProfilePage = () => {
               </button>
             ) : (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={handleEdit}
                 className="text-blue-500 flex items-center space-x-1 mt-1 hover:underline"
               >
                 <FiEdit2 size={14} />
@@ -122,7 +203,7 @@ const ProfilePage = () => {
                   Wallet Amount
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  ₹ {user.wallet}
+                  ₹ {wallet?.WalletBalance ?? 0}
                 </div>
               </div>
             </div>
@@ -140,7 +221,7 @@ const ProfilePage = () => {
                   Backtest Credit
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  {user.credit}
+                  {subscription?.PlanDetail?.allowedBacktestCount ?? 0}
                 </div>
               </div>
             </div>
@@ -158,7 +239,7 @@ const ProfilePage = () => {
                   Active Plan
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  {user.plan}
+                  {subscription?.PlanName || "N/A"}
                 </div>
               </div>
             </div>
@@ -168,15 +249,16 @@ const ProfilePage = () => {
             <div>
               <div className="text-[#718EBF]">Referral Link:</div>
               <a
-                href={user.referral}
+                target="_blank"
+                href={profile.referralLink}
                 className="text-[#2E3A59] dark:text-white break-all underline"
               >
-                {user.referral}
+                {profile.referralLink}
               </a>
             </div>
             <div className="text-right">
               <div className="text-gray-500 dark:text-gray-400">Joined on</div>
-              <div className="font-medium">{user.joined}</div>
+              <div className="font-medium">{profile.JoiningDate}</div>
             </div>
           </div>
         </div>
@@ -194,6 +276,8 @@ const ProfilePage = () => {
               </label>
               <input
                 type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
@@ -204,15 +288,18 @@ const ProfilePage = () => {
               </label>
               <input
                 type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter your new password"
                 className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
             <button
-              className="mt-4 py-2 px-4 w-1/2 bg-[#0096FF] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all"
-              onClick={() => alert("Password changed successfully")}
+              className="mt-4 py-2 px-4 w-1/2 bg-[#0096FF] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
+              onClick={handleChangePassword}
+              disabled={changePasswordMutation.isLoading}
             >
-              Change
+              {changePasswordMutation.isLoading ? "Changing..." : "Change"}
             </button>
           </div>
         </div>
@@ -228,7 +315,7 @@ const ProfilePage = () => {
                   Subscription Type
                 </div>
                 <div className="text-base font-semibold">
-                  {subscription.type}
+                  {subscription?.SubscriptionType || "N/A"}
                 </div>
               </div>
               <div>
@@ -236,7 +323,7 @@ const ProfilePage = () => {
                   Plan Name
                 </div>
                 <div className="text-base font-semibold">
-                  {subscription.name}
+                  {subscription?.PlanName || "N/A"}
                 </div>
               </div>
               <div>
@@ -244,7 +331,7 @@ const ProfilePage = () => {
                   Start Date
                 </div>
                 <div className="text-base font-semibold">
-                  {subscription.startDate}
+                  {subscription?.StartDate?.split("T")[0] || "N/A"}
                 </div>
               </div>
               <div>
@@ -252,12 +339,12 @@ const ProfilePage = () => {
                   End Date
                 </div>
                 <div className="text-base font-semibold">
-                  {subscription.endDate}
+                  {subscription?.EndDate?.split("T")[0] || "N/A"}
                 </div>
               </div>
               <div>
                 <div className="text-sm text-[#718EBF] mb-1 dark:text-gray-400">
-                  End Date
+                  Plan Action
                 </div>
                 <div className="text-base font-semibold text-blue-600 cursor-pointer hover:underline">
                   Change Plan
@@ -269,9 +356,9 @@ const ProfilePage = () => {
                 Expire
               </div>
               <div className="text-sm text-red-500">
-                Your current subscription expire in{" "}
+                Your current subscription expires in{" "}
                 <span className="text-base font-semibold">
-                  {subscription.expiresIn} days
+                  <DaysRemaining endDateStr={subscription?.EndDate} /> days
                 </span>
               </div>
             </div>
@@ -280,6 +367,15 @@ const ProfilePage = () => {
       </div>
     </div>
   );
+};
+
+const DaysRemaining = ({ endDateStr }) => {
+  const endDate = new Date(endDateStr);
+  const today = new Date();
+  const diffMs = endDate - today;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  return diffDays;
 };
 
 export default ProfilePage;

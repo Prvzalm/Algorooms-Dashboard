@@ -32,6 +32,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const { token, loading } = useAuth();
   const location = useLocation();
   const isAuthPage = location.pathname === "/signin";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
@@ -40,6 +41,10 @@ function App() {
 
   const sidebarWidth = isSidebarCollapsed ? "md:ml-16" : "md:ml-64";
 
+  if (!loading && token && isAuthPage) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <>
       <ToastContainer
@@ -47,145 +52,69 @@ function App() {
         autoClose={3000}
         hideProgressBar
       />
-      {isAuthPage ? (
-        <Routes>
-          <Route path="/signin" element={<Auth />} />
-        </Routes>
-      ) : (
-        <div className="min-h-screen">
-          <Sidebar
-            isCollapsed={isSidebarCollapsed}
-            setIsCollapsed={setIsSidebarCollapsed}
-          />
-          <Header />
-          <main
-            className={`pt-20 p-4 space-y-6 transition-all duration-200 ${sidebarWidth}`}
-          >
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/trading/strategy-builder"
-                element={
-                  <ProtectedRoute>
-                    <StrategyBuilder />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/trading/signals"
-                element={
-                  <ProtectedRoute>
-                    <TradingviewSignalsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/subscription"
-                element={
-                  <ProtectedRoute>
-                    <SubscriptionsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/wallet"
-                element={
-                  <ProtectedRoute>
-                    <WalletPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/subscriptions"
-                element={
-                  <ProtectedRoute>
-                    <SubscriptionsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/strategies"
-                element={
-                  <ProtectedRoute>
-                    <StrategiesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/raalgo"
-                element={
-                  <ProtectedRoute>
-                    <RaAlgosPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/backtesting/strategybacktest"
-                element={
-                  <ProtectedRoute>
-                    <BacktestStrategyComponent />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/backtesting/simulator"
-                element={
-                  <ProtectedRoute>
-                    <SimulatorPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/backtesting/simulator/addfuture"
-                element={
-                  <ProtectedRoute>
-                    <SimulatorAddFuture />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/broker"
-                element={
-                  <ProtectedRoute>
-                    <BrokerSection />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/add-broker"
-                element={
-                  <ProtectedRoute>
-                    <AddBrokerPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </main>
-        </div>
-      )}
+
+      <Routes>
+        <Route path="/signin" element={<Auth />} />
+        <Route
+          path="*"
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen">
+                <Sidebar
+                  isCollapsed={isSidebarCollapsed}
+                  setIsCollapsed={setIsSidebarCollapsed}
+                />
+                <Header />
+                <main
+                  className={`pt-20 p-4 space-y-6 transition-all duration-200 ${sidebarWidth}`}
+                >
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route
+                      path="/trading/strategy-builder"
+                      element={<StrategyBuilder />}
+                    />
+                    <Route
+                      path="/trading/signals"
+                      element={<TradingviewSignalsPage />}
+                    />
+                    <Route
+                      path="/subscription"
+                      element={<SubscriptionsPage />}
+                    />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/wallet" element={<WalletPage />} />
+                    <Route
+                      path="/subscriptions"
+                      element={<SubscriptionsPage />}
+                    />
+                    <Route
+                      path="/notifications"
+                      element={<NotificationsPage />}
+                    />
+                    <Route path="/strategies" element={<StrategiesPage />} />
+                    <Route path="/raalgo" element={<RaAlgosPage />} />
+                    <Route
+                      path="/backtesting/strategybacktest"
+                      element={<BacktestStrategyComponent />}
+                    />
+                    <Route
+                      path="/backtesting/simulator"
+                      element={<SimulatorPage />}
+                    />
+                    <Route
+                      path="/backtesting/simulator/addfuture"
+                      element={<SimulatorAddFuture />}
+                    />
+                    <Route path="/broker" element={<BrokerSection />} />
+                    <Route path="/add-broker" element={<AddBrokerPage />} />
+                  </Routes>
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </>
   );
 }

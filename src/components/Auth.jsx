@@ -45,6 +45,7 @@ export default function Auth() {
         axiosInstance.defaults.headers.common[
           "Authorization"
         ] = `Bearer ${res.data.Data.AccessToken}`;
+        window.location.reload();
         navigate("/");
       } else {
         toast.error(res.data.Message || "Login failed");
