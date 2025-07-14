@@ -12,15 +12,15 @@ import {
   useUpdateProfile,
   useWalletQuery,
 } from "../../../hooks/profileHooks";
-import { useChangePasswordMutation } from "../../../hooks/loginHooks";
 import { toast } from "react-toastify";
+import { useChangePasswordMutation } from "../../../hooks/loginHooks";
 
 const ProfilePage = () => {
   const { data: profile, isLoading } = useProfileQuery();
   const { data: wallet } = useWalletQuery();
   const { data: subscriptionData } = useSubscriptionQuery();
   const { mutate: updateProfile, isPending, error } = useUpdateProfile();
-  const { mutate: changePasswordMutation } = useChangePasswordMutation();
+  const { mutate: changePasswordUser } = useChangePasswordMutation();
 
   const [form, setForm] = useState({
     Name: "",
@@ -36,20 +36,20 @@ const ProfilePage = () => {
   const handleEdit = () => {
     setIsEditing(true);
     setForm({
-      Name: profile.Name,
-      EmailAddress: profile.EmailAddress,
-      Mobile_Number: profile.Mobile_Number,
+      Name: profile?.Name,
+      EmailAddress: profile?.EmailAddress,
+      Mobile_Number: profile?.Mobile_Number,
     });
   };
 
   const handleSave = () => {
     updateProfile(
       {
-        Name: form.Name || profile.Name,
+        Name: form.Name || profile?.Name,
         EmailAddress: form.EmailAddress,
         Mobile_Number: form.Mobile_Number,
-        Address: profile.Address,
-        ProfileDescription: profile.ProfileDescription,
+        Address: profile?.Address,
+        ProfileDescription: profile?.ProfileDescription,
       },
       {
         onSuccess: (res) => {
@@ -65,25 +65,23 @@ const ProfilePage = () => {
   };
 
   const handleChangePassword = () => {
-    if (!oldPassword || !newPassword) {
-      toast.error("Both fields are required");
-      return;
-    }
+    if (!oldPassword || !newPassword)
+      return toast.info("Enter both old and new password");
 
-    changePasswordMutation(
+    changePasswordUser(
       {
         OldPassword: oldPassword,
         NewPassword: newPassword,
       },
       {
-        onSuccess: (data) => {
-          toast.success(data.Message || "Password changed successfully");
-          setOldPassword("");
-          setNewPassword("");
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("Password changed");
+          } else {
+            toast.error(res.data.Message || "Change failed");
+          }
         },
-        onError: (err) => {
-          toast.error(err.message || "Failed to change password");
-        },
+        onError: () => toast.error("Error changing password"),
       }
     );
   };
@@ -95,8 +93,8 @@ const ProfilePage = () => {
       <div className="flex flex-col md:flex-row gap-6">
         <div className="relative w-full md:w-1/3 rounded-2xl overflow-hidden">
           <img
-            src={profile.AvtarURL || profileMan}
-            alt={profile.Name}
+            src={profile?.AvtarURL || profileMan}
+            alt={profile?.Name}
             className="w-full h-64 object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#343C6A] to-[#343C6A00]" />
@@ -114,7 +112,7 @@ const ProfilePage = () => {
             />
           ) : (
             <div className="absolute bottom-3 left-4 text-white font-semibold text-lg z-10">
-              {profile.Name}
+              {profile?.Name}
             </div>
           )}
         </div>
@@ -125,7 +123,7 @@ const ProfilePage = () => {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 User Id
               </div>
-              <div className="font-semibold">{profile.UserId}</div>
+              <div className="font-semibold">{profile?.UserId}</div>
             </div>
 
             <div>
@@ -145,7 +143,7 @@ const ProfilePage = () => {
                   }
                 />
               ) : (
-                <div className="font-semibold">{profile.EmailAddress}</div>
+                <div className="font-semibold">{profile?.EmailAddress}</div>
               )}
             </div>
 
@@ -166,7 +164,7 @@ const ProfilePage = () => {
                   }
                 />
               ) : (
-                <div className="font-semibold">{profile.Mobile_Number}</div>
+                <div className="font-semibold">{profile?.Mobile_Number}</div>
               )}
             </div>
 
@@ -250,15 +248,15 @@ const ProfilePage = () => {
               <div className="text-[#718EBF]">Referral Link:</div>
               <a
                 target="_blank"
-                href={profile.referralLink}
+                href={profile?.referralLink}
                 className="text-[#2E3A59] dark:text-white break-all underline"
               >
-                {profile.referralLink}
+                {profile?.referralLink}
               </a>
             </div>
             <div className="text-right">
               <div className="text-gray-500 dark:text-gray-400">Joined on</div>
-              <div className="font-medium">{profile.JoiningDate}</div>
+              <div className="font-medium">{profile?.JoiningDate}</div>
             </div>
           </div>
         </div>
@@ -297,9 +295,9 @@ const ProfilePage = () => {
             <button
               className="mt-4 py-2 px-4 w-1/2 bg-[#0096FF] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
               onClick={handleChangePassword}
-              disabled={changePasswordMutation.isLoading}
+              disabled={changePasswordUser.isLoading}
             >
-              {changePasswordMutation.isLoading ? "Changing..." : "Change"}
+              {changePasswordUser.isLoading ? "Changing..." : "Change"}
             </button>
           </div>
         </div>

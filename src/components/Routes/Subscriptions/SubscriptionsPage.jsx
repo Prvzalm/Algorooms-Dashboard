@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FAQs from "./FAQs";
 import BacktestCredits from "./BacktestCredits";
 import PlanChangeConfirmationModal from "./PlanChangeConfirmationModal";
 import PaymentDetailsModal from "./PaymentDetailsModal";
 import PaymentSuccessModal from "./PaymentSuccessModal";
 import PaymentFailureModal from "./PaymentFailureModal";
+import {
+  useBrokerPlans,
+  usePaymentDetails,
+} from "../../../hooks/subscriptionHooks";
 
 const SubscriptionsPage = () => {
   const [mainTab, setMainTab] = useState("Plans");
@@ -14,6 +18,55 @@ const SubscriptionsPage = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFailure, setShowFailure] = useState(false);
+  const [apiKey] = useState("abc");
+  const { data: pricingData, isLoading } = useBrokerPlans(
+    activeTab.toLowerCase(),
+    apiKey
+  );
+  const {
+    mutate: fetchPaymentDetails,
+    data: paymentData,
+    isPending,
+  } = usePaymentDetails();
+
+  const handlePlanContinue = (plan) => {
+    const planId = plan.planId || plan.PlanId;
+    const planType = activeTab.toLowerCase();
+    const subscriptionType = mainTab === "Plans" ? "BROKER" : "BACKTEST";
+
+    fetchPaymentDetails({
+      Planid: planId,
+      PlanType: planType,
+      CouponCode: "",
+      SubscriptionType: subscriptionType,
+      BrokerClientId: "",
+    });
+
+    setShowConfirm(false);
+    setShowPayment(true);
+  };
+
+  const mappedPlans = useMemo(() => {
+    if (!pricingData || !Array.isArray(pricingData)) return [];
+
+    return pricingData.map((plan) => ({
+      ...plan,
+      title: `${plan.planName} Plan`,
+      price: plan.Price,
+      description: "Auto-fetched from API",
+      features: [
+        `${plan.allowedBacktestCount} allowed backtest credits`,
+        `${plan.maxStrategyCreation} strategy creation allowed`,
+        `${plan.maxLiveDeployment} live deployment allowed`,
+        `${plan.maxPaperDeployment} forward deployment allowed`,
+        `${plan.maxStrategyAllowedInPhortpholio} strategy portfolio allowed`,
+        plan.isHNIMarketPlaceAccess
+          ? "Retail + HNI strategies allowed"
+          : "Retail strategies allowed",
+        `${plan.allowedBrokes.join(", ")} brokers allowed`,
+      ],
+    }));
+  }, [pricingData]);
 
   const tabs = ["Monthly", "Quarterly", "Yearly"];
   const mainTabs = ["Plans", "Backtest Credits"];
@@ -27,141 +80,6 @@ const SubscriptionsPage = () => {
     coupon: 0,
     tax: 719,
     netPayable: 4718,
-  };
-
-  const plans = {
-    Monthly: [
-      {
-        title: "Free Plan",
-        price: 0,
-        description:
-          "Best for small business owners, startups who need landing page for their business.",
-        features: [
-          "50 allowed backtest credits",
-          "5 strategy creation allowed",
-          "All brokers allowed",
-          "Retail strategies allowed",
-        ],
-      },
-      {
-        title: "Unlimited Plan",
-        price: 29,
-        description:
-          "Best for medium business owners, startups who need landing page for their business.",
-        features: [
-          "500 allowed backtest credits",
-          "5 strategy creation allowed",
-          "5 live deployment allowed",
-          "5 forward deployment allowed",
-          "All brokers allowed",
-          "5 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-      {
-        title: "Limited Plan",
-        price: 15,
-        description:
-          "Best for large companies, business owners who need landing page for their business.",
-        features: [
-          "250 allowed backtest credits",
-          "10 strategy creation allowed",
-          "3 live deployment allowed",
-          "3 forward deployment allowed",
-          "All brokers allowed",
-          "2 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-    ],
-    Quarterly: [
-      {
-        title: "Free Plan",
-        price: 0,
-        description:
-          "Best for small business owners, startups who need landing page for their business.",
-        features: [
-          "50 allowed backtest credits",
-          "5 strategy creation allowed",
-          "All brokers allowed",
-          "Retail strategies allowed",
-        ],
-      },
-      {
-        title: "Unlimited Plan",
-        price: 69,
-        description:
-          "Best for medium business owners, startups who need landing page for their business.",
-        features: [
-          "1500 allowed backtest credits",
-          "5 strategy creation allowed",
-          "20 live deployment allowed",
-          "20 forward deployment allowed",
-          "All brokers allowed",
-          "10 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-      {
-        title: "Limited Plan",
-        price: 41,
-        description:
-          "Best for large companies, business owners who need landing page for their business.",
-        features: [
-          "500 allowed backtest credits",
-          "25 strategy creation allowed",
-          "5 live deployment allowed",
-          "5 forward deployment allowed",
-          "All brokers allowed",
-          "2 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-    ],
-    Yearly: [
-      {
-        title: "Free Plan",
-        price: 0,
-        description:
-          "Best for small business owners, startups who need landing page for their business.",
-        features: [
-          "50 allowed backtest credits",
-          "5 strategy creation allowed",
-          "All brokers allowed",
-          "Retail strategies allowed",
-        ],
-      },
-      {
-        title: "Unlimited Plan",
-        price: 199,
-        description:
-          "Best for medium business owners, startups who need landing page for their business.",
-        features: [
-          "6000 allowed backtest credits",
-          "5 strategy creation allowed",
-          "50 live deployment allowed",
-          "50 forward deployment allowed",
-          "All brokers allowed",
-          "25 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-      {
-        title: "Limited Plan",
-        price: 129,
-        description:
-          "Best for large companies, business owners who need landing page for their business.",
-        features: [
-          "2000 allowed backtest credits",
-          "30 strategy creation allowed",
-          "10 live deployment allowed",
-          "10 forward deployment allowed",
-          "All brokers allowed",
-          "5 strategy portfolio allowed",
-          "Retail + HNI strategies allowed",
-        ],
-      },
-    ],
   };
 
   return (
@@ -186,7 +104,7 @@ const SubscriptionsPage = () => {
         </div>
 
         {mainTab === "Plans" ? (
-          <div className="bg-white dark:bg-[#15171C]">
+          <div>
             <div className="flex gap-6 border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
               {tabs.map((tab) => (
                 <button
@@ -195,7 +113,7 @@ const SubscriptionsPage = () => {
                   className={`pb-2 px-4 py-2 rounded-lg ${
                     activeTab === tab
                       ? "text-[#0096FF] bg-blue-100 border border-[#0096FF]"
-                      : "text-gray-500 bg-gray-50 border dark:text-gray-400"
+                      : "text-gray-500 bg-blue-50 border dark:text-gray-400"
                   }`}
                 >
                   {tab}
@@ -204,39 +122,72 @@ const SubscriptionsPage = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mt-4">
-              {plans[activeTab]?.map((plan, index) => (
-                <div
-                  key={index}
-                  className="border border-[#E6EDF4] dark:border-[#1E2027] bg-white dark:bg-[#15171C] rounded-2xl p-6 space-y-4"
-                >
-                  <div className="text-lg font-semibold">{plan.title}</div>
-                  <div className="text-3xl font-bold">₹{plan.price}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {plan.description}
-                  </div>
-
-                  <button
-                    onClick={() => setShowConfirm(true)}
-                    className={`w-full py-4 rounded-xl text-sm font-semibold ${
-                      plan.price === 69
-                        ? "bg-[#0096FF] text-white"
-                        : "border border-[#D5DAE1] dark:border-gray-700"
-                    }`}
+              {isLoading ? (
+                <div className="col-span-3 text-center">Loading Plans...</div>
+              ) : (
+                mappedPlans.map((plan, index) => (
+                  <div
+                    key={index}
+                    className="border border-[#E6EDF4] dark:border-[#1E2027] bg-white dark:bg-[#15171C] rounded-2xl p-6 space-y-4"
                   >
-                    Get Started
-                  </button>
-                  <div>
-                    <div className="text-sm font-semibold mb-2">
-                      What’s included:
+                    <div className="text-lg font-semibold">
+                      {plan.planName} Plan
                     </div>
-                    <ul className="space-y-1 text-sm text-[#2E3A59] dark:text-white">
-                      {plan.features.map((feature, i) => (
-                        <li key={i}>• {feature}</li>
-                      ))}
-                    </ul>
+                    <div className="text-3xl font-bold">₹{plan.Price}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {plan.description}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setSelectedPlan(plan);
+                        setShowConfirm(true);
+                      }}
+                      className={`w-full py-4 rounded-xl text-sm font-semibold ${
+                        plan.planName.toLowerCase() === "unlimited"
+                          ? "bg-[#0096FF] text-white"
+                          : "border border-[#D5DAE1] dark:border-gray-700"
+                      }`}
+                    >
+                      Get Started
+                    </button>
+
+                    <div>
+                      <div className="text-sm font-semibold mb-2">
+                        What’s included:
+                      </div>
+                      <ul className="space-y-1 text-sm text-[#2E3A59] dark:text-white">
+                        <li>
+                          • {plan.allowedBacktestCount} allowed backtest credits
+                        </li>
+                        <li>
+                          • {plan.maxStrategyCreation} strategy creation allowed
+                        </li>
+                        <li>
+                          • {plan.maxLiveDeployment} live deployment allowed
+                        </li>
+                        <li>
+                          • {plan.maxPaperDeployment} forward deployment allowed
+                        </li>
+                        <li>
+                          • {plan.maxStrategyAllowedInPhortpholio} strategy
+                          portfolio allowed
+                        </li>
+                        <li>
+                          •{" "}
+                          {plan.isHNIMarketPlaceAccess
+                            ? "Retail + HNI"
+                            : "Retail only"}{" "}
+                          strategies allowed
+                        </li>
+                        <li>
+                          • Brokers allowed: {plan.allowedBrokes.join(", ")}
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         ) : (
@@ -253,15 +204,16 @@ const SubscriptionsPage = () => {
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onContinue={() => {
-          setShowConfirm(false);
-          setShowPayment(true);
+          if (selectedPlan) {
+            handlePlanContinue(selectedPlan);
+          }
         }}
       />
 
       <PaymentDetailsModal
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
-        data={paymentInfo}
+        data={paymentData}
         onProcessPayment={() => {
           setShowPayment(false);
 

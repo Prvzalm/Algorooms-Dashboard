@@ -6,6 +6,18 @@ import { googleIcon } from "../assets";
 import { jwtDecode } from "jwt-decode";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
+import {
+  useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useGoogleLoginMutation,
+  useLoginMutation,
+  useRegisterMutation,
+  useRequestEmailOtpMutation,
+  useRequestMobileOtpMutation,
+  useResetPasswordMutation,
+  useValidateEmailOtpMutation,
+  useValidateMobileOtpMutation,
+} from "../hooks/loginHooks";
 
 export default function Auth() {
   const [mode, setMode] = useState("login");
@@ -15,6 +27,20 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupOtp, setSignupOtp] = useState(["", "", "", "", "", ""]);
+
+  const { mutate: loginUser } = useLoginMutation();
+  const { mutate: googleLoginUser } = useGoogleLoginMutation();
+  const { mutate: forgotPasswordUser } = useForgotPasswordMutation();
+  const { mutate: resetPasswordUser } = useResetPasswordMutation();
+  const { mutate: requestEmailOtp } = useRequestEmailOtpMutation();
+  const { mutate: validateEmailOtp } = useValidateEmailOtpMutation();
+  const { mutate: requestMobileOtp } = useRequestMobileOtpMutation();
+  const { mutate: validateMobileOtp } = useValidateMobileOtpMutation();
+  const { mutate: registerUser } = useRegisterMutation();
 
   const navigate = useNavigate();
 
@@ -26,140 +52,263 @@ export default function Auth() {
     }
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      toast.info("Please enter email and password");
-      return;
-    }
+  const handleLogin = (email, password) => {
+    if (!email || !password) return toast.info("Enter email and password");
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post("/home/loginUser", {
+    loginUser(
+      {
         UserId: email,
         Password: password,
         ApiKey: "abc",
-      });
-
-      if (res.data.Status === "Success") {
-        localStorage.setItem("token", res.data.Data.AccessToken);
-        axiosInstance.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${res.data.Data.AccessToken}`;
-        window.location.reload();
-        navigate("/");
-      } else {
-        toast.error(res.data.Message || "Login failed");
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            localStorage.setItem("token", res.data.Data.AccessToken);
+            axiosInstance.defaults.headers.common[
+              "Authorization"
+            ] = `Bearer ${res.data.Data.AccessToken}`;
+            window.location.reload();
+            toast.success("Logged in successfully");
+            navigate("/");
+          } else {
+            toast.error(res.data.Message || "Login failed");
+          }
+        },
+        onError: () => toast.error("Login error"),
       }
-    } catch (err) {
-      toast.error("Login failed");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
-  const sendEmailOtp = async () => {
-    if (!email) return toast.info("Enter email/client ID");
+  const handleRegister = ({
+    Name,
+    EmailAddress,
+    Mobile_Number,
+    Password,
+    OTP,
+  }) => {
+    if (
+      !Name ||
+      !EmailAddress ||
+      !Mobile_Number ||
+      !Password ||
+      OTP.length !== 6
+    ) {
+      return toast.info("Please fill all fields and enter a 6-digit OTP");
+    }
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post("/home/requestEmailOTP", {
-        EmailID: email,
-        OTPType: "ForgetPassword",
+    registerUser(
+      {
+        Name,
+        EmailAddress,
+        Mobile_Number,
+        Password,
+        OTP: parseInt(OTP),
         ApiKey: "abc",
-      });
-
-      if (res.data.Status === "Success") {
-        setMode("verify");
-      } else {
-        toast.error(res.data.Message || "Failed to send OTP");
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("Registration successful. Please log in.");
+            setMode("login");
+          } else {
+            toast.error(res.data.Message || "Registration failed");
+          }
+        },
+        onError: () => {
+          toast.error("Error during registration");
+        },
       }
-    } catch (err) {
-      toast.error("Error sending OTP");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
-  const verifyOtp = async () => {
-    const code = otp.join("");
-    if (code.length < 6) return toast.info("Enter valid 6-digit OTP");
+  const handleForgot = (email) => {
+    if (!email) return toast.info("Enter your email");
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post("/home/ValidateEmailOTP", {
+    requestEmailOtp(
+      {
         EmailID: email,
-        OTP: parseInt(code),
+        OTPType: "FORGOTPASSWORD",
         ApiKey: "abc",
-      });
-
-      if (res.data.Status === "Success") {
-        setMode("reset");
-      } else {
-        toast.error(res.data.Message || "Invalid OTP");
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("OTP sent to email");
+            setMode("verify");
+          } else {
+            toast.error(res.data.Message || "Failed to send OTP");
+          }
+        },
+        onError: () => toast.error("Request OTP failed"),
       }
-    } catch (err) {
-      toast.error("OTP verification failed");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
-  const resetPassword = async () => {
+  const handleVerifyOtp = (email, otp) => {
+    if (otp.length !== 6) return toast.info("Enter 6-digit OTP");
+
+    validateEmailOtp(
+      {
+        EmailID: email,
+        OTP: parseInt(otp),
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("OTP verified");
+            setMode("reset");
+          } else {
+            toast.error(res.data.Message || "OTP incorrect");
+          }
+        },
+        onError: () => toast.error("OTP verification failed"),
+      }
+    );
+  };
+
+  const handleReset = (email, newPassword, otp) => {
     if (!newPassword) return toast.info("Enter new password");
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post("/home/forgotPassword", {
+    forgotPasswordUser(
+      {
         EmailID: email,
         NewPassword: newPassword,
-        OTP: parseInt(otp.join("")),
+        OTP: parseInt(otp),
         ApiKey: "abc",
-      });
-
-      if (res.data.Status === "Success") {
-        toast.success("Password reset successful. Please log in.");
-        setMode("login");
-      } else {
-        toast.error(res.data.Message || "Reset failed");
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("Password reset successfully");
+            setMode("login");
+          } else {
+            toast.error(res.data.Message || "Reset failed");
+          }
+        },
+        onError: () => toast.error("Reset error"),
       }
-    } catch (err) {
-      toast.error("Error resetting password");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      const decoded = jwtDecode(tokenResponse.credential);
-      const { email, picture, name } = decoded;
+  const handleRequestMobileOtp = (mobileNumber, otpType = "REGISTRATION") => {
+    if (!mobileNumber) return toast.info("Enter mobile number");
 
-      try {
-        const res = await axiosInstance.post("/home/ThirdPartyLogin", {
-          EmailID: email,
-          Token: tokenResponse.credential,
-          AvtarUrl: picture,
-          CreatedBy: name,
-          ApiKey: "abc",
-        });
-
-        if (res.data.Status === "Success") {
-          localStorage.setItem("token", res.data.Data.AccessToken);
-          axiosInstance.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${res.data.Data.AccessToken}`;
-          navigate("/");
-        } else {
-          toast.error(res.data.Message || "Google login failed");
-        }
-      } catch (err) {
-        toast.error("Google login error");
+    requestMobileOtp(
+      {
+        MobileNumber: mobileNumber,
+        OTPType: otpType,
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("OTP sent to mobile");
+          } else {
+            toast.error(res.data.Message || "Failed to send mobile OTP");
+          }
+        },
+        onError: () => toast.error("Request mobile OTP failed"),
       }
-    },
-    onError: () => {
-      toast.error("Google login failed");
-    },
-  });
+    );
+  };
+
+  const handleValidateMobileOtp = (mobileNumber, otp) => {
+    if (!otp || otp.length !== 6)
+      return toast.info("Enter a valid 6-digit OTP");
+
+    validateMobileOtp(
+      {
+        MobileNumber: mobileNumber,
+        OTP: parseInt(otp),
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("Mobile OTP verified");
+          } else {
+            toast.error(res.data.Message || "Invalid mobile OTP");
+          }
+        },
+        onError: () => toast.error("OTP verification failed"),
+      }
+    );
+  };
+
+  const handleResetViaTicket = (resetTicket, newPassword) => {
+    if (!resetTicket || !newPassword)
+      return toast.info("Missing reset ticket or password");
+
+    resetPasswordUser(
+      {
+        ResetTicket: resetTicket,
+        NewPassword: newPassword,
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("Password reset successfully");
+            setMode("login");
+          } else {
+            toast.error(res.data.Message || "Reset failed");
+          }
+        },
+        onError: () => toast.error("Reset error"),
+      }
+    );
+  };
+
+  const handleRequestEmailOtpForRegistration = (email) => {
+    if (!email) return toast.info("Enter email");
+
+    requestEmailOtp(
+      {
+        EmailID: email,
+        OTPType: "REGISTRATION",
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            toast.success("OTP sent to email");
+          } else {
+            toast.error(res.data.Message || "Failed to send OTP");
+          }
+        },
+        onError: () => toast.error("Request failed"),
+      }
+    );
+  };
+
+  const handleGoogleLogin = ({ email, picture, name, token }) => {
+    googleLoginUser(
+      {
+        EmailID: email,
+        Token: token,
+        AvtarUrl: picture,
+        CreatedBy: name,
+        ApiKey: "abc",
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.Status === "Success") {
+            localStorage.setItem("token", res.data.Data.AccessToken);
+            axiosInstance.defaults.headers.common[
+              "Authorization"
+            ] = `Bearer ${res.data.Data.AccessToken}`;
+            toast.success("Logged in with Google");
+            navigate("/");
+          } else {
+            toast.error(res.data.Message || "Google login failed");
+          }
+        },
+        onError: () => toast.error("Google login error"),
+      }
+    );
+  };
 
   return (
     <div className="min-h-screen flex dark:bg-[#0B0C10]">
@@ -201,7 +350,7 @@ export default function Auth() {
           </p>
 
           <button
-            onClick={() => googleLogin()}
+            onClick={() => handleGoogleLogin(email, name)}
             className="w-full py-2 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-left flex items-center px-4"
           >
             <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
@@ -277,26 +426,98 @@ export default function Auth() {
             </div>
           )}
 
-          <button
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
-            disabled={loading}
-            onClick={() => {
-              if (mode === "login") handleLogin();
-              else if (mode === "forget") sendEmailOtp();
-              else if (mode === "verify") verifyOtp();
-              else if (mode === "reset") resetPassword();
-            }}
-          >
-            {loading
-              ? "Please wait..."
-              : mode === "login"
-              ? "Log In"
-              : mode === "forget"
-              ? "Send OTP"
-              : mode === "verify"
-              ? "Verify"
-              : "Reset Password"}
-          </button>
+          {mode === "signup" && (
+            <>
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+              />
+              <input
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+              />
+              <button
+                className="text-blue-500 text-sm mt-1"
+                onClick={() => handleRequestEmailOtpForRegistration(email)}
+              >
+                Send OTP to Email
+              </button>
+              <input
+                type="tel"
+                placeholder="Mobile Number"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={signupPassword}
+                onChange={(e) => setSignupPassword(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+              />
+              <div className="flex justify-between">
+                {signupOtp.map((digit, i) => (
+                  <input
+                    key={i}
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => {
+                      const updated = [...signupOtp];
+                      updated[i] = e.target.value;
+                      setSignupOtp(updated);
+                    }}
+                    className="w-10 h-12 rounded-lg bg-gray-100 text-center text-xl focus:outline-none"
+                  />
+                ))}
+              </div>
+              <button
+                onClick={() =>
+                  handleRegister({
+                    Name: name,
+                    EmailAddress: email,
+                    Mobile_Number: mobile,
+                    Password: signupPassword,
+                    OTP: signupOtp.join(""),
+                  })
+                }
+                className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
+              >
+                Register
+              </button>
+            </>
+          )}
+
+          {mode !== "signup" && (
+            <button
+              className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
+              disabled={loading}
+              onClick={() => {
+                if (mode === "login") handleLogin(email, password);
+                else if (mode === "forget") handleForgot(email);
+                else if (mode === "verify")
+                  handleVerifyOtp(email, otp.join(""));
+                else if (mode === "reset")
+                  handleReset(email, newPassword, otp.join(""));
+              }}
+            >
+              {loading
+                ? "Please wait..."
+                : mode === "login"
+                ? "Log In"
+                : mode === "forget"
+                ? "Send OTP"
+                : mode === "verify"
+                ? "Verify"
+                : "Reset Password"}
+            </button>
+          )}
 
           <div className="text-center text-xs text-gray-500">
             {mode === "login" ? (

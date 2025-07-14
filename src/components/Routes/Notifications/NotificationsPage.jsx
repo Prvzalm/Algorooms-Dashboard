@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { noNotification, notificationGeneral, upStox } from "../../../assets";
+import { useTradeEngineLogs } from "../../../hooks/notificationHooks";
 
 const tabs = [
   "General",
@@ -60,6 +61,11 @@ const mockNotifications = {
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState("General");
   const notifications = mockNotifications[activeTab];
+  const {
+    data: tradeLogs = [],
+    isLoading: tradeLoading,
+    isError: tradeErrors,
+  } = useTradeEngineLogs();
 
   const renderNotification = (note, index) => {
     if (activeTab === "General") {
@@ -90,21 +96,27 @@ const NotificationsPage = () => {
     }
 
     if (activeTab === "Trade Engine Logs") {
-      return (
+      if (tradeLoading) return <div>Loading logs...</div>;
+      if (tradeErrors) return <div>Failed to fetch trade engine logs.</div>;
+      return tradeLogs.map((note, index) => (
         <div
           key={index}
           className="bg-white dark:bg-[#1F1F24] border border-gray-100 dark:border-[#2D2F36] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between"
         >
           <div className="flex items-center space-x-3 mb-3 md:mb-0">
             <img
-              src={note.broker.logo}
-              alt={note.broker.name}
+              src={
+                note.BrokerClientId === "3CCF6C"
+                  ? upStox
+                  : "/default-broker-logo.png"
+              }
+              alt={note.BrokerClientId}
               className="w-8 h-8 object-contain"
             />
             <div>
               <div className="text-xs text-[#718EBF]">Broker</div>
               <div className="font-medium text-[#2E3A59] dark:text-white">
-                {note.broker.name} ({note.broker.code})
+                {note.BrokerClientId}
               </div>
             </div>
           </div>
@@ -112,23 +124,32 @@ const NotificationsPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 w-full text-sm text-[#2E3A59] dark:text-gray-300">
             <div>
               <div className="text-xs text-[#718EBF]">Trade Engine Name</div>
-              <div className="font-medium">{note.engineName}</div>
+              <div className="font-medium">{note.TradeEngineName}</div>
             </div>
-            <div>
-              <div className="text-xs text-[#718EBF]">Start Date & Time</div>
-              <div className="font-medium">{note.startTime}</div>
-            </div>
-            <div>
-              <div className="text-xs text-[#718EBF]">End Date & Time</div>
-              <div className="font-medium">{note.endTime}</div>
-            </div>
-            <div>
-              <div className="text-xs text-[#718EBF]">Message</div>
-              <div className="font-medium">{note.message}</div>
-            </div>
+
+            {note.TradeEngineStartTime && (
+              <div>
+                <div className="text-xs text-[#718EBF]">Start Date & Time</div>
+                <div className="font-medium">{note.TradeEngineStartTime}</div>
+              </div>
+            )}
+
+            {note.TradeEngineStopTime && (
+              <div>
+                <div className="text-xs text-[#718EBF]">End Date & Time</div>
+                <div className="font-medium">{note.TradeEngineStopTime}</div>
+              </div>
+            )}
+
+            {note.Message && (
+              <div>
+                <div className="text-xs text-[#718EBF]">Message</div>
+                <div className="font-medium">{note.Message}</div>
+              </div>
+            )}
           </div>
         </div>
-      );
+      ));
     }
 
     if (activeTab === "Broadcast Received") {
@@ -208,8 +229,21 @@ const NotificationsPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {notifications.map((note, index) =>
-              renderNotification(note, index)
+            {activeTab === "Trade Engine Logs" ? (
+              renderNotification(null, 0)
+            ) : mockNotifications[activeTab]?.length > 0 ? (
+              mockNotifications[activeTab].map((note, index) =>
+                renderNotification(note, index)
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                <img
+                  src={noNotification}
+                  alt="No Notifications"
+                  className="w-20 h-20 mb-4 opacity-70"
+                />
+                <p className="text-center text-sm">No Notifications Found!</p>
+              </div>
             )}
           </div>
         )}

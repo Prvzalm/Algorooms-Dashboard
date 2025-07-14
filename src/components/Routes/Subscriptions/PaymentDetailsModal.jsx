@@ -9,6 +9,7 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
   const handleOutsideClick = (e) => {
     if (e.target.id === "modal-overlay") onClose();
   };
+  console.log({ data });
 
   return (
     <div
@@ -24,36 +25,54 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
         <div className="text-sm space-y-4">
           <div className="flex justify-between">
             <span className="text-[#707070]">Subscription Plan Name</span>
-            <span className="font-medium">{data.planName}</span>
+            <span className="font-medium">{data?.PlanName || "N/A"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">Subscription Type</span>
-            <span>{data.type}</span>
+            <span>
+              {data?.PlanType
+                ? data.PlanType.charAt(0).toUpperCase() +
+                  data.PlanType.slice(1).toLowerCase()
+                : "N/A"}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">Base Price</span>
-            <span>₹{data.basePrice.toFixed(2)}</span>
+            <span>₹{data?.BasePrice?.toFixed(2) || "0.00"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">Wallet Balance</span>
-            <span className="text-green-600">-₹{data.wallet.toFixed(2)}</span>
+            <span className="text-green-600">
+              -₹{data?.WalletAmount?.toFixed(2) || "0.00"}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">Discount</span>
-            <span className="text-green-600">-₹{data.discount.toFixed(2)}</span>
+            <span className="text-green-600">-₹{data?.discount || "0.00"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">Coupon</span>
-            <span>-₹{data.coupon.toFixed(2)}</span>
+            <span>-₹{data?.coupon || "0.00"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#707070]">IGST 18%</span>
-            <span className="text-red-500">+₹{data.tax.toFixed(2)}</span>
+            <span className="text-red-500">
+              +₹{data?.GstTaxationCharge?.toFixed(2) || "0.00"}
+            </span>
           </div>
           <hr />
           <div className="flex justify-between font-medium text-base">
             <span>Net Payable</span>
-            <span>₹{data.netPayable.toFixed(0)}</span>
+            <span>
+              ₹
+              {(
+                data?.NetPaybleAmount ??
+                (data?.BasePrice || 0) -
+                  (data?.WalletAmount || 0) -
+                  (data?.CouponDiscountAmount || 0) +
+                  (data?.GstTaxationCharge || 0)
+              ).toFixed(2)}
+            </span>
           </div>
           <hr />
         </div>

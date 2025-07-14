@@ -81,19 +81,20 @@ const BrokerCard = ({ brokers = [] }) => {
       </div>
 
       <div className="text-[#718EBF] dark:text-gray-400 text-xs">
-        Strategies Performance
+        Broker Login Status
       </div>
       <div className="text-xl font-bold text-black dark:text-white mb-4">
-        ₹{selectedBroker && selectedBroker.amount}
+        {selectedBroker?.isLoggedIn ? "Connected" : "Not Connected"}
       </div>
+
       <hr className="mb-4 border-gray-200 dark:border-[#1E2027]" />
 
       <div className="flex justify-between">
         <div className="flex flex-col items-center text-sm space-y-1">
           <span className="text-[#718EBF] dark:text-gray-400">Terminal</span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            <input type="checkbox" className="sr-only peer" disabled />
+            <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
           </label>
         </div>
         <div className="flex flex-col items-center text-sm space-y-1">
@@ -101,7 +102,12 @@ const BrokerCard = ({ brokers = [] }) => {
             Trading Engine
           </span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" defaultChecked className="sr-only peer" />
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={selectedBroker?.tradeEngineStatus === "Running"}
+              readOnly
+            />
             <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
           </label>
         </div>

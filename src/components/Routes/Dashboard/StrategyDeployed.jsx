@@ -4,8 +4,12 @@ import { FiChevronDown } from "react-icons/fi";
 
 const icons = [strategy1, strategy2, strategy3];
 
-const StrategyDeployed = ({ strategies, brokers }) => {
-  const [selectedBroker, setSelectedBroker] = useState(brokers[0]);
+const StrategyDeployed = ({
+  strategies,
+  uniqueBrokers,
+  selectedBroker,
+  handleSelect,
+}) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -19,10 +23,24 @@ const StrategyDeployed = ({ strategies, brokers }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelect = (broker) => {
-    setSelectedBroker(broker);
-    setDropdownOpen(false);
-  };
+  const deployedStrategies = strategies?.flatMap((broker) =>
+    broker.DeploymentDetail.flatMap((strategy) =>
+      strategy.DeploymentDetail.map((deployment) => ({
+        strategyName: strategy.StrategyName,
+        strategyId: strategy.strategyId,
+        brokerName: broker.BrokerName,
+        brokerCode: broker.BrokerClientId,
+        brokerLogo: broker.brokerLogoUrl,
+        totalPnl: deployment.TotalPnl,
+        isLive: deployment.isLiveMode,
+        running: deployment.Running_Status,
+        maxProfit: deployment.MaxProfit,
+        maxLoss: deployment.MaxLoss,
+        deploymentType: deployment.DeploymentType,
+        timestamp: deployment.deploymentTimeStamp,
+      }))
+    )
+  );
 
   return (
     <>
@@ -36,17 +54,17 @@ const StrategyDeployed = ({ strategies, brokers }) => {
         >
           <div className="flex space-x-2 items-center">
             <img
-              src={selectedBroker.logo}
-              alt={selectedBroker.name}
+              src={selectedBroker?.logo}
+              alt={selectedBroker?.name}
               className="w-5 h-5 object-contain rounded-full"
             />
-            <span className="text-sm">{selectedBroker.name}</span>
+            <span className="text-sm">{selectedBroker?.name}</span>
             <FiChevronDown className="text-gray-500 dark:text-gray-300" />
           </div>
 
           {dropdownOpen && (
             <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48">
-              {brokers.map((broker, index) => (
+              {uniqueBrokers.map((broker, index) => (
                 <div
                   key={index}
                   onClick={() => handleSelect(broker)}
@@ -71,13 +89,13 @@ const StrategyDeployed = ({ strategies, brokers }) => {
       </div>
 
       <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-full text-black dark:text-white">
-        {strategies.map((s, i) => {
+        {deployedStrategies.map((s, i) => {
           const Icon = icons[i % icons.length];
-          const isNegative = s.pnl.startsWith("-");
-          const statusParts = s.status
-            .split("•")
-            .map((part) => part.trim())
-            .filter(Boolean);
+          const isNegative = s.totalPnl < 0;
+          const statusParts = [
+            s.running ? "Running" : "Stopped",
+            s.isLive ? "Live" : "Paper",
+          ];
 
           return (
             <div
@@ -89,14 +107,14 @@ const StrategyDeployed = ({ strategies, brokers }) => {
                   <img
                     className="w-12 h-12 object-contain"
                     src={Icon}
-                    alt={s.name}
+                    alt={s.strategyName}
                   />
                 </div>
 
                 <div className="flex flex-row items-center justify-between w-full">
                   <div className="space-y-1">
                     <p className="font-medium text-gray-800 dark:text-white">
-                      {s.name}
+                      {s.strategyName}
                     </p>
                     <p className="text-xs flex flex-wrap items-center gap-1">
                       {statusParts.map((part, idx) => (
@@ -108,6 +126,8 @@ const StrategyDeployed = ({ strategies, brokers }) => {
                             className={
                               part.toLowerCase() === "running"
                                 ? "text-[#19A0FF]"
+                                : part.toLowerCase() === "stopped"
+                                ? "text-red-500"
                                 : "text-green-600"
                             }
                           >
@@ -123,7 +143,7 @@ const StrategyDeployed = ({ strategies, brokers }) => {
                       isNegative ? "text-red-500" : "text-green-500"
                     }`}
                   >
-                    {s.pnl}
+                    ₹{Math.abs(s.totalPnl)}
                   </p>
                 </div>
               </div>

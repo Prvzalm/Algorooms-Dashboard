@@ -8,25 +8,67 @@ import { man, tutorialIcon, upStox, upStoxJas } from "../../../assets";
 import { useEffect, useRef, useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import NoticeModal from "../../NoticeModal";
+import {
+  useBrokerwiseStrategies,
+  useUserBrokerData,
+} from "../../../hooks/dashboardHooks";
 
 const Dashboard = () => {
   const [showNotice, setShowNotice] = useState(() => {
     return !localStorage.getItem("noticeAccepted");
   });
+  const {
+    data: brokerData,
+    isLoading: isBrokerLoading,
+    isError: isBrokerError,
+  } = useUserBrokerData();
+  const {
+    data: brokerStrategiesData,
+    isLoading: isStrategyLoading,
+    isError: isStrategyError,
+  } = useBrokerwiseStrategies();
+
+  const strategies = brokerStrategiesData || [];
+
+  const uniqueBrokers = Array.from(
+    new Map(
+      strategies.map((strategy) => [
+        strategy.BrokerClientId,
+        {
+          name: strategy.BrokerName,
+          code: strategy.BrokerClientId,
+          logo: strategy.brokerLogoUrl,
+          brokerId: strategy.BrokerId,
+        },
+      ])
+    ).values()
+  );
+
+  const brokers =
+    brokerData?.map((item) => ({
+      name: item.BrokerName,
+      code: item.BrokerClientId,
+      logo: item.brokerLogoUrl,
+      loginUrl: item.APILoginUrl,
+      isLoggedIn: item.BrokerLoginStatus,
+      tradeEngineStatus: item.TradeEngineStatus,
+    })) || [];
 
   const handleCloseNotice = () => {
     localStorage.setItem("noticeAccepted", "true");
     setShowNotice(false);
   };
 
-  const brokers = [
-    { name: "Upstox", code: "3CCF6C", logo: upStox, amount: "7584" },
-    { name: "Zerodha", code: "7ZZ89K", logo: upStox, amount: "3676" },
-  ];
-
-  const [selectedBroker, setSelectedBroker] = useState(brokers[0]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const [selectedBroker, setSelectedBroker] = useState(null);
+
+  useEffect(() => {
+    if (uniqueBrokers.length > 0) {
+      setSelectedBroker(uniqueBrokers[0]);
+    }
+  }, [brokerStrategiesData]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -43,11 +85,9 @@ const Dashboard = () => {
     setDropdownOpen(false);
   };
 
-  const strategies = [
-    { name: "Momentum Booster", status: "• Running • Live", pnl: "+₹5,400" },
-    { name: "BankNifty S1", status: "• Running • Live", pnl: "+₹2,500" },
-    { name: "Nifty Options Hedge", status: "• Running • Live", pnl: "-₹850" },
-  ];
+  const selectedBrokerStrategies = strategies.filter(
+    (strategy) => strategy.BrokerClientId === selectedBroker?.code
+  );
 
   const yourTutorialData = [
     {
@@ -109,26 +149,8 @@ const Dashboard = () => {
     },
   ];
 
-  const templates = [
-    {
-      title: "Brahmastra Nifty Option B...",
-      desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-      margin: "₹100",
-      maxDD: "0.00",
-    },
-    {
-      title: "Shakti BankNifty Intraday",
-      desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-      margin: "₹250",
-      maxDD: "1.25%",
-    },
-    {
-      title: "Long Straddle Reversal",
-      desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-      margin: "₹500",
-      maxDD: "2.75%",
-    },
-  ];
+  if (isBrokerLoading || isStrategyLoading) return <div>Loading data...</div>;
+  if (isBrokerError || isStrategyError) return <div>Error fetching data.</div>;
 
   return (
     <>
@@ -148,21 +170,27 @@ const Dashboard = () => {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             ref={dropdownRef}
           >
-            <div className="flex space-x-2 items-center">
-              <img
-                src={selectedBroker.logo}
-                alt={selectedBroker.name}
-                className="w-5 h-5 md:w-7 md:h-7 object-contain rounded-full"
-              />
-              <span className="text-sm md:text-base">
-                {selectedBroker.name}
-              </span>
-              <FiChevronDown className="text-gray-500 dark:text-gray-300" />
-            </div>
+            {selectedBroker ? (
+              <div className="flex items-center space-x-2 font-semibold">
+                <img
+                  src={selectedBroker.logo}
+                  alt={selectedBroker.name}
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="text-base text-black dark:text-white">
+                  {selectedBroker.name}
+                  <span className="text-[#718EBF] dark:text-gray-400 font-normal ml-1">
+                    ({selectedBroker.code})
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-500">No broker selected</span>
+            )}
 
             {dropdownOpen && (
               <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48">
-                {brokers.map((broker, index) => (
+                {uniqueBrokers.map((broker, index) => (
                   <div
                     key={index}
                     onClick={() => handleSelect(broker)}
@@ -192,14 +220,18 @@ const Dashboard = () => {
           totalPnl="5,756"
           topGainer="Nifty Options S1"
           topLoser="Nifty Options S1"
-          userName="Jasnek Singh"
           accountImg={upStoxJas}
         />
         <BrokerCard brokers={brokers} />
-        <StrategyDeployed strategies={strategies} brokers={brokers} />
+        <StrategyDeployed
+          strategies={selectedBrokerStrategies}
+          selectedBroker={selectedBroker}
+          uniqueBrokers={uniqueBrokers}
+          handleSelect={handleSelect}
+        />
       </div>
 
-      <StrategyTemplates templates={templates} />
+      <StrategyTemplates />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="col-span-1">

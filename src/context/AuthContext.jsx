@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axiosInstance from "../api/axiosInstance";
-import { useQueryClient } from "@tanstack/react-query";
+import { queryClient } from "../queryClient";
 
 const AuthContext = createContext();
 
@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -68,12 +67,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    delete axiosInstance.defaults.headers.common["Authorization"];
-    queryClient.clear();
+  const logout = async () => {
+    try {
+      await axiosInstance.post("/home/signOutUser");
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem("token");
+      delete axiosInstance.defaults.headers.common["Authorization"];
+      queryClient.clear();
+    } catch (error) {
+      console.error("Logout API failed", error);
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem("token");
+      delete axiosInstance.defaults.headers.common["Authorization"];
+      queryClient.clear();
+    }
   };
 
   return (

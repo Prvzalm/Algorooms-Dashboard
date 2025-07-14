@@ -9,6 +9,8 @@ import StrategyTemplates from "../Dashboard/StrategyTemplates";
 import MyPortfolioTab from "./MyPortfolioTab";
 import { FiChevronDown, FiMoreVertical } from "react-icons/fi";
 import CreateStrategyPopup from "./CreateStrategyPopup";
+import { useUserStrategies } from "../../../hooks/strategyHooks";
+import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
 
 const mainTabs = [
   "My Strategies",
@@ -18,18 +20,6 @@ const mainTabs = [
 ];
 
 const subTabs = ["Strategies", "Tradingview Signals Trading"];
-
-const mockStrategies = [
-  // {
-  //   name: "Advanced Delta Neutral",
-  //   user: "AR85105",
-  //   startTime: "09:22",
-  //   endTime: "15:11",
-  //   segment: "OPTION",
-  //   strategyType: "Time Based",
-  //   action: "SELL NIFTY BANK ATM 0CE",
-  // },
-];
 
 const mockSignalStrategies = [
   {
@@ -43,61 +33,54 @@ const mockSignalStrategies = [
   },
 ];
 
-const mockDeployedStrategies = [
-  {
-    broker: {
-      name: "Upstox",
-      code: "3CCF6C",
-      logo: upStox,
-    },
-    engineId: "Running 01",
-    deployedId: "Deployed 01",
-    pnl: "1000.00",
-    strategy: {
-      name: "Crypto Scalper",
-      status: "Live",
-      isRunning: true,
-    },
-  },
-];
-
-const templates = [
-  {
-    title: "Brahmastra Nifty Option B...",
-    desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-    margin: "₹100",
-    maxDD: "0.00",
-  },
-  {
-    title: "Shakti BankNifty Intraday",
-    desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-    margin: "₹250",
-    maxDD: "1.25%",
-  },
-  {
-    title: "Long Straddle Reversal",
-    desc: "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum iure, dolorem debitis reprehenderit, velit qui excepturi eius architecto saepe culpa ad quo expedita vitae quas non explicabo officia voluptate! Hic, mollitia. Repellendus accusamus ullam sunt.",
-    margin: "₹500",
-    maxDD: "2.75%",
-  },
-];
-
 const StrategiesPage = () => {
   const [activeTab, setActiveTab] = useState("My Strategies");
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
   const [showStrategyPopup, setShowStrategyPopup] = useState(false);
+  const {
+    data: userStrategies = [],
+    isLoading: strategiesLoading,
+    isError: strategiesError,
+  } = useUserStrategies({
+    page: 1,
+    pageSize: 10,
+    strategyType: activeSubTab === "Strategies" ? "created" : "subscribed",
+    queryText: "",
+    orderBy: "Name",
+  });
 
-  const showEmpty = false;
+  const {
+    data: deployedData = [],
+    isLoading: deployedLoading,
+    isError: deployedError,
+  } = useBrokerwiseStrategies("Name");
+
+  const transformDeployedData = (apiData) => {
+    const flatList = [];
+
+    apiData.forEach((brokerItem) => {
+      brokerItem.DeploymentDetail?.forEach((strategy) => {
+        strategy.DeploymentDetail?.forEach((detail) => {
+          flatList.push({
+            broker: {
+              name: brokerItem.BrokerName,
+              code: brokerItem.BrokerClientId,
+              logo: brokerItem.brokerLogoUrl,
+            },
+            engineId: detail.Running_Status ? 1 : 0,
+            deployedId: detail ? 1 : 0,
+            pnl: detail.TotalPnl ?? 0,
+          });
+        });
+      });
+    });
+
+    return flatList;
+  };
 
   const renderMyStrategies = () => {
-    const data =
-      activeSubTab === "Strategies"
-        ? showEmpty
-          ? []
-          : mockStrategies
-        : showEmpty
-        ? []
-        : mockSignalStrategies;
+    if (strategiesLoading) return <div>Loading strategies...</div>;
+    if (strategiesError) return <div>Failed to load strategies.</div>;
 
     return (
       <>
@@ -117,7 +100,7 @@ const StrategiesPage = () => {
           ))}
         </div>
 
-        {data.length === 0 ? (
+        {userStrategies.length === 0 ? (
           <div className="flex h-[50vh] flex-col items-center justify-center">
             <img src={emptyStrategy} alt="Empty" className="mb-6" />
             <button
@@ -135,7 +118,7 @@ const StrategiesPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((strategy, index) => (
+            {userStrategies.map((strategy, index) => (
               <div
                 key={index}
                 className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5"
@@ -143,10 +126,10 @@ const StrategiesPage = () => {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="text-base font-semibold text-[#2E3A59] dark:text-white">
-                      {strategy.name}
+                      {strategy.StrategyName}
                     </h3>
                     <p className="text-xs text-[#718EBF] dark:text-gray-400 mt-0.5">
-                      By {strategy.user}
+                      By {strategy.CreatedBy}
                     </p>
                   </div>
                   <div className="text-gray-400 dark:text-gray-500 text-xl">
@@ -156,19 +139,23 @@ const StrategiesPage = () => {
 
                 <div className="grid grid-cols-2 gap-y-4 text-xs text-[#718EBF] dark:text-gray-400 mt-3">
                   <div>
-                    <p className="mb-1">{strategy.startTime}</p>
+                    <p className="mb-1">{strategy.TradeStartTime || "-"}</p>
                     <p className="font-medium">Start Time</p>
                   </div>
                   <div>
-                    <p className="mb-1">{strategy.endTime}</p>
+                    <p className="mb-1">{strategy.TradeStopTime || "-"}</p>
                     <p className="font-medium">End Time</p>
                   </div>
                   <div>
-                    <p className="mb-1">{strategy.segment}</p>
+                    <p className="mb-1">
+                      {strategy.StrategySegmentType || "-"}
+                    </p>
                     <p className="font-medium">Segment Type</p>
                   </div>
                   <div>
-                    <p className="mb-1">{strategy.strategyType}</p>
+                    <p className="mb-1">
+                      {strategy.StrategyExecutionType || "-"}
+                    </p>
                     <p className="font-medium">Strategy Type</p>
                   </div>
                 </div>
@@ -178,7 +165,7 @@ const StrategiesPage = () => {
                     disabled
                     className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-2 rounded-md"
                   >
-                    {strategy.action}
+                    {strategy.ScriptDetails?.[0]?.ScriptName || "-"}
                   </button>
                 </div>
 
@@ -199,14 +186,26 @@ const StrategiesPage = () => {
   };
 
   const renderDeployedStrategies = () => {
+    const deployedStrategies = transformDeployedData(deployedData);
+    if (deployedLoading) {
+      return <div className="text-center py-10">Loading...</div>;
+    }
+
+    if (deployedError) {
+      return (
+        <div className="text-center py-10 text-red-500">
+          Failed to load deployed strategies.
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
-        {mockDeployedStrategies?.length === 0 ? (
+        {deployedStrategies?.length === 0 ? (
           <div className="flex h-[50vh] items-center justify-center">
             <img src={emptyDeployedStrategy} alt="No deployed strategies" />
           </div>
         ) : (
-          mockDeployedStrategies.map((item, i) => (
+          deployedStrategies.map((item, i) => (
             <div
               key={i}
               className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5 space-y-4 md:space-y-0 flex flex-col md:flex-row md:items-center md:justify-between"
@@ -284,7 +283,7 @@ const StrategiesPage = () => {
       {activeTab === "My Strategies" && renderMyStrategies()}
       {activeTab === "Deployed Strategies" && renderDeployedStrategies()}
       {activeTab === "Strategy Templates" && (
-        <StrategyTemplates templates={templates} />
+        <StrategyTemplates pageSize={10} showSeeAll={false} />
       )}
       {activeTab === "My Portfolio" && <MyPortfolioTab />}
     </div>
