@@ -9,7 +9,6 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
   const handleOutsideClick = (e) => {
     if (e.target.id === "modal-overlay") onClose();
   };
-  console.log({ data });
 
   return (
     <div

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-import { googleIcon } from "../assets";
+import { authBg, googleIcon } from "../assets";
 import { jwtDecode } from "jwt-decode";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
@@ -18,6 +18,7 @@ import {
   useValidateEmailOtpMutation,
   useValidateMobileOtpMutation,
 } from "../hooks/loginHooks";
+import SignupFlow from "./SignupFlow";
 
 export default function Auth() {
   const [mode, setMode] = useState("login");
@@ -28,9 +29,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupOtp, setSignupOtp] = useState(["", "", "", "", "", ""]);
 
   const { mutate: loginUser } = useLoginMutation();
   const { mutate: googleLoginUser } = useGoogleLoginMutation();
@@ -40,7 +38,6 @@ export default function Auth() {
   const { mutate: validateEmailOtp } = useValidateEmailOtpMutation();
   const { mutate: requestMobileOtp } = useRequestMobileOtpMutation();
   const { mutate: validateMobileOtp } = useValidateMobileOtpMutation();
-  const { mutate: registerUser } = useRegisterMutation();
 
   const navigate = useNavigate();
 
@@ -76,48 +73,6 @@ export default function Auth() {
           }
         },
         onError: () => toast.error("Login error"),
-      }
-    );
-  };
-
-  const handleRegister = ({
-    Name,
-    EmailAddress,
-    Mobile_Number,
-    Password,
-    OTP,
-  }) => {
-    if (
-      !Name ||
-      !EmailAddress ||
-      !Mobile_Number ||
-      !Password ||
-      OTP.length !== 6
-    ) {
-      return toast.info("Please fill all fields and enter a 6-digit OTP");
-    }
-
-    registerUser(
-      {
-        Name,
-        EmailAddress,
-        Mobile_Number,
-        Password,
-        OTP: parseInt(OTP),
-        ApiKey: "abc",
-      },
-      {
-        onSuccess: (res) => {
-          if (res.data.Status === "Success") {
-            toast.success("Registration successful. Please log in.");
-            setMode("login");
-          } else {
-            toast.error(res.data.Message || "Registration failed");
-          }
-        },
-        onError: () => {
-          toast.error("Error during registration");
-        },
       }
     );
   };
@@ -283,58 +238,51 @@ export default function Auth() {
     );
   };
 
-  const handleGoogleLogin = ({ email, picture, name, token }) => {
-    googleLoginUser(
-      {
-        EmailID: email,
-        Token: token,
-        AvtarUrl: picture,
-        CreatedBy: name,
-        ApiKey: "abc",
-      },
-      {
-        onSuccess: (res) => {
-          if (res.data.Status === "Success") {
-            localStorage.setItem("token", res.data.Data.AccessToken);
-            axiosInstance.defaults.headers.common[
-              "Authorization"
-            ] = `Bearer ${res.data.Data.AccessToken}`;
-            toast.success("Logged in with Google");
-            navigate("/");
-          } else {
-            toast.error(res.data.Message || "Google login failed");
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const decoded = jwtDecode(tokenResponse.credential);
+        const { email, name, picture } = decoded;
+
+        googleLoginUser(
+          {
+            EmailID: email,
+            Token: tokenResponse.credential,
+            AvtarUrl: picture,
+            CreatedBy: name,
+            ApiKey: "abc",
+          },
+          {
+            onSuccess: (res) => {
+              if (res.data.Status === "Success") {
+                localStorage.setItem("token", res.data.Data.AccessToken);
+                axiosInstance.defaults.headers.common[
+                  "Authorization"
+                ] = `Bearer ${res.data.Data.AccessToken}`;
+                toast.success("Logged in with Google");
+                navigate("/");
+              } else {
+                toast.error(res.data.Message || "Google login failed");
+              }
+            },
+            onError: () => toast.error("Google login error"),
           }
-        },
-        onError: () => toast.error("Google login error"),
+        );
+      } catch (err) {
+        toast.error("Invalid Google credentials");
       }
-    );
-  };
+    },
+  });
 
   return (
     <div className="min-h-screen flex dark:bg-[#0B0C10]">
-      <div className="w-1/2 hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-white to-[#E8F0FF] dark:from-[#0B0C10] dark:to-[#15171C] text-black dark:text-white px-12">
-        <h1 className="text-5xl font-extrabold leading-tight mb-6">
-          Lorem ipsum <br />
-          dolor sit amet <br />
-          consectetur.
-        </h1>
-        <div className="bg-gradient-to-br from-[#2D5EFF] to-[#00C2FF] px-6 py-3 rounded-xl text-sm mt-4 text-white w-fit">
-          Lorem ipsum dolor sit amet
-        </div>
-        <div className="mt-10 text-xs space-x-4">
-          <span>#Trading</span>
-          <span>#Stockmarket</span>
-          <span>#Strategy</span>
-        </div>
-        <div className="mt-4 font-medium">Try now</div>
-        <div className="mt-2 text-[10px] rotate-90 font-semibold text-gray-500">
-          www.Algorooms.com
-        </div>
+      <div className="w-3/5 hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-white to-[#E8F0FF] dark:from-[#0B0C10] dark:to-[#15171C] text-black dark:text-white">
+        <img src={authBg} alt="" />
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6">
+      <div className="w-full lg:w-2/5 flex items-center justify-center px-6">
         <div className="max-w-sm w-full space-y-6 text-[#2E3A59] dark:text-white">
-          <h2 className="text-2xl font-bold text-center">
+          <h2 className="text-3xl text-[#0096FF] font-bold text-center">
             {mode === "login"
               ? "Sign In"
               : mode === "signup"
@@ -343,6 +291,8 @@ export default function Auth() {
               ? "Welcome!"
               : mode === "verify"
               ? "Verifying OTP"
+              : mode === "registration"
+              ? "Registration"
               : "Reset Password"}
           </h2>
           <p className="text-sm text-center text-gray-400">
@@ -350,24 +300,27 @@ export default function Auth() {
           </p>
 
           <button
-            onClick={() => handleGoogleLogin(email, name)}
-            className="w-full py-2 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-left flex items-center px-4"
+            onClick={() => handleGoogleLogin()}
+            className="w-full py-3 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-left flex items-center px-4"
           >
             <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
             Continue with Google
           </button>
 
-          {mode !== "verify" && (
-            <>
-              <div className="text-center text-xs text-gray-400">Or</div>
-              <input
-                type="email"
-                placeholder="Email Id / Client Id"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
-              />
-            </>
+          <div className="flex items-center my-4">
+            <hr className="flex-grow border-gray-300" />
+            <span className="px-2 text-sm text-gray-400">Or</span>
+            <hr className="flex-grow border-gray-300" />
+          </div>
+
+          {mode !== "verify" && mode !== "signup" && (
+            <input
+              type="email"
+              placeholder="Email Id / Client Id"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+            />
           )}
 
           {mode === "login" && (
@@ -377,7 +330,7 @@ export default function Auth() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+                className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
               />
               <div
                 className="absolute top-1/3 right-3 -translate-y-1/2 cursor-pointer"
@@ -415,7 +368,7 @@ export default function Auth() {
                 placeholder="New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
+                className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
               />
               <div
                 className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
@@ -427,71 +380,7 @@ export default function Auth() {
           )}
 
           {mode === "signup" && (
-            <>
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
-              />
-              <input
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
-              />
-              <button
-                className="text-blue-500 text-sm mt-1"
-                onClick={() => handleRequestEmailOtpForRegistration(email)}
-              >
-                Send OTP to Email
-              </button>
-              <input
-                type="tel"
-                placeholder="Mobile Number"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={signupPassword}
-                onChange={(e) => setSignupPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 text-sm focus:outline-none"
-              />
-              <div className="flex justify-between">
-                {signupOtp.map((digit, i) => (
-                  <input
-                    key={i}
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => {
-                      const updated = [...signupOtp];
-                      updated[i] = e.target.value;
-                      setSignupOtp(updated);
-                    }}
-                    className="w-10 h-12 rounded-lg bg-gray-100 text-center text-xl focus:outline-none"
-                  />
-                ))}
-              </div>
-              <button
-                onClick={() =>
-                  handleRegister({
-                    Name: name,
-                    EmailAddress: email,
-                    Mobile_Number: mobile,
-                    Password: signupPassword,
-                    OTP: signupOtp.join(""),
-                  })
-                }
-                className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
-              >
-                Register
-              </button>
-            </>
+            <SignupFlow email={email} setEmail={setEmail} setMode={setMode} />
           )}
 
           {mode !== "signup" && (

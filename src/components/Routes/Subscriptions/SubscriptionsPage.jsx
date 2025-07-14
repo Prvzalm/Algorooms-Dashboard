@@ -23,25 +23,17 @@ const SubscriptionsPage = () => {
     activeTab.toLowerCase(),
     apiKey
   );
-  const {
-    mutate: fetchPaymentDetails,
-    data: paymentData,
-    isPending,
-  } = usePaymentDetails();
+  const [payload, setPayload] = useState(null);
+  const { data: paymentData } = usePaymentDetails(payload);
 
   const handlePlanContinue = (plan) => {
-    const planId = plan.planId || plan.PlanId;
-    const planType = activeTab.toLowerCase();
-    const subscriptionType = mainTab === "Plans" ? "BROKER" : "BACKTEST";
-
-    fetchPaymentDetails({
-      Planid: planId,
-      PlanType: planType,
+    setPayload({
+      Planid: plan.planId || plan.PlanId,
+      PlanType: activeTab.toLowerCase(),
+      SubscriptionType: mainTab === "Plans" ? "BROKER" : "BACKTEST",
       CouponCode: "",
-      SubscriptionType: subscriptionType,
       BrokerClientId: "",
     });
-
     setShowConfirm(false);
     setShowPayment(true);
   };

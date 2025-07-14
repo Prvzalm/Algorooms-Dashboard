@@ -23,14 +23,17 @@ export const useBacktestPlans = (apiKey) => {
   });
 };
 
-export const usePaymentDetails = () => {
-  return useMutation({
-    mutationFn: async (payload) => {
+export const usePaymentDetails = (payload) => {
+  return useQuery({
+    queryKey: ["paymentDetails", payload],
+    queryFn: async () => {
       const res = await axiosInstance.post(
         "/Subscription/GetPaymentSubscriptionDetails",
         payload
       );
       return res.data?.Data;
     },
+    enabled: !!payload,
+    staleTime: 1000 * 60 * 2,
   });
 };

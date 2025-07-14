@@ -53,6 +53,7 @@ import paymentDetailsIcon from "./paymentDetailsIcon.svg";
 import successPaymentIcon from "./successPaymentIcon.svg";
 import failurePaymentIcon from "./failurePaymentIcon.svg";
 import confirmPaymentIcon from "./confirmPaymentIcon.svg";
+import authBg from "./authBg.svg";
 
 export {
   tutorialIcon,
@@ -110,4 +111,5 @@ export {
   successPaymentIcon,
   failurePaymentIcon,
   confirmPaymentIcon,
+  authBg,
 };
