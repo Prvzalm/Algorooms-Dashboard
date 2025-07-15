@@ -216,13 +216,22 @@ const Dashboard = () => {
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mt-6">
-        <HeaderCard
-          totalPnl="5,756"
-          topGainer="Nifty Options S1"
-          topLoser="Nifty Options S1"
-          accountImg={upStoxJas}
-        />
-        <BrokerCard brokers={brokers} />
+        <div
+          className={
+            brokers.length === 0 ? "md:col-span-2 col-span-1" : "col-span-1"
+          }
+        >
+          <HeaderCard
+            totalPnl="5,756"
+            topGainer="Nifty Options S1"
+            topLoser="Nifty Options S1"
+            accountImg={upStoxJas}
+            brokers={brokers}
+          />
+        </div>
+
+        {brokers.length > 0 && <BrokerCard brokers={brokers} />}
+
         <StrategyDeployed
           strategies={selectedBrokerStrategies}
           selectedBroker={selectedBroker}

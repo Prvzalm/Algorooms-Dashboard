@@ -58,7 +58,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
               </div>
             </div>
 
-            <button className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-md text-sm transition">
+            <button className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-md text-sm transition">
               Add to my strategy
             </button>
           </div>

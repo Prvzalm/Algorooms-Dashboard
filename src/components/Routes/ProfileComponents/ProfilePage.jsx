@@ -6,14 +6,11 @@ import {
   profileMan,
   profileWalletIcon,
 } from "../../../assets";
-import {
-  useProfileQuery,
-  useSubscriptionQuery,
-  useUpdateProfile,
-  useWalletQuery,
-} from "../../../hooks/profileHooks";
+import { useProfileQuery, useUpdateProfile } from "../../../hooks/profileHooks";
 import { toast } from "react-toastify";
 import { useChangePasswordMutation } from "../../../hooks/loginHooks";
+import { useSubscriptionQuery } from "../../../hooks/subscriptionHooks";
+import { useWalletQuery } from "../../../hooks/walletHooks";
 
 const ProfilePage = () => {
   const { data: profile, isLoading } = useProfileQuery();
@@ -99,17 +96,26 @@ const ProfilePage = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#343C6A] to-[#343C6A00]" />
           {isEditing ? (
-            <input
-              type="text"
-              className="absolute bottom-3 left-4 bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1 z-10"
-              value={form.Name}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  Name: e.target.value,
-                }))
-              }
-            />
+            <>
+              <label
+                htmlFor="name-input"
+                className="absolute bottom-12 left-4 text-white text-sm z-10"
+              >
+                Name
+              </label>
+              <input
+                id="name-input"
+                type="text"
+                className="absolute bottom-3 left-4 bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-2 z-10"
+                value={form.Name}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    Name: e.target.value,
+                  }))
+                }
+              />
+            </>
           ) : (
             <div className="absolute bottom-3 left-4 text-white font-semibold text-lg z-10">
               {profile?.Name}
@@ -130,41 +136,39 @@ const ProfilePage = () => {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Mail id
               </div>
-              {isEditing ? (
-                <input
-                  type="email"
-                  className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
-                  value={form.EmailAddress}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      EmailAddress: e.target.value,
-                    }))
-                  }
-                />
-              ) : (
-                <div className="font-semibold">{profile?.EmailAddress}</div>
-              )}
+              <div className="font-semibold">{profile?.EmailAddress}</div>
             </div>
 
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Mobile Number
-              </div>
               {isEditing ? (
-                <input
-                  type="text"
-                  className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-1"
-                  value={form.Mobile_Number}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      Mobile_Number: e.target.value,
-                    }))
-                  }
-                />
+                <>
+                  <label
+                    htmlFor="mobileNumber"
+                    className="text-xs text-gray-500 dark:text-gray-400 block mb-1"
+                  >
+                    Mobile Number
+                  </label>
+                  <input
+                    id="mobileNumber"
+                    name="Mobile_Number"
+                    type="text"
+                    className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-2"
+                    value={form.Mobile_Number}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        Mobile_Number: e.target.value,
+                      }))
+                    }
+                  />
+                </>
               ) : (
-                <div className="font-semibold">{profile?.Mobile_Number}</div>
+                <>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Mobile Number
+                  </div>
+                  <div className="font-semibold">{profile?.Mobile_Number}</div>
+                </>
               )}
             </div>
 

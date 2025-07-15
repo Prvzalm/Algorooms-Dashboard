@@ -98,7 +98,7 @@ const OrderType = () => {
             </button>
           ))}
         </div>
-        <button className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-2 rounded-lg text-sm font-medium transition">
+        <button className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition">
           + Add
         </button>
       </div>

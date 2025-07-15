@@ -52,7 +52,7 @@ const RaAlgosPage = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            className={`px-8 py-3 rounded-lg text-sm font-medium ${
               activeTab === tab
                 ? "bg-blue-100 text-[#0096FF] border border-[#0096FF]"
                 : "bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"

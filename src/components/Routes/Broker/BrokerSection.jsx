@@ -37,7 +37,7 @@ const BrokerSection = () => {
           </div>
           <button
             onClick={() => navigate("/add-broker")}
-            className="px-4 py-2 bg-[#0096FF] text-white rounded-lg text-sm font-medium w-full sm:w-auto"
+            className="px-4 py-3 bg-[#0096FF] text-white rounded-lg text-sm font-medium w-full sm:w-auto"
           >
             + Add Broker
           </button>

@@ -37,3 +37,15 @@ export const usePaymentDetails = (payload) => {
     staleTime: 1000 * 60 * 2,
   });
 };
+
+export const useSubscriptionQuery = () =>
+  useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/profile/GetUserSubscruotionDetail");
+      if (!Array.isArray(res.data) || res.data.length === 0)
+        throw new Error("No subscription found");
+      return res.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });

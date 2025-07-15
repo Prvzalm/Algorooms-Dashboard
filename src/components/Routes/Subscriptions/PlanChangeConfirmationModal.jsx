@@ -26,7 +26,7 @@ const PlanChangeConfirmationModal = ({ isOpen, onClose, onContinue }) => {
         </p>
         <button
           onClick={onContinue}
-          className="w-full py-3 bg-[#0096FF] text-white text-sm font-semibold rounded-xl"
+          className="w-full py-4 bg-[#0096FF] text-white text-sm font-semibold rounded-xl"
         >
           Continue
         </button>

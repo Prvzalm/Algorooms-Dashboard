@@ -34,7 +34,7 @@ const AddBrokerPage = () => {
         APIKey: apiKey,
         APISecretKey: apiSecret,
         APIAppId: appName,
-        IsCustomApi: true,
+        IsCustomApi: selectedBroker.IsMasterApiAvailable,
       };
 
       const res = await addBroker(payload);
@@ -67,9 +67,9 @@ const AddBrokerPage = () => {
               placeholder="Search broker"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-10 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+              className="w-full px-4 py-3 pl-10 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
             />
-            <span className="absolute left-3 top-2 text-[#718EBF]">
+            <span className="absolute left-3 top-3 text-[#718EBF]">
               <img src={searchIcon} alt="search" />
             </span>
           </div>
@@ -143,37 +143,79 @@ const AddBrokerPage = () => {
             </div>
           )}
 
-          <input
-            type="text"
-            placeholder="Enter Broker ID"
-            value={brokerId}
-            onChange={(e) => setBrokerId(e.target.value)}
-            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-          />
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="brokerId"
+                className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Broker ID
+              </label>
+              <input
+                id="brokerId"
+                name="brokerId"
+                type="text"
+                placeholder="Enter Broker ID"
+                value={brokerId}
+                onChange={(e) => setBrokerId(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+              />
+            </div>
 
-          <input
-            type="text"
-            placeholder="App Name (Any)"
-            value={appName}
-            onChange={(e) => setAppName(e.target.value)}
-            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-          />
+            <div>
+              <label
+                htmlFor="appName"
+                className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                App Name
+              </label>
+              <input
+                id="appName"
+                name="appName"
+                type="text"
+                placeholder="App Name (Any)"
+                value={appName}
+                onChange={(e) => setAppName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+              />
+            </div>
 
-          <input
-            type="text"
-            placeholder="API Key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-          />
+            <div>
+              <label
+                htmlFor="apiKey"
+                className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                API Key
+              </label>
+              <input
+                id="apiKey"
+                name="apiKey"
+                type="text"
+                placeholder="API Key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+              />
+            </div>
 
-          <input
-            type="text"
-            placeholder="API Secret Key"
-            value={apiSecret}
-            onChange={(e) => setApiSecret(e.target.value)}
-            className="w-full px-4 py-2 mb-4 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-          />
+            <div>
+              <label
+                htmlFor="apiSecret"
+                className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                API Secret Key
+              </label>
+              <input
+                id="apiSecret"
+                name="apiSecret"
+                type="text"
+                placeholder="API Secret Key"
+                value={apiSecret}
+                onChange={(e) => setApiSecret(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+              />
+            </div>
+          </div>
 
           <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
             Redirect Url:
@@ -189,7 +231,7 @@ const AddBrokerPage = () => {
           </a>
 
           <button
-            className="w-full py-2 rounded-lg bg-[#0096FF] text-white font-medium"
+            className="w-full py-3 rounded-lg bg-[#0096FF] text-white font-medium"
             onClick={handleSubmit}
           >
             Submit

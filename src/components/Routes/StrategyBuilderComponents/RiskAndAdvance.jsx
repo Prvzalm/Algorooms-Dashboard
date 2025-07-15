@@ -133,7 +133,7 @@ const RiskAndAdvance = () => {
             placeholder="Entry your strategy name here"
             className="mt-3 bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 w-full dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
           />
-          <button className="ml-auto mt-4 bg-[#0096FF] text-white md:px-8 px-4 py-2 rounded-lg text-sm font-medium">
+          <button className="ml-auto mt-4 bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium">
             Create
           </button>
         </div>

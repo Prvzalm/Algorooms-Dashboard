@@ -89,7 +89,7 @@ const StrategiesPage = () => {
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              className={`px-4 py-3 rounded-lg text-sm font-medium ${
                 activeSubTab === tab
                   ? "bg-blue-100 text-[#0096FF] border border-[#0096FF]"
                   : "bg-gray-200 dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
@@ -163,17 +163,17 @@ const StrategiesPage = () => {
                 <div className="mt-4">
                   <button
                     disabled
-                    className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-2 rounded-md"
+                    className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-3 rounded-md"
                   >
                     {strategy.ScriptDetails?.[0]?.ScriptName || "-"}
                   </button>
                 </div>
 
                 <div className="mt-4 flex space-x-2">
-                  <button className="flex-1 py-2 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium">
+                  <button className="flex-1 py-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium">
                     Deploy
                   </button>
-                  <button className="flex-1 py-2 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium">
+                  <button className="flex-1 py-3 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium">
                     Deploy
                   </button>
                 </div>

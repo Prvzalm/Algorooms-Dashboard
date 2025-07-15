@@ -101,10 +101,10 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
           />
           <button
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
+            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
             onClick={handleRequestOtp}
           >
             Send OTP to Email
@@ -125,13 +125,13 @@ export default function SignupFlow({ email, setEmail, setMode }) {
                   updated[i] = e.target.value;
                   setSignupOtp(updated);
                 }}
-                className="w-10 h-12 rounded-lg bg-gray-100 text-center text-xl focus:outline-none"
+                className="w-10 h-12 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-center text-xl focus:outline-none text-black dark:text-white placeholder:text-gray-500"
               />
             ))}
           </div>
           <button
             onClick={handleVerifyOtp}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg mt-4"
+            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg mt-4"
           >
             Verify OTP
           </button>
@@ -145,25 +145,25 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
           />
           <input
             type="tel"
             placeholder="Mobile Number"
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
           />
           <input
             type="password"
             placeholder="Password"
             value={signupPassword}
             onChange={(e) => setSignupPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
           />
           <button
             onClick={handleRegister}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
+            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
           >
             Register
           </button>

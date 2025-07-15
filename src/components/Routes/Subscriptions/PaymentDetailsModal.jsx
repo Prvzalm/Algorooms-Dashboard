@@ -94,7 +94,7 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
         <button
           disabled={!agree}
           onClick={onProcessPayment}
-          className={`w-full py-3 rounded-xl text-white text-sm font-semibold ${
+          className={`w-full py-4 rounded-xl text-white text-sm font-semibold ${
             agree ? "bg-[#0096FF]" : "bg-gray-400 cursor-not-allowed"
           }`}
         >

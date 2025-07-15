@@ -54,6 +54,9 @@ import successPaymentIcon from "./successPaymentIcon.svg";
 import failurePaymentIcon from "./failurePaymentIcon.svg";
 import confirmPaymentIcon from "./confirmPaymentIcon.svg";
 import authBg from "./authBg.svg";
+import authBgDark from "./authBgDark.svg";
+import emptyHeaderCard from "./emptyHeaderCard.svg";
+import emptyStrategyImg from "./emptyStrategyImg.svg";
 
 export {
   tutorialIcon,
@@ -112,4 +115,7 @@ export {
   failurePaymentIcon,
   confirmPaymentIcon,
   authBg,
+  authBgDark,
+  emptyHeaderCard,
+  emptyStrategyImg,
 };

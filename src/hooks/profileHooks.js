@@ -35,30 +35,6 @@ export const useUpdateProfile = () => {
   });
 };
 
-export const useWalletQuery = () =>
-  useQuery({
-    queryKey: ["wallet"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/profile/GetUserWallet");
-      if (res.data.Status !== "Success")
-        throw new Error("Failed to load wallet");
-      return res.data.Data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-export const useSubscriptionQuery = () =>
-  useQuery({
-    queryKey: ["subscription"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/profile/GetUserSubscruotionDetail");
-      if (!Array.isArray(res.data) || res.data.length === 0)
-        throw new Error("No subscription found");
-      return res.data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
 export const useNotificationsData = () => {
   const { token } = useAuth();
 
@@ -83,22 +59,6 @@ export const useUserNotifications = () => {
     queryFn: async () => {
       const res = await axiosInstance.get("/profile/GetUserNotifications");
       return res.data;
-    },
-    enabled: !!token,
-    staleTime: 1000 * 60 * 5,
-  });
-};
-
-export const useWalletTransactions = () => {
-  const { token } = useAuth();
-
-  return useQuery({
-    queryKey: ["walletTransactions"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/profile/GetWalletTransaction");
-      if (res.data.Status !== "Success")
-        throw new Error("Failed to load wallet transactions");
-      return res.data.Data;
     },
     enabled: !!token,
     staleTime: 1000 * 60 * 5,

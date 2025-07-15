@@ -1,21 +1,25 @@
+import { useBackTestCounterDetails } from "../../../hooks/backTestHooks";
 import {
   useWalletQuery,
   useWalletTransactions,
-} from "../../../hooks/profileHooks";
+} from "../../../hooks/walletHooks";
 
 const WalletPage = () => {
   const { data: walletInfo } = useWalletQuery();
   const { data: transactions } = useWalletTransactions();
+  const { data: backTestCredits } = useBackTestCounterDetails();
 
   return (
-    <div className="p-6 space-y-8 text-sm text-[#2E3A59] dark:text-white">
+    <div className="space-y-8 text-sm text-[#2E3A59] dark:text-white">
       <div className="text-xl font-semibold">My Wallet</div>
 
       <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-2xl w-full md:w-1/3 space-y-3">
         <div className="text-sm">Wallet Amount</div>
         <div className="text-3xl font-bold">₹{walletInfo?.WalletBalance}</div>
         <div className="text-sm pt-2">Backtest Credit</div>
-        <div className="text-lg font-medium">{walletInfo?.credit}</div>
+        <div className="text-lg font-medium">
+          {backTestCredits?.AllowedBacktestCount}
+        </div>
       </div>
 
       <div className="text-xl font-semibold">Wallet Transactions</div>
@@ -47,7 +51,13 @@ const WalletPage = () => {
                   ₹ {tx?.Amount}
                 </div>
               </div>
-              <div className="text-green-600 font-medium">{tx?.status}</div>
+              <div className="font-medium">
+                {tx?.TransactionRefId ? (
+                  <span className="text-green-600">Success</span>
+                ) : (
+                  <span className="text-red-500">Failure</span>
+                )}
+              </div>
               <div>{tx?.Remarks ? tx?.Remarks : "N/A"}</div>
               <div>{tx?.SubscriptionType ? tx?.SubscriptionType : "N/A"}</div>
               <div>{new Date(tx?.TransactionDate).toLocaleDateString()}</div>

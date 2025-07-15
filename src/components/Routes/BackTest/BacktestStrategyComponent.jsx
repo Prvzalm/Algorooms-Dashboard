@@ -58,7 +58,7 @@ const BacktestStrategyComponent = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div className="w-full sm:w-1/3">
-          <div className="bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-2 rounded-lg text-[#718EBF] dark:text-white cursor-pointer">
+          <div className="bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-[#718EBF] dark:text-white cursor-pointer">
             Select Strategy
           </div>
         </div>
@@ -68,7 +68,7 @@ const BacktestStrategyComponent = () => {
             <button
               key={range}
               onClick={() => handleTimeRangeClick(range)}
-              className={`text-sm px-4 py-1.5 rounded-md border ${
+              className={`text-sm px-4 py-3 rounded-md border ${
                 (activeTimeRange === range && range !== "Custom Range") ||
                 (range === "Custom Range" && showCustomRange)
                   ? "bg-[#0096FF] text-white border-[#0096FF]"
@@ -91,7 +91,7 @@ const BacktestStrategyComponent = () => {
             onChange={(update) => setCustomRange(update)}
             isClearable
             placeholderText="Choose range"
-            className="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-[#2D2F36] bg-white dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
+            className="text-sm px-4 py-3 rounded-md border border-gray-300 dark:border-[#2D2F36] bg-white dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
           />
         </div>
       )}
@@ -105,7 +105,7 @@ const BacktestStrategyComponent = () => {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowExportMenu((prev) => !prev)}
-            className="text-sm px-4 py-2 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
+            className="text-sm px-4 py-3 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
           >
             Export to PDF <FiChevronDown />
           </button>

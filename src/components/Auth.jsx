@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-import { authBg, googleIcon } from "../assets";
+import { authBg, authBgDark, googleIcon } from "../assets";
 import { jwtDecode } from "jwt-decode";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
@@ -277,11 +277,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex dark:bg-[#0B0C10]">
       <div className="w-3/5 hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-white to-[#E8F0FF] dark:from-[#0B0C10] dark:to-[#15171C] text-black dark:text-white">
-        <img src={authBg} alt="" />
+        <img src={authBg} alt="" className="block dark:hidden" />
+        <img src={authBgDark} alt="" className="hidden dark:block" />
       </div>
 
-      <div className="w-full lg:w-2/5 flex items-center justify-center px-6">
-        <div className="max-w-sm w-full space-y-6 text-[#2E3A59] dark:text-white">
+      <div className="w-full lg:w-2/5 flex items-center justify-center px-6 bg-white dark:bg-[#15171C]">
+        <div className="max-w-sm w-full space-y-6 text-[#2E3A59] dark:text-[#61677D]">
           <h2 className="text-3xl text-[#0096FF] font-bold text-center">
             {mode === "login"
               ? "Sign In"
@@ -295,13 +296,14 @@ export default function Auth() {
               ? "Registration"
               : "Reset Password"}
           </h2>
-          <p className="text-sm text-center text-gray-400">
+
+          <p className="text-sm text-center text-gray-400 dark:text-gray-500">
             It was popularised in the 1960s with the release of Letraset...
           </p>
 
           <button
             onClick={() => handleGoogleLogin()}
-            className="w-full py-3 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-left flex items-center px-4"
+            className="w-full py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-left flex items-center px-4"
           >
             <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
             Continue with Google
@@ -319,7 +321,7 @@ export default function Auth() {
               placeholder="Email Id / Client Id"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+              className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
             />
           )}
 
@@ -330,10 +332,10 @@ export default function Auth() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+                className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
               />
               <div
-                className="absolute top-1/3 right-3 -translate-y-1/2 cursor-pointer"
+                className="absolute top-1/3 right-3 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -355,7 +357,7 @@ export default function Auth() {
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleOtpChange(e.target.value, i)}
-                  className="w-10 h-12 rounded-lg bg-gray-100 text-center text-xl focus:outline-none"
+                  className="w-10 h-12 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-center text-xl focus:outline-none text-black dark:text-white"
                 />
               ))}
             </div>
@@ -368,10 +370,10 @@ export default function Auth() {
                 placeholder="New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-100 text-sm focus:outline-none"
+                className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
               />
               <div
-                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -385,7 +387,7 @@ export default function Auth() {
 
           {mode !== "signup" && (
             <button
-              className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg"
+              className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
               disabled={loading}
               onClick={() => {
                 if (mode === "login") handleLogin(email, password);
@@ -408,7 +410,7 @@ export default function Auth() {
             </button>
           )}
 
-          <div className="text-center text-xs text-gray-500">
+          <div className="text-center text-xs text-gray-500 dark:text-gray-400">
             {mode === "login" ? (
               <>
                 Don’t have account?{" "}

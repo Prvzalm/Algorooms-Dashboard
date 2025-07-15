@@ -104,7 +104,7 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
 
         <button
           onClick={onClose}
-          className="w-full bg-[#0096FF] text-white py-2 rounded-lg font-semibold"
+          className="w-full bg-[#0096FF] text-white py-3 rounded-lg font-semibold"
         >
           Save
         </button>

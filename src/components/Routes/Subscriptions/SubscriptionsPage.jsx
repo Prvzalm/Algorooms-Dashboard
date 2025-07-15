@@ -102,7 +102,7 @@ const SubscriptionsPage = () => {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-2 px-4 py-2 rounded-lg ${
+                  className={`pb-2 px-4 py-3 rounded-lg ${
                     activeTab === tab
                       ? "text-[#0096FF] bg-blue-100 border border-[#0096FF]"
                       : "text-gray-500 bg-blue-50 border dark:text-gray-400"

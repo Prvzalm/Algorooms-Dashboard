@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { noNotification, notificationGeneral, upStox } from "../../../assets";
 import { useTradeEngineLogs } from "../../../hooks/notificationHooks";
+import { useMasterBrokerData } from "../../../hooks/brokerHooks";
 
 const tabs = [
   "General",
@@ -66,6 +67,7 @@ const NotificationsPage = () => {
     isLoading: tradeLoading,
     isError: tradeErrors,
   } = useTradeEngineLogs();
+  const { data: brokers = [], isLoading, isError } = useMasterBrokerData();
 
   const renderNotification = (note, index) => {
     if (activeTab === "General") {
