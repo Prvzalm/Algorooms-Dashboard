@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FiChevronDown } from "react-icons/fi";
+import BacktestReport from "./BacktestReport";
+import BacktestSummaryCard from "./BacktestSummaryCard";
+import MaxProfitLossChart from "./MaxProfitLossChart";
+import DaywiseBreakdown from "./DaywiseBreakdown";
+import TransactionDetails from "./TransactionDetails";
 
 const timeRanges = [
   "1 Month",
@@ -128,6 +133,11 @@ const BacktestStrategyComponent = () => {
           )}
         </div>
       </div>
+      <BacktestReport />
+      <BacktestSummaryCard />
+      <MaxProfitLossChart />
+      <DaywiseBreakdown />
+      <TransactionDetails />
     </div>
   );
 };

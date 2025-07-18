@@ -6,7 +6,6 @@ import Tutorials from "./Tutorials";
 import RaAlgos from "./RaAlgos";
 import { man, tutorialIcon, upStox, upStoxJas } from "../../../assets";
 import { useEffect, useRef, useState } from "react";
-import { FiChevronDown } from "react-icons/fi";
 import NoticeModal from "../../NoticeModal";
 import {
   useBrokerwiseStrategies,

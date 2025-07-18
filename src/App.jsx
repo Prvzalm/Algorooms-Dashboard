@@ -20,6 +20,7 @@ import SimulatorAddFuture from "./components/Routes/SimulatorAddFuture/Simulator
 import Auth from "./components/Auth";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
+import LivePCRGauge from "./components/LivePCR";
 
 const ProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
@@ -55,6 +56,14 @@ function App() {
 
       <Routes>
         <Route path="/signin" element={<Auth />} />
+        {/* <Route
+          path="/pcr"
+          element={
+            <div style={{ textAlign: "center", marginTop: "40px" }}>
+              <LivePCRGauge value={2.5} />
+            </div>
+          }
+        /> */}
         <Route
           path="*"
           element={
