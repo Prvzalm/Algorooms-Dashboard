@@ -3,6 +3,7 @@ import Leg1 from "./Leg1";
 import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
 import InstrumentModal from "./InstrumentModal";
+import EntryCondition from "./EntryCondition";
 
 const StrategyBuilder = () => {
   const [selectedStrategyTypes, setSelectedStrategyTypes] = useState([]);
@@ -10,9 +11,7 @@ const StrategyBuilder = () => {
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
 
   const handleStrategyChange = (id) => {
-    setSelectedStrategyTypes((prev) =>
-      prev.includes(id) ? prev.filter((type) => type !== id) : [...prev, id]
-    );
+    setSelectedStrategyTypes((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   return (
@@ -69,16 +68,18 @@ const StrategyBuilder = () => {
             />
           </div>
 
-          <OrderType />
+          <OrderType selectedStrategyTypes={selectedStrategyTypes} />
         </div>
 
         <div className="overflow-x-hidden">
-          <Leg1 />
+          <Leg1 selectedStrategyTypes={selectedStrategyTypes} />
         </div>
       </div>
 
+      {selectedStrategyTypes[0] === "indicator" && <EntryCondition />}
+
       <div className="overflow-x-hidden">
-        <RiskAndAdvance />
+        <RiskAndAdvance selectedStrategyTypes={selectedStrategyTypes} />
       </div>
     </div>
   );

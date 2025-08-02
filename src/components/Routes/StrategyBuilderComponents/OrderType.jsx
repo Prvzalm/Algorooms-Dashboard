@@ -1,6 +1,7 @@
 import { useState } from "react";
+import TradeSettings from "./TradeSettings";
 
-const OrderType = () => {
+const OrderType = ({ selectedStrategyTypes }) => {
   const [selectedDays, setSelectedDays] = useState(["MON"]);
   const [selectedLeg, setSelectedLeg] = useState("L1");
   const [startTime, setStartTime] = useState("09:16");
@@ -78,6 +79,8 @@ const OrderType = () => {
           </div>
         </div>
       </div>
+
+      {selectedStrategyTypes?.[0] === "indicator" && <TradeSettings />}
 
       <div className="text-sm font-semibold text-black dark:text-white">
         Strategy Legs

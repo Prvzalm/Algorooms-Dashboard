@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { infoIcon } from "../../../assets";
 
-const RiskAndAdvance = () => {
+const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   const [noTradeAfter, setNoTradeAfter] = useState("15:14");
 
   const trailingOptions = [
@@ -48,13 +48,13 @@ const RiskAndAdvance = () => {
         <input
           type="text"
           placeholder="Exit When Over All Profit In Amount (INR)"
-          className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+          className="w-full bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
         />
 
         <input
           type="text"
           placeholder="Exit When Over All Loss In Amount (INR)"
-          className="w-full bg-blue-50 text-gray-600 px-4 py-3 rounded-xl text-sm font-medium placeholder-gray-600 dark:bg-[#1E2027] dark:text-white dark:placeholder-white"
+          className="w-full bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
         />
 
         <div className="space-y-2">
@@ -74,28 +74,30 @@ const RiskAndAdvance = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="text"
-            placeholder="If Profit Reaches"
-            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Lock Profit at"
-            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Every Increase In Profit By"
-            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Trail Profit By"
-            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-          />
-        </div>
+        {selectedStrategyTypes?.[0] !== "time" && (
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="If Profit Reaches"
+              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Lock Profit at"
+              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Every Increase In Profit By"
+              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Trail Profit By"
+              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-6 md:flex md:flex-col md:justify-between">

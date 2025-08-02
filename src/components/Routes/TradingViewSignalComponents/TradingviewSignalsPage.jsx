@@ -1,22 +1,17 @@
-import { useState, useEffect } from "react";
-import StrategyBuilderLeg from "../StrategyBuilderComponents/Leg1";
+import { useState } from "react";
+import Leg1 from "../StrategyBuilderComponents/Leg1";
 import OrderType from "../StrategyBuilderComponents/OrderType";
 import RiskAndAdvance from "../StrategyBuilderComponents/RiskAndAdvance";
 import InstrumentModal from "../StrategyBuilderComponents/InstrumentModal";
 
 const TradingviewSignalsPage = () => {
+  const [selectedStrategyTypes, setSelectedStrategyTypes] = useState([]);
   const [selectedSignals, setSelectedSignals] = useState([]);
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
   const [selectedInstrument, setSelectedInstrument] = useState("");
 
-  const sampleData = {
-    signalTypes: [
-      "TradingView Indicators",
-      "TradingView Strategy (Pinescript)",
-      "Chartink",
-      "Multi Stocks from Chartink",
-    ],
-    strategyTypes: ["Time Based", "Indicator Based", "Price Action Based"],
+  const handleStrategyChange = (id) => {
+    setSelectedStrategyTypes((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const handleSignalToggle = (signal) => {
@@ -32,7 +27,12 @@ const TradingviewSignalsPage = () => {
       <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
         <h2 className="font-semibold dark:text-white">Select Signal From</h2>
         <div className="flex flex-wrap gap-4">
-          {sampleData.signalTypes.map((signal, i) => (
+          {[
+            "TradingView Indicators",
+            "TradingView Strategy (Pinescript)",
+            "Chartink",
+            "Multi Stocks from Chartink",
+          ].map((signal, i) => (
             <label key={i} className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -48,14 +48,24 @@ const TradingviewSignalsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+            <div className="p-4 border rounded-xl space-y-4 w-full dark:bg-[#15171C] dark:border-[#1E2027]">
               <h2 className="font-semibold dark:text-white">Strategy Type</h2>
-              {sampleData.strategyTypes.map((type, i) => (
-                <label key={i} className="flex items-center space-x-2">
-                  <input type="checkbox" />
-                  <span>{type}</span>
-                </label>
-              ))}
+              <div className="space-y-2">
+                {[
+                  { id: "time", label: "Time Based" },
+                  { id: "indicator", label: "Indicator Based" },
+                  { id: "price", label: "Price Action Based" },
+                ].map((type) => (
+                  <label key={type.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedStrategyTypes.includes(type.id)}
+                      onChange={() => handleStrategyChange(type.id)}
+                    />
+                    <span className="break-words">{type.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
@@ -86,16 +96,16 @@ const TradingviewSignalsPage = () => {
             />
           </div>
 
-          <OrderType />
+          <OrderType selectedStrategyTypes={selectedStrategyTypes} />
         </div>
 
         <div className="overflow-x-hidden">
-          <StrategyBuilderLeg />
+          <Leg1 selectedStrategyTypes={selectedStrategyTypes} />
         </div>
       </div>
 
       <div className="overflow-x-hidden">
-        <RiskAndAdvance />
+        <RiskAndAdvance selectedStrategyTypes={selectedStrategyTypes} />
       </div>
     </div>
   );

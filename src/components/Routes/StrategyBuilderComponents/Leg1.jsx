@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { FiTrash2, FiShield } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
 
-const Leg1 = () => {
+const Leg1 = ({ selectedStrategyTypes }) => {
   const [position, setPosition] = useState("BUY");
   const [optionType, setOptionType] = useState("Call");
+  const [prePunchSL, setPrePunchSL] = useState(false);
+  const [signalCandleCondition, setSignalCandleCondition] = useState(false);
 
   const strikeOptions = ["ATM"];
   const expiryOptions = ["Weekly"];
@@ -12,20 +14,51 @@ const Leg1 = () => {
   const slOptions = ["SL%"];
   const tpOptions = ["TP%"];
   const onPriceOptions = ["On Price"];
+  const conditionOptions = ["CE", "PE"];
 
   return (
     <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C] text-black dark:text-white">
-      <div>
-        <h2 className="font-semibold text-lg">Leg1</h2>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          Lorem Ipsum donor
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-lg">Leg1</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Lorem Ipsum donor
+          </p>
+        </div>
+        <button className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+          View All Strategies
+        </button>
       </div>
 
       <div className="border rounded-xl p-4 space-y-4 border-gray-200 dark:border-[#1E2027] dark:bg-[#1E2027]">
+        {selectedStrategyTypes?.[0] === "indicator" && (
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block mb-1 text-green-600 font-medium">
+                When Long Condition
+              </label>
+              <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
+                {conditionOptions.map((opt) => (
+                  <option key={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block mb-1 text-red-500 font-medium">
+                When Short Condition
+              </label>
+              <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
+                {conditionOptions.map((opt) => (
+                  <option key={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Qty
             </label>
             <input
@@ -35,7 +68,7 @@ const Leg1 = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Position
             </label>
             <div className="flex space-x-2">
@@ -55,7 +88,7 @@ const Leg1 = () => {
             </div>
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Option Type
             </label>
             <div className="flex space-x-2">
@@ -78,7 +111,7 @@ const Leg1 = () => {
 
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Expiry
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -88,7 +121,7 @@ const Leg1 = () => {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Select Strike Criteria
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -98,7 +131,7 @@ const Leg1 = () => {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Strike Type
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -111,7 +144,7 @@ const Leg1 = () => {
 
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Stop Loss
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -121,7 +154,7 @@ const Leg1 = () => {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Qty
             </label>
             <input
@@ -131,7 +164,7 @@ const Leg1 = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               On Price
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -144,7 +177,7 @@ const Leg1 = () => {
 
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               TP
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -154,7 +187,7 @@ const Leg1 = () => {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               Qty
             </label>
             <input
@@ -164,7 +197,7 @@ const Leg1 = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-gray-600 dark:text-gray-400 text-xs">
+            <label className="block mb-1 text-gray-600 dark:text-gray-400">
               On Price
             </label>
             <select className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]">
@@ -174,16 +207,48 @@ const Leg1 = () => {
             </select>
           </div>
         </div>
+
+        <div
+          className={`flex ${
+            selectedStrategyTypes?.[0] === "indicator"
+              ? "justify-between"
+              : "justify-end"
+          } items-center pt-2`}
+        >
+          {selectedStrategyTypes?.[0] === "indicator" && (
+            <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={prePunchSL}
+                onChange={() => setPrePunchSL(!prePunchSL)}
+              />
+              <span>
+                Pre Punch SL{" "}
+                <span className="text-[11px]">(Advance Feature)</span>
+              </span>
+            </label>
+          )}
+
+          <div className="flex space-x-4 text-xl text-gray-400 dark:text-gray-500">
+            <FiTrash2 className="text-red-500 cursor-pointer" />
+            <img src={leg1CopyIcon} />
+          </div>
+        </div>
       </div>
 
-      <div className="flex justify-end space-x-4 text-xl text-gray-400 dark:text-gray-500">
-        <FiTrash2 className="text-red-500 cursor-pointer" />
-        <img src={leg1CopyIcon} />
-      </div>
-
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-        View All Strategies
-      </div>
+      {selectedStrategyTypes?.[0] === "indicator" && (
+        <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={signalCandleCondition}
+            onChange={() => setSignalCandleCondition(!signalCandleCondition)}
+          />
+          <span>
+            Add Signal Candle Condition{" "}
+            <span className="text-[11px] text-gray-400">(Optional)</span>
+          </span>
+        </label>
+      )}
     </div>
   );
 };
