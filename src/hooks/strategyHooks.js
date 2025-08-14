@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { searchInstrument, userCreatedStrategies } from "../api/strategies";
+import { searchInstrument, userCreatedStrategies, createStrategy } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
 export const useSearchInstrument = (segmentType, query, enabled = true) => {
@@ -44,16 +44,7 @@ export const useCreateStrategyMutation = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload) => {
-      const res = await axiosInstance.post(
-        "/strategies/CreateStrategy",
-        payload
-      );
-      if (res?.data?.Status !== "Success") {
-        throw new Error(res?.data?.Message || "Failed to create strategy");
-      }
-      return res.data.Data;
-    },
+    mutationFn: (payload) => createStrategy(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["strategies"] });
     },

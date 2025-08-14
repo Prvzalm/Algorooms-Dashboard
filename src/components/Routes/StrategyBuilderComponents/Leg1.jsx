@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
 
 const Leg1 = ({ selectedStrategyTypes }) => {
+  const { setValue } = useFormContext();
   const [position, setPosition] = useState("BUY");
   const [optionType, setOptionType] = useState("Call");
   const [prePunchSL, setPrePunchSL] = useState(false);
@@ -15,6 +17,48 @@ const Leg1 = ({ selectedStrategyTypes }) => {
   const tpOptions = ["TP%"];
   const onPriceOptions = ["On Price"];
   const conditionOptions = ["CE", "PE"];
+
+  useEffect(() => {
+    const strikeType = optionType === "Call" ? "CE" : "PE";
+    setValue(
+      "StrategyScriptList",
+      [
+        {
+          InstrumentToken: "",
+          InstrumentName: "",
+          Qty: 0,
+          LongEquationoptionStrikeList: [
+            {
+              TransactionType: position,
+              StrikeType: strikeType,
+              StrikeValueType: 0,
+              StrikeValue: 0,
+              Qty: 0,
+              TargetType: "tgpr",
+              SLType: "slpr",
+              Target: 0,
+              StopLoss: 0,
+              TargetActionTypeId: "ONPRICE",
+              SLActionTypeId: "ONPRICE",
+              ExpiryType: "WEEKLY",
+              reEntry: { isRentry: false, RentryType: "", TradeCycle: 0, RentryActionTypeId: "" },
+              waitNTrade: { isWaitnTrade: false, isPerPt: "wtpr_+", typeId: "wtpr_+", MovementValue: 0 },
+              TrailingSL: { TrailingType: "tslpr", InstrumentMovementValue: 0, TrailingValue: 0 },
+              strikeTypeobj: { type: "ATM", StrikeValue: 0, RangeFrom: 0, RangeTo: 0 },
+              isTrailSL: false,
+              IsRecursive: false,
+              IsMoveSLCTC: false,
+              isExitAll: false,
+              TargetTypeId: "ONPRICE",
+            },
+          ],
+          ShortEquationoptionStrikeList: [],
+          StrikeTickValue: 0,
+        },
+      ],
+      { shouldDirty: true }
+    );
+  }, [position, optionType, setValue]);
 
   return (
     <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C] text-black dark:text-white">
@@ -74,6 +118,7 @@ const Leg1 = ({ selectedStrategyTypes }) => {
             <div className="flex space-x-2">
               {["BUY", "SELL"].map((pos) => (
                 <button
+                  type="button"
                   key={pos}
                   onClick={() => setPosition(pos)}
                   className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
@@ -94,6 +139,7 @@ const Leg1 = ({ selectedStrategyTypes }) => {
             <div className="flex space-x-2">
               {["Call", "Put"].map((type) => (
                 <button
+                  type="button"
                   key={type}
                   onClick={() => setOptionType(type)}
                   className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
@@ -29,6 +29,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [name, setName] = useState("");
+  const [resetTicket, setResetTicket] = useState(null);
+  const otpRefs = useRef([]);
 
   const { mutate: loginUser } = useLoginMutation();
   const { mutate: googleLoginUser } = useGoogleLoginMutation();
@@ -42,11 +44,35 @@ export default function Auth() {
   const navigate = useNavigate();
 
   const handleOtpChange = (value, index) => {
-    if (/^\d*$/.test(value)) {
-      const updatedOtp = [...otp];
-      updatedOtp[index] = value;
-      setOtp(updatedOtp);
+    if (!/^\d*$/.test(value)) return;
+    const updatedOtp = [...otp];
+    updatedOtp[index] = value.slice(-1);
+    setOtp(updatedOtp);
+    if (value && index < otpRefs.current.length - 1) {
+      otpRefs.current[index + 1]?.focus();
     }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "ArrowLeft" && index > 0) otpRefs.current[index - 1]?.focus();
+    if (e.key === "ArrowRight" && index < otpRefs.current.length - 1)
+      otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpPaste = (e) => {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    const arr = text.split("");
+    const filled = Array(6)
+      .fill("")
+      .map((_, i) => arr[i] || "");
+    setOtp(filled);
+    const nextEmpty = filled.findIndex((d) => d === "");
+    const focusIndex = nextEmpty === -1 ? 5 : nextEmpty;
+    otpRefs.current[focusIndex]?.focus();
   };
 
   const handleLogin = (email, password) => {
@@ -113,6 +139,7 @@ export default function Auth() {
         onSuccess: (res) => {
           if (res.data.Status === "Success") {
             toast.success("OTP verified");
+            setResetTicket(res?.data?.Data?.ResetTicket || null);
             setMode("reset");
           } else {
             toast.error(res.data.Message || "OTP incorrect");
@@ -126,25 +153,48 @@ export default function Auth() {
   const handleReset = (email, newPassword, otp) => {
     if (!newPassword) return toast.info("Enter new password");
 
-    forgotPasswordUser(
-      {
-        EmailID: email,
-        NewPassword: newPassword,
-        OTP: parseInt(otp),
-        ApiKey: "abc",
-      },
-      {
-        onSuccess: (res) => {
-          if (res.data.Status === "Success") {
-            toast.success("Password reset successfully");
-            setMode("login");
-          } else {
-            toast.error(res.data.Message || "Reset failed");
-          }
+    if (resetTicket) {
+      // Use resetPassword when we have a reset ticket from OTP verification
+      resetPasswordUser(
+        {
+          ResetTicket: resetTicket,
+          NewPassword: newPassword,
+          ApiKey: "abc",
         },
-        onError: () => toast.error("Reset error"),
-      }
-    );
+        {
+          onSuccess: (res) => {
+            if (res.data.Status === "Success") {
+              toast.success("Password created successfully");
+              setMode("login");
+            } else {
+              toast.error(res.data.Message || "Reset failed");
+            }
+          },
+          onError: () => toast.error("Reset error"),
+        }
+      );
+    } else {
+      // Fallback to forgotPassword flow with OTP
+      forgotPasswordUser(
+        {
+          EmailID: email,
+          NewPassword: newPassword,
+          OTP: parseInt(otp),
+          ApiKey: "abc",
+        },
+        {
+          onSuccess: (res) => {
+            if (res.data.Status === "Success") {
+              toast.success("Password reset successfully");
+              setMode("login");
+            } else {
+              toast.error(res.data.Message || "Reset failed");
+            }
+          },
+          onError: () => toast.error("Reset error"),
+        }
+      );
+    }
   };
 
   const handleRequestMobileOtp = (mobileNumber, otpType = "REGISTRATION") => {
@@ -241,15 +291,18 @@ export default function Auth() {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const decoded = jwtDecode(tokenResponse.credential);
-        const { email, name, picture } = decoded;
+        const userInfo = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        }).then((r) => r.json());
+
+        const { email: gEmail, name: gName, picture: gPicture } = userInfo;
 
         googleLoginUser(
           {
-            EmailID: email,
-            Token: tokenResponse.credential,
-            AvtarUrl: picture,
-            CreatedBy: name,
+            EmailID: gEmail,
+            Token: tokenResponse.access_token,
+            AvtarUrl: gPicture,
+            CreatedBy: gName,
             ApiKey: "abc",
           },
           {
@@ -272,6 +325,8 @@ export default function Auth() {
         toast.error("Invalid Google credentials");
       }
     },
+    onError: () => toast.error("Google login error"),
+    scope: "openid email profile",
   });
 
   return (

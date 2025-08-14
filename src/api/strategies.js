@@ -28,3 +28,15 @@ export const userCreatedStrategies = async ({
 
   return response.data?.Data?.StrategyData || [];
 };
+
+export const createStrategy = async (payload) => {
+  const response = await axiosInstance.post(
+    "/strategies/CreateStrategy",
+    payload
+  );
+  const { Status, Message, Data } = response?.data || {};
+  if (Status !== "Success") {
+    throw new Error(Message || "Failed to create strategy");
+  }
+  return Data;
+};

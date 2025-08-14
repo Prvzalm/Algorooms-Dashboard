@@ -88,10 +88,11 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
           ) : (
             instruments.map((item, i) => (
               <button
+                type="button"
                 key={item.InstrumentToken}
-                onClick={() => setSelected(item.Name)}
+                onClick={() => setSelected({ ...item, SegmentType: segmentType })}
                 className={`border rounded-lg py-2 text-sm font-medium ${
-                  selected === item.Name
+                  selected?.Name === item.Name
                     ? "bg-blue-100 text-[#0096FF] dark:bg-[#2A2D34] dark:text-blue-400"
                     : "text-gray-700 hover:bg-blue-50 dark:text-white dark:hover:bg-[#2A2D34]"
                 } dark:border-[#1E2027]`}
@@ -103,6 +104,7 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
         </div>
 
         <button
+          type="button"
           onClick={onClose}
           className="w-full bg-[#0096FF] text-white py-3 rounded-lg font-semibold"
         >

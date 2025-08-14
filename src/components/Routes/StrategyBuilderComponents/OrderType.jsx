@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
 import TradeSettings from "./TradeSettings";
 
 const OrderType = ({ selectedStrategyTypes }) => {
+  const { setValue } = useFormContext();
   const [selectedDays, setSelectedDays] = useState(["MON"]);
   const [selectedLeg, setSelectedLeg] = useState("L1");
   const [startTime, setStartTime] = useState("09:16");
   const [squareOffTime, setSquareOffTime] = useState("15:14");
+  const [productType, setProductType] = useState("MIS");
 
   const orderTypes = ["MIS", "CNC", "BTST"];
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
@@ -16,6 +19,24 @@ const OrderType = ({ selectedStrategyTypes }) => {
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   };
+
+  useEffect(() => {
+    setValue("ActiveDays", selectedDays, { shouldDirty: true });
+  }, [selectedDays, setValue]);
+
+  useEffect(() => {
+    setValue("TradeStartTime", startTime, { shouldDirty: true });
+  }, [startTime, setValue]);
+
+  useEffect(() => {
+    setValue("AutoSquareOffTime", squareOffTime, { shouldDirty: true });
+  }, [squareOffTime, setValue]);
+
+  useEffect(() => {
+    const productTypeMap = { MIS: 0, CNC: 1, BTST: 1 };
+    setValue("ProductType", productTypeMap[productType], { shouldDirty: true });
+    setValue("isBtSt", productType === "BTST", { shouldDirty: true });
+  }, [productType, setValue]);
 
   return (
     <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C]">
@@ -28,11 +49,13 @@ const OrderType = ({ selectedStrategyTypes }) => {
 
       <div className="flex items-center space-x-4 text-sm">
         {orderTypes.map((type) => (
-          <label
-            key={type}
-            className="flex items-center space-x-2 dark:text-gray-300"
-          >
-            <input type="checkbox" />
+          <label key={type} className="flex items-center space-x-2 dark:text-gray-300">
+            <input
+              type="radio"
+              name="productType"
+              checked={productType === type}
+              onChange={() => setProductType(type)}
+            />
             <span>{type}</span>
           </label>
         ))}
@@ -65,6 +88,7 @@ const OrderType = ({ selectedStrategyTypes }) => {
           <div className="flex space-x-1 ml-4 min-w-max">
             {days.map((day) => (
               <button
+                type="button"
                 key={day}
                 onClick={() => toggleDay(day)}
                 className={`px-3 py-2 rounded border text-xs transition ${
@@ -89,6 +113,7 @@ const OrderType = ({ selectedStrategyTypes }) => {
         <div className="flex space-x-2">
           {legs.map((leg) => (
             <button
+              type="button"
               key={leg}
               onClick={() => setSelectedLeg(leg)}
               className={`md:px-12 px-4 py-2 rounded-lg text-sm font-medium border transition ${
@@ -101,7 +126,7 @@ const OrderType = ({ selectedStrategyTypes }) => {
             </button>
           ))}
         </div>
-        <button className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition">
+        <button type="button" className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition">
           + Add
         </button>
       </div>

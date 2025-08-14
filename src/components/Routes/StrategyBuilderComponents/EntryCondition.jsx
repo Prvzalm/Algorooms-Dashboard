@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
 import { FiTrash, FiInfo } from "react-icons/fi";
 
 const initialCondition = {
@@ -7,6 +8,7 @@ const initialCondition = {
 };
 
 const EntryCondition = () => {
+  const { setValue } = useFormContext();
   const [conditions, setConditions] = useState([{ ...initialCondition }]);
   const [useCombinedChart, setUseCombinedChart] = useState(false);
   const [exitConditions, setExitConditions] = useState(false);
@@ -20,6 +22,36 @@ const EntryCondition = () => {
   const addCondition = () => {
     setConditions([...conditions, { ...initialCondition }]);
   };
+  useEffect(() => {
+    // Very basic mapping demo -> real mapping depends on your indicator catalog
+    const mapBlock = (b) => ({
+      comparerId: 0,
+      comparerName: b.long.left || "",
+      OperatorId: 0,
+      OperatorName: b.long.comparator || "",
+      indicator: {
+        indicatorId: 0,
+        IndicatorParamList: [],
+      },
+      comparerIndicator: {
+        indicatorId: 0,
+        IndicatorParamList: [],
+      },
+    });
+
+    const longEq = conditions.map(mapBlock);
+    const shortEq = conditions.map((b) => ({
+      ...mapBlock(b),
+      comparerName: b.short.left || "",
+      OperatorName: b.short.comparator || "",
+    }));
+
+    setValue("LongEntryEquation", longEq, { shouldDirty: true });
+    setValue("ShortEntryEquation", shortEq, { shouldDirty: true });
+    setValue("IsChartOnOptionStrike", useCombinedChart, { shouldDirty: true });
+    setValue("Long_ExitEquation", exitConditions ? longEq : [], { shouldDirty: true });
+    setValue("Short_ExitEquation", exitConditions ? shortEq : [], { shouldDirty: true });
+  }, [conditions, useCombinedChart, exitConditions, setValue]);
 
   const removeCondition = (index) => {
     const updated = [...conditions];

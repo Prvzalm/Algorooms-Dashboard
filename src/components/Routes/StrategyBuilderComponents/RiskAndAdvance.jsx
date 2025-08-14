@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFormContext } from "react-hook-form";
 import { infoIcon } from "../../../assets";
 
 const RiskAndAdvance = ({ selectedStrategyTypes }) => {
+  const { setValue } = useFormContext();
   const [noTradeAfter, setNoTradeAfter] = useState("15:14");
 
   const trailingOptions = [
@@ -48,12 +50,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         <input
           type="text"
           placeholder="Exit When Over All Profit In Amount (INR)"
+          onChange={(e)=> setValue("ExitWhenTotalProfit", Number(e.target.value) || 0, { shouldDirty: true })}
           className="w-full bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
         />
 
         <input
           type="text"
           placeholder="Exit When Over All Loss In Amount (INR)"
+          onChange={(e)=> setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, { shouldDirty: true })}
           className="w-full bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
         />
 
@@ -67,7 +71,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                 key={opt}
                 className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
               >
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  onChange={(e)=> {
+                    const map = { "No Trailing": 0, "Lock Fix Profit": 1, "Trail Profit": 2, "Lock and Trail": 3 };
+                    setValue("TrailProfitType", e.target.checked ? map[opt] : 0, { shouldDirty: true });
+                  }}
+                />
                 <span>{opt}</span>
               </label>
             ))}
@@ -79,21 +89,25 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             <input
               type="text"
               placeholder="If Profit Reaches"
+              onChange={(e)=> setValue("LockProfitAt", Number(e.target.value) || 0, { shouldDirty: true })}
               className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
             />
             <input
               type="text"
               placeholder="Lock Profit at"
+              onChange={(e)=> setValue("LockProfit", Number(e.target.value) || 0, { shouldDirty: true })}
               className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
             />
             <input
               type="text"
               placeholder="Every Increase In Profit By"
+              onChange={(e)=> setValue("TrailProfitBy", Number(e.target.value) || 0, { shouldDirty: true })}
               className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
             />
             <input
               type="text"
               placeholder="Trail Profit By"
+              onChange={(e)=> setValue("Trail_SL", Number(e.target.value) || 0, { shouldDirty: true })}
               className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
             />
           </div>
@@ -119,7 +133,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                 key={opt}
                 className="flex items-center space-x-2 col-span-1 text-gray-700 dark:text-gray-300"
               >
-                <input type="checkbox" />
+                <input type="checkbox" onChange={(e)=> setValue("SquareOffAllOptionLegOnSl", e.target.checked, { shouldDirty: true })} />
                 <span>{opt}</span>
               </label>
             ))}
@@ -133,11 +147,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           <input
             type="text"
             placeholder="Entry your strategy name here"
+            onChange={(e)=> setValue("StrategyName", e.target.value, { shouldDirty: true })}
             className="mt-3 bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 w-full dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
           />
-          <button className="ml-auto mt-4 bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium">
-            Create
-          </button>
+          {/* Submit button lives in parent form */}
         </div>
       </div>
     </div>
