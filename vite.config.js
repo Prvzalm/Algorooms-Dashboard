@@ -3,13 +3,13 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  // server: {
-  //   proxy: {
-  //     "/api": {
-  //       target: "https://core-api.algorooms.com",
-  //       changeOrigin: true,
-  //       secure: true,
-  //     },
-  //   },
-  // },
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://uat-api.algorooms.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });
