@@ -20,6 +20,7 @@ export const useBacktestPlans = (apiKey) => {
       );
       return response.data?.Data || [];
     },
+    staleTime: 5 * 60 * 1000,
   });
 };
 
