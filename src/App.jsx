@@ -53,6 +53,13 @@ function App() {
         hideProgressBar
       />
 
+{token && (
+        <>
+          <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+          <Header />
+        </>
+      )}
+
       <Routes>
         <Route path="/signin" element={<Auth />} />
 
