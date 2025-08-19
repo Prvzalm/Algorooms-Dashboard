@@ -2,7 +2,7 @@ import axios from "axios";
 import { queryClient } from "../queryClient";
 
 const axiosInstance = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json-patch+json",
     Accept: "*/*",
@@ -16,7 +16,7 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem("token");
       delete axiosInstance.defaults.headers.common["Authorization"];
       queryClient.clear();
-      window.location.href = "/";
+      window.location.href = "/signin"; // redirect to signin
     }
 
     return Promise.reject(error);
