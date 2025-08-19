@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { queryClient } from "../queryClient";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
@@ -8,6 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -27,6 +30,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axiosInstance.get("/profile/getProfileData");
       if (res.data.Status === "Success") {
         setUser(res.data.Data);
+        navigate("/", { replace: true });
       }
     } catch (err) {
       console.error("Profile fetch error", err);
