@@ -9,7 +9,7 @@ export const useUserBrokerData = () => {
   return useQuery({
     queryKey: ["user-broker-data"],
     queryFn: getUserBrokerData,
-    staleTime: 300000,
+    staleTime: 3000,
   });
 };
 
