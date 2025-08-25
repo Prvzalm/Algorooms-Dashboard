@@ -4,10 +4,10 @@ import TradeSettings from "./TradeSettings";
 
 const OrderType = ({ selectedStrategyTypes }) => {
   const { setValue } = useFormContext();
-  const [selectedDays, setSelectedDays] = useState(["MON"]);
+  const [selectedDays, setSelectedDays] = useState(["MON", "TUE", "WED", "THU", "FRI"]);
   const [selectedLeg, setSelectedLeg] = useState("L1");
   const [startTime, setStartTime] = useState("09:16");
-  const [squareOffTime, setSquareOffTime] = useState("15:14");
+  const [squareOffTime, setSquareOffTime] = useState("15:15");
   const [productType, setProductType] = useState("MIS");
 
   const orderTypes = ["MIS", "CNC", "BTST"];

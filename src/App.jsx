@@ -24,18 +24,26 @@ import LivePCRGauge from "./components/LivePCR";
 
 const ProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <div className="text-center pt-20">Loading...</div>;
   }
 
-  return token ? children : <Navigate to="/signin" replace />;
+  return token ? (
+    children
+  ) : (
+    <Navigate to="/signin" replace state={{ from: location }} />
+  );
 };
 
 function App() {
   const { token, loading } = useAuth();
   const location = useLocation();
-  const isAuthPage = location.pathname === "/signin";
+
+  const normalizedPath = (location.pathname || "/").replace(/\/+$/, "") || "/";
+  const isAuthPage = normalizedPath === "/signin";
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     localStorage.getItem("sidebar-collapsed") === "true"
   );

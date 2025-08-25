@@ -11,11 +11,11 @@ const Leg1 = ({ selectedStrategyTypes }) => {
   const [signalCandleCondition, setSignalCandleCondition] = useState(false);
 
   const strikeOptions = ["ATM"];
-  const expiryOptions = ["Weekly"];
+  const expiryOptions = ["WEEKLY", "MONTHLY"];
   const criteriaOptions = ["Strike Type"];
-  const slOptions = ["SL%"];
-  const tpOptions = ["TP%"];
-  const onPriceOptions = ["On Price"];
+  const slOptions = ["SL%", "SL pt"];
+  const tpOptions = ["TP%", "TP pt"];
+  const onPriceOptions = ["On Price", "On Close"];
   const conditionOptions = ["CE", "PE"];
 
   useEffect(() => {
@@ -25,7 +25,6 @@ const Leg1 = ({ selectedStrategyTypes }) => {
       [
         {
           InstrumentToken: "",
-          InstrumentName: "",
           Qty: 0,
           LongEquationoptionStrikeList: [
             {
@@ -34,25 +33,95 @@ const Leg1 = ({ selectedStrategyTypes }) => {
               StrikeValueType: 0,
               StrikeValue: 0,
               Qty: 0,
+              lotSize: 0,
               TargetType: "tgpr",
+              TargetTypeId: "ONPRICE",
               SLType: "slpr",
               Target: 0,
               StopLoss: 0,
               TargetActionTypeId: "ONPRICE",
               SLActionTypeId: "ONPRICE",
               ExpiryType: "WEEKLY",
-              reEntry: { isRentry: false, RentryType: "", TradeCycle: 0, RentryActionTypeId: "" },
-              waitNTrade: { isWaitnTrade: false, isPerPt: "wtpr_+", typeId: "wtpr_+", MovementValue: 0 },
-              TrailingSL: { TrailingType: "tslpr", InstrumentMovementValue: 0, TrailingValue: 0 },
-              strikeTypeobj: { type: "ATM", StrikeValue: 0, RangeFrom: 0, RangeTo: 0 },
+              reEntry: {
+                isRentry: false,
+                RentryType: "",
+                TradeCycle: 0,
+                RentryActionTypeId: "",
+              },
+              waitNTrade: {
+                isWaitnTrade: false,
+                isPerPt: "wtpr_+",
+                typeId: "wtpr_+",
+                MovementValue: 0,
+              },
+              TrailingSL: {
+                TrailingType: "tslpr",
+                InstrumentMovementValue: 0,
+                TrailingValue: 0,
+              },
+              strikeTypeobj: {
+                type: "ATM",
+                StrikeValue: 0,
+                RangeFrom: 0,
+                RangeTo: 0,
+              },
               isTrailSL: false,
               IsRecursive: false,
               IsMoveSLCTC: false,
               isExitAll: false,
-              TargetTypeId: "ONPRICE",
+              IsPriceDiffrenceConstrant: false,
+              PriceDiffrenceConstrantValue: 0,
+              isPrePunchSL: false,
             },
           ],
-          ShortEquationoptionStrikeList: [],
+          ShortEquationoptionStrikeList: [
+            {
+              TransactionType: position === "BUY" ? "SELL" : "BUY",
+              StrikeType: strikeType,
+              StrikeValueType: 0,
+              StrikeValue: 0,
+              Qty: 0,
+              lotSize: 0,
+              TargetType: "tgpr",
+              TargetTypeId: "ONPRICE",
+              SLType: "slpr",
+              Target: 0,
+              StopLoss: 0,
+              TargetActionTypeId: "ONPRICE",
+              SLActionTypeId: "ONPRICE",
+              ExpiryType: "WEEKLY",
+              reEntry: {
+                isRentry: false,
+                RentryType: "",
+                TradeCycle: 0,
+                RentryActionTypeId: "",
+              },
+              waitNTrade: {
+                isWaitnTrade: false,
+                isPerPt: "wtpr_+",
+                typeId: "wtpr_+",
+                MovementValue: 0,
+              },
+              TrailingSL: {
+                TrailingType: "tslpr",
+                InstrumentMovementValue: 0,
+                TrailingValue: 0,
+              },
+              strikeTypeobj: {
+                type: "ATM",
+                StrikeValue: 0,
+                RangeFrom: 0,
+                RangeTo: 0,
+              },
+              isTrailSL: false,
+              IsRecursive: false,
+              IsMoveSLCTC: false,
+              isExitAll: false,
+              IsPriceDiffrenceConstrant: false,
+              PriceDiffrenceConstrantValue: 0,
+              isPrePunchSL: false,
+            },
+          ],
           StrikeTickValue: 0,
         },
       ],

@@ -3,8 +3,8 @@ import { useProfileQuery } from "../../../hooks/profileHooks";
 
 const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
   const { data: profileData, isLoading, isError } = useProfileQuery();
-  if (isLoading) <div>Loading...</div>;
-  if (isError) <div>Error...</div>;
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error...</div>;
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-t-3xl h-full flex flex-col justify-between">

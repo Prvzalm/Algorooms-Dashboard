@@ -3,8 +3,8 @@ import { useFormContext } from "react-hook-form";
 import { infoIcon } from "../../../assets";
 
 const RiskAndAdvance = ({ selectedStrategyTypes }) => {
-  const { setValue } = useFormContext();
-  const [noTradeAfter, setNoTradeAfter] = useState("15:14");
+  const { setValue, getValues } = useFormContext();
+  const [noTradeAfter, setNoTradeAfter] = useState("15:15");
 
   const trailingOptions = [
     "No Trailing",
@@ -21,6 +21,84 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
     "Re Entry/Execute",
     "Trail SL",
   ];
+
+  const updateFirstStrike = (updater) => {
+    const scripts = getValues("StrategyScriptList") || [];
+    if (!Array.isArray(scripts) || scripts.length === 0) return;
+    const firstScript = { ...scripts[0] };
+    const longs = Array.isArray(firstScript.LongEquationoptionStrikeList)
+      ? [...firstScript.LongEquationoptionStrikeList]
+      : [];
+    if (longs.length === 0) return;
+    const strike = { ...longs[0] };
+    updater(strike);
+    longs[0] = strike;
+    const nextScripts = [...scripts];
+    nextScripts[0] = { ...firstScript, LongEquationoptionStrikeList: longs };
+    setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
+  };
+
+  const onToggleAdvance = (label, checked) => {
+    switch (label) {
+      case "Move SL to Cost":
+        updateFirstStrike((s) => {
+          s.IsMoveSLCTC = !!checked;
+        });
+        break;
+      case "Exit All on SL/Tgt":
+        setValue("SquareOffAllOptionLegOnSl", !!checked, { shouldDirty: true });
+        updateFirstStrike((s) => {
+          s.isExitAll = !!checked;
+        });
+        break;
+      case "Pre Punch SL":
+        updateFirstStrike((s) => {
+          s.isPrePunchSL = !!checked;
+        });
+        break;
+      case "Wait & Trade":
+        updateFirstStrike((s) => {
+          s.waitNTrade = {
+            ...(s.waitNTrade || {}),
+            isWaitnTrade: !!checked,
+            isPerPt: s.waitNTrade?.isPerPt || "wtpr_+",
+            typeId: s.waitNTrade?.typeId || "wtpr_+",
+            MovementValue: s.waitNTrade?.MovementValue ?? 0,
+          };
+        });
+        break;
+      case "Premium Difference":
+        updateFirstStrike((s) => {
+          s.IsPriceDiffrenceConstrant = !!checked;
+          if (!checked) s.PriceDiffrenceConstrantValue = 0;
+        });
+        break;
+      case "Re Entry/Execute":
+        updateFirstStrike((s) => {
+          s.reEntry = {
+            ...(s.reEntry || {}),
+            isRentry: !!checked,
+            RentryType: s.reEntry?.RentryType || "REN",
+            TradeCycle: s.reEntry?.TradeCycle ?? 4,
+            RentryActionTypeId: s.reEntry?.RentryActionTypeId || "ON_CLOSE",
+          };
+        });
+        break;
+      case "Trail SL":
+        updateFirstStrike((s) => {
+          s.isTrailSL = !!checked;
+          s.TrailingSL = {
+            ...(s.TrailingSL || {}),
+            TrailingType: s.TrailingSL?.TrailingType || "tslpr",
+            InstrumentMovementValue: s.TrailingSL?.InstrumentMovementValue ?? 0,
+            TrailingValue: s.TrailingSL?.TrailingValue ?? 0,
+          };
+        });
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -133,7 +211,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                 key={opt}
                 className="flex items-center space-x-2 col-span-1 text-gray-700 dark:text-gray-300"
               >
-                <input type="checkbox" onChange={(e)=> setValue("SquareOffAllOptionLegOnSl", e.target.checked, { shouldDirty: true })} />
+                <input type="checkbox" onChange={(e)=> onToggleAdvance(opt, e.target.checked)} />
                 <span>{opt}</span>
               </label>
             ))}
