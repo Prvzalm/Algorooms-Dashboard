@@ -95,50 +95,27 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument }) => {
   const lotSizeBase = selectedInstrument?.LotSize || 0;
   const qtyDisplay = Math.max(1, qtyMultiplier) * lotSizeBase;
 
-  // sync local state -> form (keeps single leg payload under "Leg1")
-  useEffect(() => {
-    setValue(
-      "Leg1",
-      {
-        position,
-        optionType,
-        prePunchSL,
-        signalCandleCondition,
-      },
-      { shouldDirty: true }
-    );
-  }, [position, optionType, prePunchSL, signalCandleCondition, setValue]);
+  // REMOVED: syncing local Leg1 state into form (Leg1 field no longer needed)
+  // useEffect(() => {
+  //   setValue("Leg1", { position, optionType, prePunchSL, signalCandleCondition }, { shouldDirty: true });
+  // }, [position, optionType, prePunchSL, signalCandleCondition, setValue]);
 
-  // reset local state + form payload whenever selectedInstrument changes
+  // UPDATED: instrument change effect (removed setValue for Leg1)
   useEffect(() => {
-    // if instrument removed -> reset to defaults and write default payload
     if (!selectedInstrument) {
       setPosition(LEG1_DEFAULTS.position);
       setOptionType(LEG1_DEFAULTS.optionType);
       setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
-
-      // also clear any per-leg qty/strike data in form
-      setValue("Leg1", { ...LEG1_DEFAULTS }, { shouldDirty: true });
       return;
     }
-
-    // when instrument changed to a real instrument, initialize Qty / lot-related values
     const lot = selectedInstrument?.LotSize || 0;
-    setValue(
-      "Leg1",
-      {
-        ...LEG1_DEFAULTS,
-        Qty: lot,
-      },
-      { shouldDirty: true }
-    );
-    // also keep local UI sane
+    // keep local resets only
     setPosition(LEG1_DEFAULTS.position);
     setOptionType(LEG1_DEFAULTS.optionType);
     setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
     setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
-  }, [selectedInstrument, setValue]);
+  }, [selectedInstrument]);
 
   // unified builder for StrategyScriptList (time & indicator)
   useEffect(() => {

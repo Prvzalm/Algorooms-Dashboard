@@ -15,9 +15,11 @@ const StrategyBuilder = () => {
     StrategyType: "time",
     StrategySegmentType: "",
     ProductType: 0,
-    TradeStartTime: "",
-    AutoSquareOffTime: "",
-    ActiveDays: [],
+    // UPDATED: set real initial times (were "")
+    TradeStartTime: "09:16",
+    AutoSquareOffTime: "15:15",
+    // UPDATED: set real initial trading days (was [])
+    ActiveDays: ["MON", "TUE", "WED", "THU", "FRI"],
     ExitWhenTotalProfit: 0,
     ExitWhenTotalLoss: 0,
     TrailProfitType: 0,
@@ -226,6 +228,8 @@ const StrategyBuilder = () => {
   ]);
 
   const onSubmit = (values) => {
+    // REMOVE Leg1 from form values before payload
+    const { Leg1: _removeLeg1, ...valuesWithoutLeg1 } = values;
     const segmentMap = {
       Option: "OPTION",
       Equity: "NSE",
@@ -235,22 +239,26 @@ const StrategyBuilder = () => {
       MCX: "MCX",
     };
     const mappedSegment =
-      segmentMap[values.StrategySegmentType] || values.StrategySegmentType;
+      segmentMap[valuesWithoutLeg1.StrategySegmentType] ||
+      valuesWithoutLeg1.StrategySegmentType;
 
-    if (values.StrategyType === "time" && mappedSegment !== "OPTION") {
+    if (
+      valuesWithoutLeg1.StrategyType === "time" &&
+      mappedSegment !== "OPTION"
+    ) {
       toast.error("Please select option category for BT-ST functionality");
       return;
     }
 
     const executionType =
-      values.StrategyType === "time"
+      valuesWithoutLeg1.StrategyType === "time"
         ? "tb"
-        : values.StrategyType === "indicator"
+        : valuesWithoutLeg1.StrategyType === "indicator"
         ? "ib"
         : "pa";
 
-    const currentScripts = Array.isArray(values.StrategyScriptList)
-      ? values.StrategyScriptList
+    const currentScripts = Array.isArray(valuesWithoutLeg1.StrategyScriptList)
+      ? valuesWithoutLeg1.StrategyScriptList
       : [];
     const firstScript = currentScripts[0] || {};
     const lotSizeVal = selectedInstrument?.LotSize || firstScript.Qty || 0;
@@ -342,13 +350,13 @@ const StrategyBuilder = () => {
 
     const isIndicatorEquityMulti =
       selectedStrategyTypes[0] === "indicator" &&
-      values.StrategySegmentType === "Equity" &&
+      valuesWithoutLeg1.StrategySegmentType === "Equity" &&
       selectedEquityInstruments.length > 0;
 
     let StrategyScriptListFinal;
 
     if (isIndicatorEquityMulti) {
-      StrategyScriptListFinal = values.StrategyScriptList;
+      StrategyScriptListFinal = valuesWithoutLeg1.StrategyScriptList;
     } else {
       const enrichedScripts = [
         {
@@ -374,19 +382,20 @@ const StrategyBuilder = () => {
     };
 
     const payload = {
-      ...values,
+      ...valuesWithoutLeg1, // use cleaned values
       StrategyType: null,
       StrategySegmentType:
-        values.StrategyType === "time" ? "OPTION" : mappedSegment,
+        valuesWithoutLeg1.StrategyType === "time" ? "OPTION" : mappedSegment,
       StrategyExecutionType: executionType,
       StrategyScriptList: StrategyScriptListFinal,
-      TradeStopTime: values.TradeStopTime || values.AutoSquareOffTime,
+      TradeStopTime:
+        valuesWithoutLeg1.TradeStopTime || valuesWithoutLeg1.AutoSquareOffTime,
       EntryRule: null,
       ExitRule: null,
-      LongEntryEquation: toNullIfEmpty(values.LongEntryEquation),
-      ShortEntryEquation: toNullIfEmpty(values.ShortEntryEquation),
-      Long_ExitEquation: toNullIfEmpty(values.Long_ExitEquation),
-      Short_ExitEquation: toNullIfEmpty(values.Short_ExitEquation),
+      LongEntryEquation: toNullIfEmpty(valuesWithoutLeg1.LongEntryEquation),
+      ShortEntryEquation: toNullIfEmpty(valuesWithoutLeg1.ShortEntryEquation),
+      Long_ExitEquation: toNullIfEmpty(valuesWithoutLeg1.Long_ExitEquation),
+      Short_ExitEquation: toNullIfEmpty(valuesWithoutLeg1.Short_ExitEquation),
     };
 
     mutate(payload, {
