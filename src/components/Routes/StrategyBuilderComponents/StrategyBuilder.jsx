@@ -9,16 +9,13 @@ import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
 
 const StrategyBuilder = () => {
-  // NEW: single source of truth for initial defaults (page-load state)
   const initialFormValuesRef = useRef({
     StrategyName: "",
     StrategyType: "time",
     StrategySegmentType: "",
     ProductType: 0,
-    // UPDATED: set real initial times (were "")
     TradeStartTime: "09:16",
     AutoSquareOffTime: "15:15",
-    // UPDATED: set real initial trading days (was [])
     ActiveDays: ["MON", "TUE", "WED", "THU", "FRI"],
     ExitWhenTotalProfit: 0,
     ExitWhenTotalLoss: 0,
@@ -74,7 +71,7 @@ const StrategyBuilder = () => {
     IsChartOnOptionStrike: false,
     isBtSt: false,
     StrategyId: 0,
-    Interval: 1, // was 5, mapped to "1 min" now
+    Interval: 1,
     SL: 0,
     Target: 0,
     Privacy: "Private",
@@ -96,7 +93,7 @@ const StrategyBuilder = () => {
     BuyWhen: null,
     ShortWhen: null,
     IsContiniousTriggerCandle: false,
-    ChartType: 1, // default Candle (1 instead of 0)
+    ChartType: 1,
     EntryDaysBeforExpiry: 0,
     ExitDaysBeforExpiry: 4,
   });
@@ -110,25 +107,23 @@ const StrategyBuilder = () => {
   const [selectedInstrument, setSelectedInstrument] = useState("");
   const [selectedEquityInstruments, setSelectedEquityInstruments] = useState(
     []
-  ); // multi select (indicator + equity)
+  );
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
 
-  // UPDATED: restore full initial defaults on strategy change (no partial blank state)
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
     const baseDefaults = initialFormValuesRef.current;
     reset({
       ...baseDefaults,
       StrategyType: id,
-      StrategySegmentType: id === "time" ? "Option" : "", // keep consistent with time logic
+      StrategySegmentType: id === "time" ? "Option" : "",
     });
-    setSelectedInstrument(""); // back to initial
-    setSelectedEquityInstruments([]); // back to initial
+    setSelectedInstrument("");
+    setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([id]);
   };
 
   useEffect(() => {
-    // keep form field synced; StrategySegmentType already handled during reset for "time"
     setValue("StrategyType", selectedStrategyTypes[0] || "", {
       shouldDirty: true,
     });
@@ -231,15 +226,14 @@ const StrategyBuilder = () => {
 
   useEffect(() => {
     if (
-      selectedEquityInstruments.length > 0 && // we were in multi mode
-      selectedInstrument && // now a single instrument selected
-      selectedInstrument.SegmentType && // has segment
-      selectedInstrument.SegmentType !== "Equity" // switched away from Equity
+      selectedEquityInstruments.length > 0 &&
+      selectedInstrument &&
+      selectedInstrument.SegmentType &&
+      selectedInstrument.SegmentType !== "Equity"
     ) {
       const inst = selectedInstrument;
-      reset(); // reset full form
-      setSelectedEquityInstruments([]); // clear multi list
-      // reapply core fields & seed script list for new single instrument
+      reset();
+      setSelectedEquityInstruments([]);
       setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
       setValue("StrategySegmentType", inst.SegmentType, { shouldDirty: true });
       setValue(
@@ -266,8 +260,105 @@ const StrategyBuilder = () => {
   ]);
 
   const onSubmit = (values) => {
-    // REMOVE Leg1 from form values before payload
-    const { Leg1: _removeLeg1, ...valuesWithoutLeg1 } = values;
+    const validateAndNormalize = (raw) => {
+      const errors = [];
+      const clone = { ...raw };
+
+      const checkEqArray = (arr, label) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach((eq, idx) => {
+          if (
+            (eq.indicator?.indicatorId && eq.indicator.indicatorId !== 0) ||
+            (eq.comparerIndicator?.indicatorId &&
+              eq.comparerIndicator.indicatorId !== 0)
+          ) {
+            if (!eq.comparerId || eq.comparerId === 0)
+              errors.push(`${label} comparer missing (row ${idx + 1}).`);
+            if (!eq.indicator?.indicatorId)
+              errors.push(`${label} left indicator missing (row ${idx + 1}).`);
+            if (!eq.comparerIndicator?.indicatorId)
+              errors.push(`${label} right indicator missing (row ${idx + 1}).`);
+          }
+        });
+      };
+      checkEqArray(clone.LongEntryEquation, "Long Entry");
+      checkEqArray(clone.ShortEntryEquation, "Short Entry");
+      checkEqArray(clone.Long_ExitEquation, "Long Exit");
+      checkEqArray(clone.Short_ExitEquation, "Short Exit");
+
+      if (
+        !Array.isArray(clone.StrategyScriptList) ||
+        !clone.StrategyScriptList.length
+      ) {
+        errors.push("At least one instrument script is required.");
+      } else {
+        clone.StrategyScriptList = clone.StrategyScriptList.map(
+          (script, sIdx) => {
+            const sc = { ...script };
+            const fixStrikes = (list, sideLabel) =>
+              Array.isArray(list)
+                ? list.map((st, i) => {
+                    const stc = { ...st };
+                    if (!stc.Qty || +stc.Qty <= 0) {
+                      if (sc.Qty && +sc.Qty > 0) {
+                        stc.Qty = sc.Qty;
+                      } else {
+                        errors.push(
+                          `Strike Qty must be > 0 (script ${
+                            sIdx + 1
+                          }, ${sideLabel} row ${i + 1}).`
+                        );
+                      }
+                    }
+                    if (!stc.StopLoss || +stc.StopLoss <= 0) {
+                      stc.StopLoss = 30;
+                    }
+                    if (stc.reEntry?.isRentry) {
+                      if (
+                        stc.reEntry.TradeCycle === 0 ||
+                        stc.reEntry.TradeCycle === null ||
+                        stc.reEntry.TradeCycle === undefined
+                      ) {
+                        stc.reEntry = {
+                          ...stc.reEntry,
+                          TradeCycle: 1,
+                        };
+                        errors.push(
+                          `TradeCycle auto-set to 1 (script ${
+                            sIdx + 1
+                          }, ${sideLabel} row ${i + 1}).`
+                        );
+                      }
+                    }
+                    return stc;
+                  })
+                : [];
+            sc.LongEquationoptionStrikeList = fixStrikes(
+              sc.LongEquationoptionStrikeList,
+              "Long strike"
+            );
+            sc.ShortEquationoptionStrikeList = fixStrikes(
+              sc.ShortEquationoptionStrikeList,
+              "Short strike"
+            );
+            return sc;
+          }
+        );
+      }
+
+      return { errors, normalized: clone };
+    };
+
+    const { errors, normalized } = validateAndNormalize(values);
+    if (errors.length) {
+      console.warn(
+        "Strategy validation issues (non-blocking, server will validate):",
+        errors
+      );
+    }
+
+    const valuesNorm = normalized;
+
     const segmentMap = {
       Option: "OPTION",
       Equity: "NSE",
@@ -277,26 +368,24 @@ const StrategyBuilder = () => {
       MCX: "MCX",
     };
     const mappedSegment =
-      segmentMap[valuesWithoutLeg1.StrategySegmentType] ||
-      valuesWithoutLeg1.StrategySegmentType;
+      segmentMap[valuesNorm.StrategySegmentType] ||
+      valuesNorm.StrategySegmentType;
 
-    if (
-      valuesWithoutLeg1.StrategyType === "time" &&
-      mappedSegment !== "OPTION"
-    ) {
-      toast.error("Please select option category for BT-ST functionality");
-      return;
+    if (valuesNorm.StrategyType === "time" && mappedSegment !== "OPTION") {
+      console.warn(
+        "Time strategy with non-OPTION segment detected; proceeding without client-side block."
+      );
     }
 
     const executionType =
-      valuesWithoutLeg1.StrategyType === "time"
+      valuesNorm.StrategyType === "time"
         ? "tb"
-        : valuesWithoutLeg1.StrategyType === "indicator"
+        : valuesNorm.StrategyType === "indicator"
         ? "ib"
         : "pa";
 
-    const currentScripts = Array.isArray(valuesWithoutLeg1.StrategyScriptList)
-      ? valuesWithoutLeg1.StrategyScriptList
+    const currentScripts = Array.isArray(valuesNorm.StrategyScriptList)
+      ? valuesNorm.StrategyScriptList
       : [];
     const firstScript = currentScripts[0] || {};
     const lotSizeVal = selectedInstrument?.LotSize || firstScript.Qty || 0;
@@ -388,13 +477,13 @@ const StrategyBuilder = () => {
 
     const isIndicatorEquityMulti =
       selectedStrategyTypes[0] === "indicator" &&
-      valuesWithoutLeg1.StrategySegmentType === "Equity" &&
+      valuesNorm.StrategySegmentType === "Equity" &&
       selectedEquityInstruments.length > 0;
 
     let StrategyScriptListFinal;
 
     if (isIndicatorEquityMulti) {
-      StrategyScriptListFinal = valuesWithoutLeg1.StrategyScriptList;
+      StrategyScriptListFinal = valuesNorm.StrategyScriptList;
     } else {
       const enrichedScripts = [
         {
@@ -420,20 +509,19 @@ const StrategyBuilder = () => {
     };
 
     const payload = {
-      ...valuesWithoutLeg1, // use cleaned values
+      ...valuesNorm,
       StrategyType: null,
       StrategySegmentType:
-        valuesWithoutLeg1.StrategyType === "time" ? "OPTION" : mappedSegment,
+        valuesNorm.StrategyType === "time" ? "OPTION" : mappedSegment,
       StrategyExecutionType: executionType,
       StrategyScriptList: StrategyScriptListFinal,
-      TradeStopTime:
-        valuesWithoutLeg1.TradeStopTime || valuesWithoutLeg1.AutoSquareOffTime,
+      TradeStopTime: valuesNorm.TradeStopTime || valuesNorm.AutoSquareOffTime,
       EntryRule: null,
       ExitRule: null,
-      LongEntryEquation: toNullIfEmpty(valuesWithoutLeg1.LongEntryEquation),
-      ShortEntryEquation: toNullIfEmpty(valuesWithoutLeg1.ShortEntryEquation),
-      Long_ExitEquation: toNullIfEmpty(valuesWithoutLeg1.Long_ExitEquation),
-      Short_ExitEquation: toNullIfEmpty(valuesWithoutLeg1.Short_ExitEquation),
+      LongEntryEquation: toNullIfEmpty(valuesNorm.LongEntryEquation),
+      ShortEntryEquation: toNullIfEmpty(valuesNorm.ShortEntryEquation),
+      Long_ExitEquation: toNullIfEmpty(valuesNorm.Long_ExitEquation),
+      Short_ExitEquation: toNullIfEmpty(valuesNorm.Short_ExitEquation),
     };
 
     mutate(payload, {

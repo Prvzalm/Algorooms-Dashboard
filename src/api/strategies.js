@@ -30,15 +30,25 @@ export const userCreatedStrategies = async ({
 };
 
 export const createStrategy = async (payload) => {
-  const response = await axiosInstance.post(
-    "/strategies/CreateStrategy",
-    payload
-  );
-  const { Status, Message, Data } = response?.data || {};
-  if (Status !== "Success") {
-    throw new Error(Message || "Failed to create strategy");
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/CreateStrategy",
+      payload
+    );
+    const { Status, Message, Data } = response?.data || {};
+    if (Status !== "Success") {
+      throw new Error(Message || "Failed to create strategy");
+    }
+    return Data;
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Failed to create strategy";
+    throw new Error(serverMsg);
   }
-  return Data;
 };
 
 export const getIndicatorMaster = async () => {
