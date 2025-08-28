@@ -1,89 +1,104 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useCreateStrategyMutation } from "../../../hooks/strategyHooks";
 import { toast } from "react-toastify";
 import Leg1 from "./Leg1";
 import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
-import InstrumentModal from "./InstrumentModal";
 import EntryCondition from "./EntryCondition";
+import InstrumentModal from "./InstrumentModal";
 
 const StrategyBuilder = () => {
+  // NEW: single source of truth for initial defaults (page-load state)
+  const initialFormValuesRef = useRef({
+    StrategyName: "",
+    StrategyType: "time",
+    StrategySegmentType: "",
+    ProductType: 0,
+    TradeStartTime: "",
+    AutoSquareOffTime: "",
+    ActiveDays: [],
+    ExitWhenTotalProfit: 0,
+    ExitWhenTotalLoss: 0,
+    TrailProfitType: 0,
+    LockProfitAt: 0,
+    LockProfit: 0,
+    TrailProfitBy: 0,
+    Trail_SL: 0,
+    SquareOffAllOptionLegOnSl: false,
+    StrategyScriptList: [],
+    LongEntryEquation: [],
+    ShortEntryEquation: [],
+    Long_ExitEquation: [],
+    Short_ExitEquation: [],
+    IsChartOnOptionStrike: false,
+    isBtSt: false,
+    StrategyId: 0,
+    Interval: 5,
+    SL: 0,
+    Target: 0,
+    Privacy: "Private",
+    Copy_Allowed: false,
+    StrategyExecuterId: 0,
+    OrderType: 0,
+    TransactionType: 0,
+    TpSLType: 0,
+    MinimumCapital: 0,
+    ProfitTranches: 0,
+    strategyTag: "any",
+    RiskDescription: null,
+    subscriptionprice: 0,
+    subscriptiondays: 0,
+    MaxTrade: 0,
+    MaxDD: 0,
+    Roi: 0,
+    isTradeOnTriggerCandle: false,
+    BuyWhen: null,
+    ShortWhen: null,
+    IsContiniousTriggerCandle: false,
+    ChartType: 0,
+    EntryDaysBeforExpiry: 0,
+    ExitDaysBeforExpiry: 4,
+  });
+
   const methods = useForm({
-    defaultValues: {
-      StrategyName: "",
-      StrategyType: "time",
-      StrategySegmentType: "",
-      ProductType: 0,
-      TradeStartTime: "",
-      AutoSquareOffTime: "",
-      ActiveDays: [],
-      ExitWhenTotalProfit: 0,
-      ExitWhenTotalLoss: 0,
-      TrailProfitType: 0,
-      LockProfitAt: 0,
-      LockProfit: 0,
-      TrailProfitBy: 0,
-      Trail_SL: 0,
-      SquareOffAllOptionLegOnSl: false,
-      StrategyScriptList: [],
-      LongEntryEquation: [],
-      ShortEntryEquation: [],
-      Long_ExitEquation: [],
-      Short_ExitEquation: [],
-      IsChartOnOptionStrike: false,
-      isBtSt: false,
-      StrategyId: 0,
-      Interval: 5,
-      SL: 0,
-      Target: 0,
-      Privacy: "Private",
-      Copy_Allowed: false,
-      StrategyExecuterId: 0,
-      OrderType: 0,
-      TransactionType: 0,
-      TpSLType: 0,
-      MinimumCapital: 0,
-      ProfitTranches: 0,
-      strategyTag: "any",
-      RiskDescription: null,
-      subscriptionprice: 0,
-      subscriptiondays: 0,
-      MaxTrade: 0,
-      MaxDD: 0,
-      Roi: 0,
-      isTradeOnTriggerCandle: false,
-      BuyWhen: null,
-      ShortWhen: null,
-      IsContiniousTriggerCandle: false,
-      ChartType: 0,
-      EntryDaysBeforExpiry: 0,
-      ExitDaysBeforExpiry: 4,
-    },
+    defaultValues: initialFormValuesRef.current,
   });
   const { handleSubmit, setValue, reset, getValues } = methods;
   const { mutate, isPending } = useCreateStrategyMutation();
   const [selectedStrategyTypes, setSelectedStrategyTypes] = useState(["time"]);
   const [selectedInstrument, setSelectedInstrument] = useState("");
+  const [selectedEquityInstruments, setSelectedEquityInstruments] = useState(
+    []
+  ); // multi select (indicator + equity)
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
 
+  // UPDATED: restore full initial defaults on strategy change (no partial blank state)
   const handleStrategyChange = (id) => {
-    setSelectedStrategyTypes((prev) => {
-      if (prev.includes(id)) {
-        return prev;
-      }
-      return [id];
+    if (selectedStrategyTypes.includes(id)) return;
+    const baseDefaults = initialFormValuesRef.current;
+    reset({
+      ...baseDefaults,
+      StrategyType: id,
+      StrategySegmentType: id === "time" ? "Option" : "", // keep consistent with time logic
     });
+    setSelectedInstrument(""); // back to initial
+    setSelectedEquityInstruments([]); // back to initial
+    setSelectedStrategyTypes([id]);
   };
 
   useEffect(() => {
-    if (selectedStrategyTypes[0] === "time") {
-      setValue("StrategySegmentType", "Option", { shouldDirty: true });
-    }
+    // keep form field synced; StrategySegmentType already handled during reset for "time"
     setValue("StrategyType", selectedStrategyTypes[0] || "", {
       shouldDirty: true,
     });
-  }, [selectedStrategyTypes, setValue]);
+    if (selectedStrategyTypes[0] === "time") {
+      const currentSeg = methods.getValues("StrategySegmentType");
+      if (currentSeg !== "Option") {
+        setValue("StrategySegmentType", "Option", { shouldDirty: true });
+      }
+    }
+  }, [selectedStrategyTypes, setValue, methods]);
 
   useEffect(() => {
     if (selectedInstrument && selectedInstrument.SegmentType) {
@@ -110,6 +125,105 @@ const StrategyBuilder = () => {
       }
     }
   }, [selectedInstrument, setValue, getValues]);
+
+  useEffect(() => {
+    if (selectedStrategyTypes[0] !== "indicator") return;
+    if (!selectedEquityInstruments.length) return;
+
+    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
+
+    const buildDefaultStrike = (strikeType) => ({
+      TransactionType: "SELL",
+      StrikeType: strikeType,
+      StrikeValueType: 0,
+      StrikeValue: 0,
+      SLActionTypeId: "ONPRICE",
+      TargetActionTypeId: "ONPRICE",
+      isTrailSL: true,
+      IsRecursive: true,
+      IsMoveSLCTC: true,
+      isExitAll: true,
+      TargetType: "tgpr",
+      SLType: "slpr",
+      Target: 0,
+      StopLoss: 0,
+      Qty: 0,
+      isPrePunchSL: true,
+      IsPriceDiffrenceConstrant: true,
+      PriceDiffrenceConstrantValue: 0,
+      ExpiryType: "WEEKLY",
+      reEntry: {
+        isRentry: true,
+        RentryType: "REN",
+        TradeCycle: 0,
+        RentryActionTypeId: "ON_CLOSE",
+      },
+      waitNTrade: {
+        isWaitnTrade: true,
+        isPerPt: "wtpr_+",
+        typeId: "wtpr_+",
+        MovementValue: 0,
+      },
+      TrailingSL: {
+        TrailingType: "tslpr",
+        InstrumentMovementValue: 0,
+        TrailingValue: 0,
+      },
+      strikeTypeobj: {
+        type: "ATM",
+        StrikeValue: 0,
+        RangeFrom: 0,
+        RangeTo: 0,
+      },
+    });
+
+    const scripts = selectedEquityInstruments.map((ins) => ({
+      InstrumentToken: ins.InstrumentToken || "",
+      InstrumentName: ins.Name || "",
+      Qty: 1,
+      LongEquationoptionStrikeList: [buildDefaultStrike("PE")],
+      ShortEquationoptionStrikeList: [buildDefaultStrike("CE")],
+      StrikeTickValue: 0,
+    }));
+
+    setValue("StrategyScriptList", scripts, { shouldDirty: true });
+  }, [selectedEquityInstruments, selectedStrategyTypes, setValue]);
+
+  useEffect(() => {
+    if (
+      selectedEquityInstruments.length > 0 && // we were in multi mode
+      selectedInstrument && // now a single instrument selected
+      selectedInstrument.SegmentType && // has segment
+      selectedInstrument.SegmentType !== "Equity" // switched away from Equity
+    ) {
+      const inst = selectedInstrument;
+      reset(); // reset full form
+      setSelectedEquityInstruments([]); // clear multi list
+      // reapply core fields & seed script list for new single instrument
+      setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
+      setValue("StrategySegmentType", inst.SegmentType, { shouldDirty: true });
+      setValue(
+        "StrategyScriptList",
+        [
+          {
+            InstrumentToken: inst.InstrumentToken || "",
+            InstrumentName: inst.Name || "",
+            Qty: 0,
+            LongEquationoptionStrikeList: [],
+            ShortEquationoptionStrikeList: [],
+            StrikeTickValue: 0,
+          },
+        ],
+        { shouldDirty: true }
+      );
+    }
+  }, [
+    selectedInstrument,
+    selectedEquityInstruments,
+    reset,
+    setValue,
+    selectedStrategyTypes,
+  ]);
 
   const onSubmit = (values) => {
     const segmentMap = {
@@ -226,21 +340,33 @@ const StrategyBuilder = () => {
           }))
         : [buildDefaultStrike(lotSizeVal)];
 
-    const enrichedScripts = [
-      {
-        InstrumentToken:
-          selectedInstrument?.InstrumentToken ||
-          firstScript.InstrumentToken ||
-          "",
-        Qty: lotSizeVal,
-        LongEquationoptionStrikeList: longOptionStrikes,
-        ShortEquationoptionStrikeList: Array.isArray(
-          firstScript.ShortEquationoptionStrikeList
-        )
-          ? firstScript.ShortEquationoptionStrikeList
-          : [],
-      },
-    ];
+    const isIndicatorEquityMulti =
+      selectedStrategyTypes[0] === "indicator" &&
+      values.StrategySegmentType === "Equity" &&
+      selectedEquityInstruments.length > 0;
+
+    let StrategyScriptListFinal;
+
+    if (isIndicatorEquityMulti) {
+      StrategyScriptListFinal = values.StrategyScriptList;
+    } else {
+      const enrichedScripts = [
+        {
+          InstrumentToken:
+            selectedInstrument?.InstrumentToken ||
+            firstScript.InstrumentToken ||
+            "",
+          Qty: lotSizeVal,
+          LongEquationoptionStrikeList: longOptionStrikes,
+          ShortEquationoptionStrikeList: Array.isArray(
+            firstScript.ShortEquationoptionStrikeList
+          )
+            ? firstScript.ShortEquationoptionStrikeList
+            : [],
+        },
+      ];
+      StrategyScriptListFinal = enrichedScripts;
+    }
 
     const toNullIfEmpty = (val) => {
       if (Array.isArray(val)) return val.length > 0 ? val : null;
@@ -253,7 +379,7 @@ const StrategyBuilder = () => {
       StrategySegmentType:
         values.StrategyType === "time" ? "OPTION" : mappedSegment,
       StrategyExecutionType: executionType,
-      StrategyScriptList: enrichedScripts,
+      StrategyScriptList: StrategyScriptListFinal,
       TradeStopTime: values.TradeStopTime || values.AutoSquareOffTime,
       EntryRule: null,
       ExitRule: null,
@@ -273,6 +399,11 @@ const StrategyBuilder = () => {
       },
     });
   };
+
+  const hideLeg1 =
+    selectedStrategyTypes[0] === "indicator" &&
+    (selectedEquityInstruments.length > 0 ||
+      (selectedInstrument && selectedInstrument.SegmentType === "Equity"));
 
   return (
     <FormProvider {...methods}>
@@ -315,15 +446,52 @@ const StrategyBuilder = () => {
                   onClick={() => setShowInstrumentModal(true)}
                 >
                   <span className="text-gray-400 dark:text-gray-500 text-xl">
-                    + Add
+                    {selectedInstrument || selectedEquityInstruments.length
+                      ? "Change"
+                      : "+ Add"}
                   </span>
                 </div>
 
-                {selectedInstrument && (
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs break-words dark:bg-[#1E2027] dark:text-blue-400">
-                      {selectedInstrument?.Name || ""}
-                    </span>
+                {selectedInstrument && !selectedEquityInstruments.length && (
+                  <div className="mt-2 border rounded-lg p-3 text-xs flex flex-col gap-1 dark:bg-[#1E2027] dark:border-[#1E2027]">
+                    <div>
+                      <span className="font-semibold">Name: </span>
+                      {selectedInstrument.Name}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Lot Size: </span>
+                      {selectedInstrument.LotSize || 0}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Exchange: </span>
+                      {selectedInstrument.Exchange ||
+                        selectedInstrument.Segment ||
+                        "—"}
+                    </div>
+                  </div>
+                )}
+
+                {selectedEquityInstruments.length > 0 && (
+                  <div className="mt-2 space-y-3">
+                    {selectedEquityInstruments.map((ins) => (
+                      <div
+                        key={ins.InstrumentToken}
+                        className="border rounded-lg p-3 text-xs flex flex-col gap-1 dark:bg-[#1E2027] dark:border-[#1E2027]"
+                      >
+                        <div>
+                          <span className="font-semibold">Name: </span>
+                          {ins.Name}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Lot Size: </span>
+                          {ins.LotSize || 0}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Exchange: </span>
+                          {ins.Exchange || ins.Segment || "—"}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -332,6 +500,9 @@ const StrategyBuilder = () => {
                 onClose={() => setShowInstrumentModal(false)}
                 selected={selectedInstrument}
                 setSelected={setSelectedInstrument}
+                selectedList={selectedEquityInstruments}
+                setSelectedList={setSelectedEquityInstruments}
+                selectedStrategyTypes={selectedStrategyTypes}
               />
             </div>
 
@@ -339,7 +510,12 @@ const StrategyBuilder = () => {
           </div>
 
           <div className="overflow-x-hidden">
-            <Leg1 selectedStrategyTypes={selectedStrategyTypes} />
+            {!hideLeg1 && (
+              <Leg1
+                selectedStrategyTypes={selectedStrategyTypes}
+                selectedInstrument={selectedInstrument}
+              />
+            )}
           </div>
         </div>
 

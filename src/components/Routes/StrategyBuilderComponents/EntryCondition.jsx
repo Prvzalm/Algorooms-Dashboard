@@ -49,8 +49,12 @@ const EntryCondition = () => {
     setValue("LongEntryEquation", longEq, { shouldDirty: true });
     setValue("ShortEntryEquation", shortEq, { shouldDirty: true });
     setValue("IsChartOnOptionStrike", useCombinedChart, { shouldDirty: true });
-    setValue("Long_ExitEquation", exitConditions ? longEq : [], { shouldDirty: true });
-    setValue("Short_ExitEquation", exitConditions ? shortEq : [], { shouldDirty: true });
+    setValue("Long_ExitEquation", exitConditions ? longEq : [], {
+      shouldDirty: true,
+    });
+    setValue("Short_ExitEquation", exitConditions ? shortEq : [], {
+      shouldDirty: true,
+    });
   }, [conditions, useCombinedChart, exitConditions, setValue]);
 
   const removeCondition = (index) => {
@@ -142,6 +146,7 @@ const EntryCondition = () => {
 
           {conditions.length > 1 && (
             <button
+              type="button"
               onClick={() => removeCondition(idx)}
               className="absolute right-4 top-4 text-red-400 hover:text-red-600"
             >
@@ -152,10 +157,18 @@ const EntryCondition = () => {
           {idx < conditions.length - 1 && (
             <div className="text-center mt-4">
               <div className="inline-flex rounded-md border border-gray-300">
-                <button className="px-4 py-1 bg-blue-500 text-white text-xs rounded-l">
+                <button
+                  type="button"
+                  className="px-4 py-1 bg-blue-500 text-white text-xs rounded-l"
+                >
                   AND
                 </button>
-                <button className="px-4 py-1 text-gray-500 text-xs">OR</button>
+                <button
+                  type="button"
+                  className="px-4 py-1 text-gray-500 text-xs"
+                >
+                  OR
+                </button>
               </div>
             </div>
           )}
@@ -174,6 +187,7 @@ const EntryCondition = () => {
 
       <div className="mt-4 text-right">
         <button
+          type="button"
           onClick={addCondition}
           className="bg-[#0096FF] text-white text-sm px-4 py-3 rounded-lg hover:bg-blue-600"
         >

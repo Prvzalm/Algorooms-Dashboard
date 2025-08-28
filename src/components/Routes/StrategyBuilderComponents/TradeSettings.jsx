@@ -34,6 +34,7 @@ const TradeSettings = () => {
           <div className="flex space-x-2 overflow-x-auto">
             {transactionOptions.map((option) => (
               <button
+                type="button"
                 key={option}
                 onClick={() => setTransactionType(option)}
                 className={`${baseBtn} ${
@@ -55,6 +56,7 @@ const TradeSettings = () => {
           <div className="flex space-x-2 overflow-x-auto">
             {chartTypes.map((type) => (
               <button
+                type="button"
                 key={type}
                 onClick={() => setChartType(type)}
                 className={`${baseBtn} ${
@@ -77,6 +79,7 @@ const TradeSettings = () => {
         <div className="flex gap-2 overflow-x-auto w-full">
           {intervals.map((intvl) => (
             <button
+              type="button"
               key={intvl}
               onClick={() => setInterval(intvl)}
               className={`${baseBtn} ${

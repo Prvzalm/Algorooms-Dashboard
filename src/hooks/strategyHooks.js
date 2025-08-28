@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { searchInstrument, userCreatedStrategies, createStrategy } from "../api/strategies";
+import {
+  searchInstrument,
+  userCreatedStrategies,
+  createStrategy,
+} from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
 export const useSearchInstrument = (segmentType, query, enabled = true) => {
   return useQuery({
     queryKey: ["search-instrument", segmentType, query],
     queryFn: () => searchInstrument({ segmentType, query }),
-    enabled: enabled && !!query,
+    enabled: enabled,
     staleTime: 5 * 60 * 1000,
   });
 };

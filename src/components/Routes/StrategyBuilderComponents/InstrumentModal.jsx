@@ -4,20 +4,63 @@ import { useSearchInstrument } from "../../../hooks/strategyHooks";
 
 const segmentTypes = ["Option", "Equity", "Future", "Indices", "CDS", "MCX"];
 
-const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
+const InstrumentModal = ({
+  visible,
+  onClose,
+  selected,
+  setSelected,
+  selectedList = [],
+  setSelectedList = () => {},
+  selectedStrategyTypes = [],
+}) => {
   const modalRef = useRef(null);
-  const [searchQuery, setSearchQuery] = useState("nif");
+  // send a single space when input is empty so API returns "all" instruments
+  const [searchQuery, setSearchQuery] = useState("");
   const [segmentType, setSegmentType] = useState("Option");
 
   const {
     data: instruments = [],
     isLoading,
     isError,
-  } = useSearchInstrument(
-    segmentType,
-    searchQuery,
-    visible && searchQuery.length > 0
-  );
+  } = useSearchInstrument(segmentType, searchQuery, visible);
+
+  const isDisabledType = (type) => {
+    const st = selectedStrategyTypes?.[0];
+    if (st === "time") return type !== "Option";
+    if (st === "indicator") return type === "CDS" || type === "MCX";
+    return false;
+  };
+
+  const multiMode =
+    selectedStrategyTypes?.[0] === "indicator" && segmentType === "Equity";
+
+  const toggleSelect = (item) => {
+    if (multiMode) {
+      setSelected(""); // clear single
+      const exists = selectedList.some(
+        (i) => i.InstrumentToken === item.InstrumentToken
+      );
+      if (exists) {
+        setSelectedList(
+          selectedList.filter((i) => i.InstrumentToken !== item.InstrumentToken)
+        );
+      } else {
+        setSelectedList([
+          ...selectedList,
+          { ...item, SegmentType: segmentType },
+        ]);
+      }
+    } else {
+      setSelected({ ...item, SegmentType: segmentType });
+    }
+  };
+
+  // if strategy type changes and current segment is not allowed, switch to Option
+  useEffect(() => {
+    if (isDisabledType(segmentType)) {
+      setSegmentType("Option");
+    }
+  }, [selectedStrategyTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -46,7 +89,10 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) =>
+              // if user clears input (or only spaces), send single space to fetch all
+              setSearchQuery(e.target.value)
+            }
             placeholder="Search scripts: i.e. State Bank of India, Banknifty, Crudeoil"
             className="bg-transparent outline-none flex-1 text-sm text-gray-700 dark:text-white placeholder:text-gray-400"
           />
@@ -54,14 +100,20 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
 
         <div className="space-x-3 text-sm mb-2 flex flex-wrap">
           {segmentTypes.map((type) => (
-            <label key={type} className="cursor-pointer">
+            <label
+              key={type}
+              className={`cursor-pointer ${
+                isDisabledType(type) ? "opacity-50" : ""
+              }`}
+            >
               <input
                 type="radio"
                 name="type"
                 value={type}
                 checked={segmentType === type}
-                onChange={() => setSegmentType(type)}
+                onChange={() => !isDisabledType(type) && setSegmentType(type)}
                 className="mr-1"
+                disabled={isDisabledType(type)}
               />
               {type}
             </label>
@@ -86,20 +138,27 @@ const InstrumentModal = ({ visible, onClose, selected, setSelected }) => {
               No instruments found.
             </p>
           ) : (
-            instruments.map((item, i) => (
-              <button
-                type="button"
-                key={item.InstrumentToken}
-                onClick={() => setSelected({ ...item, SegmentType: segmentType })}
-                className={`border rounded-lg py-2 text-sm font-medium ${
-                  selected?.Name === item.Name
-                    ? "bg-blue-100 text-[#0096FF] dark:bg-[#2A2D34] dark:text-blue-400"
-                    : "text-gray-700 hover:bg-blue-50 dark:text-white dark:hover:bg-[#2A2D34]"
-                } dark:border-[#1E2027]`}
-              >
-                {item.Name}
-              </button>
-            ))
+            instruments.map((item) => {
+              const isActive = multiMode
+                ? selectedList.some(
+                    (i) => i.InstrumentToken === item.InstrumentToken
+                  )
+                : selected?.Name === item.Name;
+              return (
+                <button
+                  type="button"
+                  key={item.InstrumentToken}
+                  onClick={() => toggleSelect(item)}
+                  className={`border rounded-lg py-2 text-sm font-medium ${
+                    isActive
+                      ? "bg-blue-100 text-[#0096FF] dark:bg-[#2A2D34] dark:text-blue-400"
+                      : "text-gray-700 hover:bg-blue-50 dark:text-white dark:hover:bg-[#2A2D34]"
+                  } dark:border-[#1E2027]`}
+                >
+                  {item.Name}
+                </button>
+              );
+            })
           )}
         </div>
 
