@@ -29,14 +29,52 @@ const StrategyBuilder = () => {
     Trail_SL: 0,
     SquareOffAllOptionLegOnSl: false,
     StrategyScriptList: [],
-    LongEntryEquation: [],
-    ShortEntryEquation: [],
+    LongEntryEquation: [
+      {
+        comparerId: 0,
+        comparerName: "string",
+        OperatorId: 0,
+        OperatorName: "string",
+        indicator: {
+          indicatorId: 0,
+          IndicatorParamList: [
+            { ParamId: "string", IndicatorParamValue: "string" },
+          ],
+        },
+        comparerIndicator: {
+          indicatorId: 0,
+          IndicatorParamList: [
+            { ParamId: "string", IndicatorParamValue: "string" },
+          ],
+        },
+      },
+    ],
+    ShortEntryEquation: [
+      {
+        comparerId: 0,
+        comparerName: "string",
+        OperatorId: 0,
+        OperatorName: "string",
+        indicator: {
+          indicatorId: 0,
+          IndicatorParamList: [
+            { ParamId: "string", IndicatorParamValue: "string" },
+          ],
+        },
+        comparerIndicator: {
+          indicatorId: 0,
+          IndicatorParamList: [
+            { ParamId: "string", IndicatorParamValue: "string" },
+          ],
+        },
+      },
+    ],
     Long_ExitEquation: [],
     Short_ExitEquation: [],
     IsChartOnOptionStrike: false,
     isBtSt: false,
     StrategyId: 0,
-    Interval: 5,
+    Interval: 1, // was 5, mapped to "1 min" now
     SL: 0,
     Target: 0,
     Privacy: "Private",
@@ -58,7 +96,7 @@ const StrategyBuilder = () => {
     BuyWhen: null,
     ShortWhen: null,
     IsContiniousTriggerCandle: false,
-    ChartType: 0,
+    ChartType: 1, // default Candle (1 instead of 0)
     EntryDaysBeforExpiry: 0,
     ExitDaysBeforExpiry: 4,
   });

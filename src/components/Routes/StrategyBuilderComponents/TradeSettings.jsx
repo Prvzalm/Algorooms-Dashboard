@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiInfo } from "react-icons/fi";
+import { useFormContext } from "react-hook-form";
 
 const transactionOptions = ["Both Side", "Only Long", "Only Shot"];
 const chartTypes = ["Candle", "Heikin Ashi"];
@@ -14,9 +15,41 @@ const intervals = [
 ];
 
 const TradeSettings = () => {
+  const { setValue } = useFormContext();
   const [transactionType, setTransactionType] = useState("Both Side");
   const [chartType, setChartType] = useState("Candle");
   const [interval, setInterval] = useState("1 min");
+
+  // mapping helpers
+  const transactionMap = {
+    "Both Side": 0,
+    "Only Long": 1,
+    "Only Shot": 2,
+  };
+  const chartTypeMap = {
+    Candle: 1,
+    "Heikin Ashi": 2,
+  };
+  const intervalMap = (val) => {
+    if (val === "1H") return 60;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // push to form whenever user changes
+  useEffect(() => {
+    setValue("TransactionType", transactionMap[transactionType], {
+      shouldDirty: true,
+    });
+  }, [transactionType, setValue]);
+
+  useEffect(() => {
+    setValue("ChartType", chartTypeMap[chartType], { shouldDirty: true });
+  }, [chartType, setValue]);
+
+  useEffect(() => {
+    setValue("Interval", intervalMap(interval), { shouldDirty: true });
+  }, [interval, setValue]);
 
   const baseBtn =
     "px-3 py-2 rounded border text-xs transition whitespace-nowrap";

@@ -40,3 +40,15 @@ export const createStrategy = async (payload) => {
   }
   return Data;
 };
+
+export const getIndicatorMaster = async () => {
+  const response = await axiosInstance.post(
+    "/strategies/GetIndicatorMaster",
+    {}
+  );
+  const { Status, Data, Message } = response?.data || {};
+  if (Status !== "Success") {
+    throw new Error(Message || "Failed to load indicators");
+  }
+  return Data; // { Indicators, PriceActionIndicators, Comparers, Intervals }
+};

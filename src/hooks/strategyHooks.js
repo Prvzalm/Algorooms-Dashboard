@@ -3,6 +3,7 @@ import {
   searchInstrument,
   userCreatedStrategies,
   createStrategy,
+  getIndicatorMaster,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -52,5 +53,14 @@ export const useCreateStrategyMutation = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["strategies"] });
     },
+  });
+};
+
+export const useIndicatorMaster = (enabled = true) => {
+  return useQuery({
+    queryKey: ["indicator-master"],
+    queryFn: () => getIndicatorMaster(),
+    enabled,
+    staleTime: 10 * 60 * 1000,
   });
 };
