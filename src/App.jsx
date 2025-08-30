@@ -21,6 +21,7 @@ import Auth from "./components/Auth";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import LivePCRGauge from "./components/LivePCR";
+import ConnectBroker from "./components/Routes/Broker/ConnectBroker";
 
 const ProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
@@ -125,6 +126,7 @@ function App() {
                     />
                     <Route path="/broker" element={<BrokerSection />} />
                     <Route path="/add-broker" element={<AddBrokerPage />} />
+                    <Route path="/connect-broker" element={<ConnectBroker />} />
                   </Routes>
                 </main>
               </div>

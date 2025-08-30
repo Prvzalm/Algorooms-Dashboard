@@ -141,7 +141,23 @@ const BrokerCard = ({ brokers = [] }) => {
         <div className="flex flex-col items-center text-sm space-y-1">
           <span className="text-[#718EBF] dark:text-gray-400">Terminal</span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" disabled />
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              onChange={() => {
+                if (!selectedBroker?.loginUrl) return;
+                localStorage.setItem(
+                  "selected-broker-client-id",
+                  selectedBroker.code
+                );
+                // Save expected query param key provided by API (fallback handled earlier)
+                localStorage.setItem(
+                  "broker-auth-query-key",
+                  selectedBroker.brokerAuthQueryString
+                );
+                window.location.href = selectedBroker.loginUrl;
+              }}
+            />
             <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
           </label>
         </div>

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axiosInstance from "../api/axiosInstance";
-import { startStopTradeEngine } from "../api/brokerApi";
+import { startStopTradeEngine, updateBrokerAuthCode } from "../api/brokerApi";
 
 export const useMasterBrokerData = () => {
   return useQuery({
@@ -11,6 +11,30 @@ export const useMasterBrokerData = () => {
       return res.data?.Data || [];
     },
     staleTime: 1000 * 60 * 2,
+  });
+};
+
+export const useUpdateBrokerAuthCode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload) => {
+      const res = await updateBrokerAuthCode(payload);
+      return res;
+    },
+    onSuccess: (data) => {
+      if (data?.Status && data.Status.toLowerCase() === "error") {
+        toast.error(data?.Message || "Auth update failed");
+      } else {
+        toast.success(data?.Message || "Broker connected");
+      }
+      queryClient.invalidateQueries(["user-broker-data"]);
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.Message || error?.message || "Request failed";
+      toast.error(msg);
+    },
   });
 };
 

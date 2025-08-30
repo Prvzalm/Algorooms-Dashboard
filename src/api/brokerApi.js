@@ -12,3 +12,11 @@ export const startStopTradeEngine = async (payload) => {
   );
   return response.data;
 };
+
+export const updateBrokerAuthCode = async (payload) => {
+  const response = await axiosInstance.post(
+    "/Broker/UpdateBrokerAuthCode",
+    payload
+  );
+  return response.data;
+};
