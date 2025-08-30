@@ -508,7 +508,7 @@ const StrategyBuilder = () => {
       return val === "" ? null : val ?? null;
     };
 
-    const payload = {
+    const payloadBase = {
       ...valuesNorm,
       StrategyType: null,
       StrategySegmentType:
@@ -518,11 +518,24 @@ const StrategyBuilder = () => {
       TradeStopTime: valuesNorm.TradeStopTime || valuesNorm.AutoSquareOffTime,
       EntryRule: null,
       ExitRule: null,
-      LongEntryEquation: toNullIfEmpty(valuesNorm.LongEntryEquation),
-      ShortEntryEquation: toNullIfEmpty(valuesNorm.ShortEntryEquation),
       Long_ExitEquation: toNullIfEmpty(valuesNorm.Long_ExitEquation),
       Short_ExitEquation: toNullIfEmpty(valuesNorm.Short_ExitEquation),
     };
+
+    // Include entry equations only for indicator strategies
+    if (valuesNorm.StrategyType === "indicator") {
+      payloadBase.LongEntryEquation = toNullIfEmpty(
+        valuesNorm.LongEntryEquation
+      );
+      payloadBase.ShortEntryEquation = toNullIfEmpty(
+        valuesNorm.ShortEntryEquation
+      );
+    } else {
+      payloadBase.LongEntryEquation = null;
+      payloadBase.ShortEntryEquation = null;
+    }
+
+    const payload = payloadBase;
 
     mutate(payload, {
       onSuccess: () => {
