@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 
-const DaywiseBreakdown = () => {
+const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
   const cellRef = useRef();
   const [alignLeft, setAlignLeft] = useState(false);
 
@@ -16,62 +16,27 @@ const DaywiseBreakdown = () => {
   const formatAmount = (amt) =>
     amt > 0 ? `+${amt.toFixed(2)}` : amt.toFixed(2);
 
-  const generateDaywiseDataWithActualDates = () => {
-    const startDate = new Date(new Date().getFullYear(), 0, 1);
-    const result = [];
-
-    for (let month = 0; month < 12; month++) {
-      const date = new Date(startDate);
-      date.setMonth(month);
-
-      const monthName = date.toLocaleDateString("en-US", {
+  const data = useMemo(() => {
+    if (!dictionaryOfDateWisePnl) return [];
+    // dictionary keys: YYYY-MM-DD => pnl
+    const grouped = {};
+    Object.entries(dictionaryOfDateWisePnl).forEach(([dateStr, pnl]) => {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return;
+      const monthKey = `${d.toLocaleDateString("en-US", {
         month: "short",
-        year: "numeric",
+      })} ${d.getFullYear()}`;
+      if (!grouped[monthKey])
+        grouped[monthKey] = { date: monthKey, pnl: 0, grid: [] };
+      grouped[monthKey].pnl += pnl;
+      grouped[monthKey].grid.push({
+        type: pnl > 0 ? "profit" : pnl < 0 ? "loss" : "inactive",
+        amount: pnl,
+        date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
       });
-
-      const dayData = {
-        date: monthName,
-        pnl: 0,
-        grid: [],
-      };
-
-      for (let i = 0; i < 25; i++) {
-        const tradeDate = new Date(date);
-        tradeDate.setDate(i + 1);
-
-        const rand = Math.random();
-        let type = "inactive";
-        let amount = 0;
-
-        if (rand > 0.7) {
-          type = "profit";
-          amount = Math.floor(Math.random() * 2000 + 500);
-        } else if (rand > 0.4) {
-          type = "loss";
-          amount = -Math.floor(Math.random() * 1500 + 300);
-        }
-
-        if (type !== "inactive") {
-          dayData.pnl += amount;
-        }
-
-        dayData.grid.push({
-          type,
-          amount,
-          date: tradeDate.toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-          }),
-        });
-      }
-
-      result.push(dayData);
-    }
-
-    return result;
-  };
-
-  const data = generateDaywiseDataWithActualDates();
+    });
+    return Object.values(grouped);
+  }, [dictionaryOfDateWisePnl]);
 
   return (
     <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8">

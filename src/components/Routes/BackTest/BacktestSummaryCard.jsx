@@ -24,25 +24,42 @@ const StatRow = ({ label, value, percentage, badgeText, positive }) => (
   </div>
 );
 
-const BacktestSummaryCard = () => {
+const BacktestSummaryCard = ({ overall }) => {
+  const winDayPer = overall?.WinDayPer ?? 0;
+  const loseDayPer = overall?.LoseDayPer ?? 0;
+  const totalTradedDays = overall?.TotalTradedDays ?? 0;
+  const winDays = overall?.WinDays ?? 0;
+  const loseDays = overall?.LoseDays ?? 0;
+  const totalTrades = overall?.TotalTrades ?? 0;
+  const winTrades = overall?.WinTrades ?? 0;
+  const loseTrades = overall?.LoseTrades ?? 0;
+  const winTradesPer = overall?.WinTradesPer ?? 0;
+  const loseTradesPer = overall?.LoseTradesPer ?? 0;
+  const maxProfit = overall?.MaxProfit ?? 0;
+  const maxLoss = overall?.MaxLoss ?? 0;
+  const winStreak = overall?.WinStreak ?? 0;
+  const loseStreak = overall?.LoseStreak ?? 0;
+  const avgProfitPerDay = overall?.AverageProfitPerDay ?? 0;
+  const avgLossPerDay = overall?.AverageLossPerDay ?? 0;
+  const maxDrawDown = overall?.CommulitiveDrawDown ?? 0;
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-medium mb-8">
       <div className="rounded-2xl border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] p-4">
         <div className="flex border-b justify-between items-center text-gray-500 dark:text-gray-400 pb-3">
           Trading Days
-          <div className="text-2xl font-semibold">13</div>
+          <div className="text-2xl font-semibold">{totalTradedDays}</div>
         </div>
         <div className="flex justify-between mt-5">
           <StatRow
             label="Win Days"
-            value="53.85%"
-            badgeText="7 vs 13"
-            positive
+            value={`${winDayPer?.toFixed(2)}%`}
+            badgeText={`${winDays} vs ${totalTradedDays}`}
+            positive={winDayPer >= loseDayPer}
           />
           <StatRow
             label="Loss Days"
-            value="46.15%"
-            badgeText="7 vs 13"
+            value={`${loseDayPer?.toFixed(2)}%`}
+            badgeText={`${loseDays} vs ${totalTradedDays}`}
             positive={false}
           />
         </div>
@@ -50,19 +67,20 @@ const BacktestSummaryCard = () => {
 
       <div className="rounded-2xl border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] p-4">
         <div className="flex border-b justify-between items-center text-gray-500 dark:text-gray-400 pb-3">
-          Total Trades <div className="text-2xl font-semibold">48</div>
+          Total Trades{" "}
+          <div className="text-2xl font-semibold">{totalTrades}</div>
         </div>
         <div className="flex justify-between mt-5">
           <StatRow
             label="Win Trades"
-            value="53.85%"
-            badgeText="7 vs 13"
-            positive
+            value={`${winTradesPer?.toFixed(2)}%`}
+            badgeText={`${winTrades} vs ${totalTrades}`}
+            positive={winTradesPer >= loseTradesPer}
           />
           <StatRow
             label="Loss Trades"
-            value="46.15%"
-            badgeText="7 vs 13"
+            value={`${loseTradesPer?.toFixed(2)}%`}
+            badgeText={`${loseTrades} vs ${totalTrades}`}
             positive={false}
           />
         </div>
@@ -73,24 +91,24 @@ const BacktestSummaryCard = () => {
           <div className="text-gray-500 dark:text-gray-400">Streak</div>
           <div className="text-left">
             <p>
-              Win <b className="text-green-500">3</b>
+              Win <b className="text-green-500">{winStreak}</b>
             </p>
             <p>
-              Loss <b className="text-red-500">4</b>
+              Loss <b className="text-red-500">{loseStreak}</b>
             </p>
           </div>
         </div>
         <div className="flex justify-between mt-5">
           <StatRow
             label="Max Profit"
-            value="53.85%"
-            badgeText="7 vs 13"
+            value={`₹ ${maxProfit.toLocaleString()}`}
+            badgeText={""}
             positive
           />
           <StatRow
             label="Max Loss"
-            value="2.50K"
-            badgeText="7 vs 13"
+            value={`₹ ${Math.abs(maxLoss).toLocaleString()}`}
+            badgeText={""}
             positive={false}
           />
         </div>
@@ -103,10 +121,11 @@ const BacktestSummaryCard = () => {
           </div>
           <div className="text-left">
             <p>
-              Profit <b className="text-green-500">1234.00</b>
+              Profit{" "}
+              <b className="text-green-500">{avgProfitPerDay.toFixed(2)}</b>
             </p>
             <p>
-              Loss <b className="text-red-500">-1599.21</b>
+              Loss <b className="text-red-500">{avgLossPerDay.toFixed(2)}</b>
             </p>
           </div>
         </div>
@@ -115,11 +134,13 @@ const BacktestSummaryCard = () => {
             <p className="text-gray-500 dark:text-gray-400 mb-1">
               Max Drawdown
             </p>
-            <p className="text-red-500 text-sm">From Park</p>
+            <p className="text-red-500 text-sm">From Peak</p>
           </div>
           <div className="mt-2 flex justify-center">
             <div className="w-20 h-20 rounded-full border-4 border-red-400 flex items-center justify-center text-red-500 font-bold text-lg">
-              5.59K
+              {Math.abs(maxDrawDown) > 1000
+                ? (Math.abs(maxDrawDown) / 1000).toFixed(2) + "K"
+                : Math.abs(maxDrawDown).toFixed(0)}
             </div>
           </div>
         </div>

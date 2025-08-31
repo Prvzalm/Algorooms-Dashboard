@@ -10,6 +10,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      // Proxy for backtest service to avoid CORS in dev
+      "/btapi": {
+        target: "https://backtest.algorooms.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/btapi/, ""),
+      },
     },
   },
 });

@@ -1,34 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { FiChevronDown, FiChevronUp, FiPrinter } from "react-icons/fi";
 
-const mockData = [
-  {
-    date: "Jun 10 2025",
-    totalPL: 2000,
-    trades: [
-      {
-        symbol: "BANKNIFTY25JUN88000CE",
-        qty: 35,
-        entry: { price: 151.5, time: "9:22:00 AM" },
-        exit: { price: 121.5, time: "10:20:00 AM" },
-        pl: 1379,
-        type: "SELL",
-        exitType: "SHORT TARGET",
-      },
-      {
-        symbol: "BANKNIFTY25JUN88000CE",
-        qty: 35,
-        entry: { price: 151.5, time: "9:22:00 AM" },
-        exit: { price: 121.5, time: "10:20:00 AM" },
-        pl: 1379,
-        type: "SELL",
-        exitType: "SHORT TARGET",
-      },
-    ],
-  },
-];
-
-const TransactionDetails = () => {
+const TransactionDetails = ({ dateWiseDetailList }) => {
   const [expandedDate, setExpandedDate] = useState(null);
 
   const toggleExpand = (date) => {
@@ -46,7 +19,7 @@ const TransactionDetails = () => {
         </button>
       </div>
 
-      {mockData.map((item, index) => (
+      {dateWiseDetailList?.map((item, index) => (
         <div
           key={index}
           className="rounded-2xl border border-gray-200 dark:border-[#2D2F36] mb-6 overflow-hidden"
@@ -54,22 +27,32 @@ const TransactionDetails = () => {
           {/* Date Header */}
           <div
             className="flex justify-between items-center px-4 py-4 cursor-pointer"
-            onClick={() => toggleExpand(item.date)}
+            onClick={() => toggleExpand(item.Date)}
           >
             <span className="text-gray-500 dark:text-gray-400">
-              {item.date}
+              {new Date(item.Date).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Profit/Loss</span>
-              <span className="bg-green-100 text-green-600 font-semibold px-3 py-1 rounded-full text-sm">
-                {item.totalPL}
+              <span
+                className={`${
+                  item.dateWiseSummary?.TotatProfitLoss >= 0
+                    ? "bg-green-100 text-green-600"
+                    : "bg-red-100 text-red-600"
+                } font-semibold px-3 py-1 rounded-full text-sm`}
+              >
+                {item.dateWiseSummary?.TotatProfitLoss?.toLocaleString()}
               </span>
-              {expandedDate === item.date ? <FiChevronUp /> : <FiChevronDown />}
+              {expandedDate === item.Date ? <FiChevronUp /> : <FiChevronDown />}
             </div>
           </div>
 
           {/* Trades Table */}
-          {expandedDate === item.date && (
+          {expandedDate === item.Date && (
             <div className="border-t border-gray-200 dark:border-[#2D2F36] p-4 overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="text-left text-gray-500">
@@ -84,31 +67,37 @@ const TransactionDetails = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {item.trades.map((trade, i) => (
+                  {item.ScriptWiseTransactionDetailList?.map((trade, i) => (
                     <tr
                       key={i}
                       className="text-gray-700 dark:text-white border-t"
                     >
-                      <td className="py-2 pr-4">{trade.symbol}</td>
-                      <td className="py-2 pr-4">{trade.qty}</td>
+                      <td className="py-2 pr-4">{trade.TradingSymbol}</td>
+                      <td className="py-2 pr-4">{trade.Qty}</td>
                       <td className="py-2 pr-4">
-                        Price: {trade.entry.price}
+                        Price: {trade.EntryPrice}
                         <br />
-                        Time: {trade.entry.time}
+                        Time:{" "}
+                        {new Date(trade.EntryTimeStamp).toLocaleTimeString()}
                       </td>
                       <td className="py-2 pr-4">
-                        Price: {trade.exit.price}
+                        Price: {trade.ExitPrice}
                         <br />
-                        Time: {trade.exit.time}
+                        Time:{" "}
+                        {new Date(trade.ExitTimeStamp).toLocaleTimeString()}
                       </td>
-                      <td className="py-2 pr-4 text-green-600 font-medium">
-                        {trade.pl.toLocaleString()}
+                      <td
+                        className={`py-2 pr-4 font-medium ${
+                          trade.PNL >= 0 ? "text-green-600" : "text-red-500"
+                        }`}
+                      >
+                        {trade.PNL.toLocaleString()}
                       </td>
                       <td className="py-2 pr-4 text-red-500 font-semibold">
-                        {trade.type}
+                        {trade.TransactionType}
                       </td>
                       <td className="py-2 text-blue-500 font-medium">
-                        {trade.exitType}
+                        {trade.OrderExitType}
                       </td>
                     </tr>
                   ))}

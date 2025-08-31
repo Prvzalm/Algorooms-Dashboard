@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FiChevronDown } from "react-icons/fi";
@@ -7,6 +7,12 @@ import BacktestSummaryCard from "./BacktestSummaryCard";
 import MaxProfitLossChart from "./MaxProfitLossChart";
 import DaywiseBreakdown from "./DaywiseBreakdown";
 import TransactionDetails from "./TransactionDetails";
+import {
+  useBacktestResult,
+  useBackTestCounterDetails,
+} from "../../../hooks/backTestHooks";
+import { useUserStrategies } from "../../../hooks/strategyHooks";
+import { useProfileQuery } from "../../../hooks/profileHooks";
 
 const timeRanges = [
   "1 Month",
@@ -30,16 +36,9 @@ const BacktestStrategyComponent = () => {
 
   const handleTimeRangeClick = (range) => {
     if (range === "Custom Range") {
-      setShowCustomRange((prev) => {
-        const newState = !prev;
-        if (!newState) {
-          setCustomRange([null, null]);
-          setActiveTimeRange("");
-        } else {
-          setActiveTimeRange("Custom Range");
-        }
-        return newState;
-      });
+      // Immediately open date picker each time button clicked
+      setShowCustomRange(true);
+      setActiveTimeRange("Custom Range");
     } else {
       setActiveTimeRange(range);
       setShowCustomRange(false);
@@ -56,6 +55,66 @@ const BacktestStrategyComponent = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // compute from/to based on activeTimeRange or custom (server expects RFC1123 like 'Thu, 31 Jul 2025 09:19:39 GMT')
+  const { fromDateRFC, toDateRFC } = useMemo(() => {
+    const end = new Date();
+    let start = new Date(end);
+    if (activeTimeRange === "1 Month") start.setMonth(start.getMonth() - 1);
+    else if (activeTimeRange === "3 Months")
+      start.setMonth(start.getMonth() - 3);
+    else if (activeTimeRange === "6 Months")
+      start.setMonth(start.getMonth() - 6);
+    else if (activeTimeRange === "1 Year")
+      start.setFullYear(start.getFullYear() - 1);
+    else if (activeTimeRange === "2 Years")
+      start.setFullYear(start.getFullYear() - 2);
+    else if (activeTimeRange === "Custom Range" && startDate && endDate) {
+      start = new Date(startDate);
+      end.setTime(endDate.getTime());
+    }
+    const toRFC = (d) => d.toUTCString();
+    return { fromDateRFC: toRFC(start), toDateRFC: toRFC(end) };
+  }, [activeTimeRange, startDate, endDate]);
+
+  // profile for userId
+  const { data: profile } = useProfileQuery();
+  const userId = profile?.UserId;
+  const apiKey = "abc"; // assumption from sample
+
+  // strategies list
+  const { data: strategies } = useUserStrategies({
+    page: 1,
+    pageSize: 50,
+    orderBy: "Date",
+  });
+  // backtest credit
+  const { data: counter } = useBackTestCounterDetails();
+
+  const {
+    data: backtestData,
+    isFetching,
+    error,
+  } = useBacktestResult({
+    strategyId: selectedStrategy,
+    from: fromDateRFC,
+    to: toDateRFC,
+    userId,
+    apiKey,
+  });
+
+  const overall = backtestData?.OverAllResultSummary;
+  const equityCurve = useMemo(() => {
+    if (!backtestData?.DictionaryOfDateWisePnl)
+      return { labels: [], values: [] };
+    const entries = Object.entries(backtestData.DictionaryOfDateWisePnl).sort(
+      (a, b) => new Date(a[0]) - new Date(b[0])
+    );
+    let cumulative = 0;
+    const labels = entries.map(([d]) => d.slice(5)); // MM-DD
+    const values = entries.map(([_, pnl]) => (cumulative += pnl));
+    return { labels, values };
+  }, [backtestData]);
+
   return (
     <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
       <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
@@ -63,9 +122,18 @@ const BacktestStrategyComponent = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div className="w-full sm:w-1/3">
-          <div className="bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-[#718EBF] dark:text-white cursor-pointer">
-            Select Strategy
-          </div>
+          <select
+            className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-[#2E3A59] dark:text-white"
+            value={selectedStrategy}
+            onChange={(e) => setSelectedStrategy(e.target.value)}
+          >
+            <option value="">Select Strategy</option>
+            {strategies?.map((s) => (
+              <option key={s.StrategyId} value={s.StrategyId}>
+                {s.StrategyName || s.Name || s.StrategyId}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
@@ -104,7 +172,13 @@ const BacktestStrategyComponent = () => {
       <div className="flex justify-between items-center border rounded-xl px-4 py-2 text-sm font-medium mb-4">
         <div>
           Backtest Credit:{" "}
-          <span className="text-black dark:text-white">6034/6044</span>
+          <span className="text-black dark:text-white">
+            {counter
+              ? `${
+                  counter.AllowedBacktestCount - counter.RunningBacktestCount
+                }/${counter.AllowedBacktestCount}`
+              : "--/--"}
+          </span>
         </div>
 
         <div className="relative" ref={dropdownRef}>
@@ -133,11 +207,28 @@ const BacktestStrategyComponent = () => {
           )}
         </div>
       </div>
-      <BacktestReport />
-      <BacktestSummaryCard />
-      <MaxProfitLossChart />
-      <DaywiseBreakdown />
-      <TransactionDetails />
+      {error && (
+        <div className="text-red-500 mb-4 text-sm">{error.message}</div>
+      )}
+      {isFetching && (
+        <div className="mb-4 text-sm">Loading backtest data...</div>
+      )}
+      {backtestData && (
+        <>
+          <BacktestReport overall={overall} equityCurve={equityCurve} />
+          <BacktestSummaryCard overall={overall} />
+          <MaxProfitLossChart
+            scriptDetailList={backtestData.ScriptDetailList || []}
+            scriptSummaryList={overall?.ScriptSummaryList || []} // backward compatibility
+          />
+          <DaywiseBreakdown
+            dictionaryOfDateWisePnl={backtestData.DictionaryOfDateWisePnl}
+          />
+          <TransactionDetails
+            dateWiseDetailList={backtestData.DateWiseDetailList}
+          />
+        </>
+      )}
     </div>
   );
 };
