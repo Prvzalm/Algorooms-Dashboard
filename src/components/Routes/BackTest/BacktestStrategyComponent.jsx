@@ -33,6 +33,7 @@ const BacktestStrategyComponent = () => {
   const [customRange, setCustomRange] = useState([null, null]);
   const [startDate, endDate] = customRange;
   const dropdownRef = useRef(null);
+  const [runToken, setRunToken] = useState(0);
 
   const handleTimeRangeClick = (range) => {
     if (range === "Custom Range") {
@@ -76,6 +77,11 @@ const BacktestStrategyComponent = () => {
     return { fromDateRFC: toRFC(start), toDateRFC: toRFC(end) };
   }, [activeTimeRange, startDate, endDate]);
 
+  // when strategy or range changes, reset runToken so Run Backtest must be clicked again
+  useEffect(() => {
+    setRunToken(0);
+  }, [selectedStrategy, activeTimeRange, startDate, endDate]);
+
   // profile for userId
   const { data: profile } = useProfileQuery();
   const userId = profile?.UserId;
@@ -100,7 +106,14 @@ const BacktestStrategyComponent = () => {
     to: toDateRFC,
     userId,
     apiKey,
+    // we'll only enable the hook when user clicks Run Backtest
+    rangeType: "fixed",
+    enabled: runToken > 0,
+    runToken,
+    isMarketPlaceStrategy: false,
   });
+
+  // No-op: runToken is used to control when query runs (it is part of queryKey)
 
   const overall = backtestData?.OverAllResultSummary;
   const equityCurve = useMemo(() => {
@@ -205,6 +218,26 @@ const BacktestStrategyComponent = () => {
               ))}
             </div>
           )}
+        </div>
+        <div>
+          <button
+            className={`ml-3 text-sm px-4 py-2 rounded-md text-white ${
+              isFetching ? "bg-gray-400" : "bg-[#0096FF]"
+            }`}
+            onClick={() => setRunToken((n) => n + 1)}
+            disabled={
+              isFetching || !selectedStrategy || !fromDateRFC || !toDateRFC
+            }
+            title={
+              isFetching
+                ? "Backtest running"
+                : !selectedStrategy
+                ? "Select a strategy"
+                : "Run Backtest"
+            }
+          >
+            {isFetching ? "Running..." : "Run Backtest"}
+          </button>
         </div>
       </div>
       {error && (

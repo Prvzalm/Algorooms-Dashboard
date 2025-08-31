@@ -18,8 +18,13 @@ export const useBacktestResult = ({
   apiKey,
   isMarketPlaceStrategy = false,
   rangeType = "fixed",
+  // allow parent to control whether the query is enabled (useful for "Run" button)
+  enabled: enabledParam = true,
+  // optional numeric token that can be changed to force refetch
+  runToken = 0,
 }) => {
-  const enabled = Boolean(strategyId && from && to && userId && apiKey);
+  // only enable if parent allows AND all required params exist
+  const enabled = Boolean(enabledParam && strategyId && from && to && userId && apiKey);
 
   return useQuery({
     queryKey: [
@@ -30,6 +35,7 @@ export const useBacktestResult = ({
       userId,
       isMarketPlaceStrategy,
       rangeType,
+      runToken,
     ],
     queryFn: () =>
       fetchBacktestResult({
