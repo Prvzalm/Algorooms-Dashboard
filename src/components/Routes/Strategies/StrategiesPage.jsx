@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   emptyDeployedStrategy,
   emptyStrategy,
@@ -42,6 +43,7 @@ const StrategiesPage = () => {
   const [activeTab, setActiveTab] = useState("My Strategies");
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
   const [showStrategyPopup, setShowStrategyPopup] = useState(false);
+  const navigate = useNavigate();
 
   // pagination state for "Strategies" sub tab
   const pageSize = 10;
@@ -246,8 +248,15 @@ const StrategiesPage = () => {
                 </div>
 
                 <div className="mt-4 flex space-x-2">
-                  <button className="flex-1 py-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium">
-                    Deploy
+                  <button
+                    className="flex-1 py-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium"
+                    onClick={() =>
+                      navigate(
+                        `/backtesting/strategybacktest/${strategy.StrategyId}`
+                      )
+                    }
+                  >
+                    Backtest
                   </button>
                   <button className="flex-1 py-3 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium">
                     Deploy

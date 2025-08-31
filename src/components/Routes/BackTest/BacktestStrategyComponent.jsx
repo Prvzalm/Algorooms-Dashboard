@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FiChevronDown } from "react-icons/fi";
+import { FiChevronDown, FiChevronLeft } from "react-icons/fi";
 import BacktestReport from "./BacktestReport";
 import BacktestSummaryCard from "./BacktestSummaryCard";
 import MaxProfitLossChart from "./MaxProfitLossChart";
@@ -26,6 +27,9 @@ const timeRanges = [
 const exportOptions = ["Download PDF", "Email PDF", "View in Browser"];
 
 const BacktestStrategyComponent = () => {
+  // selectedStrategy can come from URL (strategyId param) or user dropdown selection
+  const { strategyId } = useParams();
+  const navigate = useNavigate();
   const [selectedStrategy, setSelectedStrategy] = useState("");
   const [activeTimeRange, setActiveTimeRange] = useState("1 Month");
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -82,6 +86,13 @@ const BacktestStrategyComponent = () => {
     setRunToken(0);
   }, [selectedStrategy, activeTimeRange, startDate, endDate]);
 
+  // initialize selected strategy from route param (once or when param changes)
+  useEffect(() => {
+    if (strategyId) {
+      setSelectedStrategy(strategyId);
+    }
+  }, [strategyId]);
+
   // profile for userId
   const { data: profile } = useProfileQuery();
   const userId = profile?.UserId;
@@ -93,6 +104,10 @@ const BacktestStrategyComponent = () => {
     pageSize: 50,
     orderBy: "Date",
   });
+  const currentStrategy = useMemo(
+    () => strategies?.find((s) => String(s.StrategyId) === String(strategyId)),
+    [strategies, strategyId]
+  );
   // backtest credit
   const { data: counter } = useBackTestCounterDetails();
 
@@ -130,24 +145,51 @@ const BacktestStrategyComponent = () => {
 
   return (
     <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
-      <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
-      <p className="text-sm text-gray-400 mb-6">Lorem Ipsum donor</p>
+      {strategyId ? (
+        <div className="flex items-start gap-3 mb-6">
+          <button
+            onClick={() => navigate("/strategies")}
+            className="mt-1 p-2 rounded-md border border-gray-200 dark:border-[#2D2F36] hover:bg-gray-100 dark:hover:bg-[#2A2C33]"
+            aria-label="Back to Strategies"
+            title="Back"
+          >
+            <FiChevronLeft />
+          </button>
+          <div>
+            <h2 className="text-lg font-semibold">
+              {currentStrategy?.StrategyName ||
+                currentStrategy?.Name ||
+                "Strategy Backtest"}
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Select a time range below and run the backtest.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
+          <p className="text-sm text-gray-400 mb-6">Lorem Ipsum donor</p>
+        </>
+      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <div className="w-full sm:w-1/3">
-          <select
-            className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-[#2E3A59] dark:text-white"
-            value={selectedStrategy}
-            onChange={(e) => setSelectedStrategy(e.target.value)}
-          >
-            <option value="">Select Strategy</option>
-            {strategies?.map((s) => (
-              <option key={s.StrategyId} value={s.StrategyId}>
-                {s.StrategyName || s.Name || s.StrategyId}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!strategyId && (
+          <div className="w-full sm:w-1/3">
+            <select
+              className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-[#2E3A59] dark:text-white"
+              value={selectedStrategy}
+              onChange={(e) => setSelectedStrategy(e.target.value)}
+            >
+              <option value="">Select Strategy</option>
+              {strategies?.map((s) => (
+                <option key={s.StrategyId} value={s.StrategyId}>
+                  {s.StrategyName || s.Name || s.StrategyId}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 items-center">
           {timeRanges.map((range) => (

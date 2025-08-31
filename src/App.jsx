@@ -117,6 +117,10 @@ function App() {
                       element={<BacktestStrategyComponent />}
                     />
                     <Route
+                      path="/backtesting/strategybacktest/:strategyId"
+                      element={<BacktestStrategyComponent />}
+                    />
+                    <Route
                       path="/backtesting/simulator"
                       element={<SimulatorPage />}
                     />
