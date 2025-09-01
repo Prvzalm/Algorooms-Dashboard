@@ -11,6 +11,7 @@ import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
 import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
+import { useFormContext } from "react-hook-form";
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -772,6 +773,7 @@ const StrategyBuilder = () => {
               <Leg1
                 selectedStrategyTypes={selectedStrategyTypes}
                 selectedInstrument={selectedInstrument}
+                editing={editing}
               />
             )}
           </div>

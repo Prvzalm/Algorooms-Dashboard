@@ -3,12 +3,33 @@ import { useFormContext } from "react-hook-form";
 import TradeSettings from "./TradeSettings";
 
 const OrderType = ({ selectedStrategyTypes }) => {
-  const { setValue } = useFormContext();
-  const [selectedDays, setSelectedDays] = useState(["MON", "TUE", "WED", "THU", "FRI"]);
+  const { setValue, getValues } = useFormContext();
+  const [selectedDays, setSelectedDays] = useState([
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+  ]);
   const [selectedLeg, setSelectedLeg] = useState("L1");
   const [startTime, setStartTime] = useState("09:16");
   const [squareOffTime, setSquareOffTime] = useState("15:15");
   const [productType, setProductType] = useState("MIS");
+
+  // Prefill from form values (edit mode)
+  useEffect(() => {
+    const vDays = getValues("ActiveDays");
+    if (Array.isArray(vDays) && vDays.length) setSelectedDays(vDays);
+    const vStart = getValues("TradeStartTime");
+    if (vStart) setStartTime(vStart);
+    const vSq = getValues("AutoSquareOffTime") || getValues("TradeStopTime");
+    if (vSq) setSquareOffTime(vSq);
+    const prod = getValues("ProductType");
+    if (prod === 0) setProductType("MIS");
+    if (prod === 1 && getValues("isBtSt")) setProductType("BTST");
+    else if (prod === 1 && !getValues("isBtSt")) setProductType("CNC");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const orderTypes = ["MIS", "CNC", "BTST"];
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
@@ -49,7 +70,10 @@ const OrderType = ({ selectedStrategyTypes }) => {
 
       <div className="flex items-center space-x-4 text-sm">
         {orderTypes.map((type) => (
-          <label key={type} className="flex items-center space-x-2 dark:text-gray-300">
+          <label
+            key={type}
+            className="flex items-center space-x-2 dark:text-gray-300"
+          >
             <input
               type="radio"
               name="productType"
@@ -126,7 +150,10 @@ const OrderType = ({ selectedStrategyTypes }) => {
             </button>
           ))}
         </div>
-        <button type="button" className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition">
+        <button
+          type="button"
+          className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition"
+        >
           + Add
         </button>
       </div>

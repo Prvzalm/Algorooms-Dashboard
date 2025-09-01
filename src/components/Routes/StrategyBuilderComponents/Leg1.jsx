@@ -3,7 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
 
-const Leg1 = ({ selectedStrategyTypes, selectedInstrument }) => {
+const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const { setValue, getValues } = useFormContext(); // added getValues
   // local UI state
   const [position, setPosition] = useState("BUY");
@@ -109,15 +109,69 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument }) => {
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
       return;
     }
-    const lot = selectedInstrument?.LotSize || 0;
-    // keep local resets only
-    setPosition(LEG1_DEFAULTS.position);
-    setOptionType(LEG1_DEFAULTS.optionType);
-    setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
-    setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
-  }, [selectedInstrument]);
+    // On edit, try to prefill from existing first long strike
+    if (editing) {
+      const scripts = getValues("StrategyScriptList") || [];
+      const first = scripts[0];
+      const long0 = first?.LongEquationoptionStrikeList?.[0];
+      if (long0) {
+        setPosition(long0.TransactionType || "BUY");
+        // infer optionType from StrikeType only in time strategy
+        if (selectedStrategyTypes?.[0] === "time") {
+          setOptionType(long0.StrikeType === "PE" ? "Put" : "Call");
+        }
+        setExpiryType(long0.ExpiryType || "WEEKLY");
+        if (long0.SLType === "slpt") setSlTypeSel("SL pt");
+        if (long0.TargetType === "tgpt") setTpTypeSel("TP pt");
+        setStopLossQty(Number(long0.StopLoss) || 30);
+        setTargetValue(Number(long0.Target) || 0);
+        setPrePunchSL(!!long0.isPrePunchSL);
+        setSlAction(
+          long0.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+        );
+        setTpAction(
+          long0.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+        );
+        // strike criteria mapping
+        const typeMapRev = {
+          ATM: "ATM_PT",
+          ATMPER: "ATM_PERCENT",
+          CPNear: "CP",
+          CPGREATERTHAN: "CP_GTE",
+          CPLESSTHAN: "CP_LTE",
+        };
+        const t = long0.strikeTypeobj?.type;
+        if (t) {
+          if (t === "ATM" || t === "ATMPER")
+            setSelectedStrikeCriteria(typeMapRev[t] || "ATM_PT");
+          if (t.startsWith("CP"))
+            setSelectedStrikeCriteria(typeMapRev[t] || "CP");
+        }
+        if (long0.strikeTypeobj) {
+          const sv = Number(long0.strikeTypeobj.StrikeValue) || 0;
+          if (
+            selectedStrikeCriteria === "ATM_PT" ||
+            selectedStrikeCriteria === "ATM_PERCENT"
+          ) {
+            // convert numeric back to ladder value
+            if (sv === 0) setStrikeTypeSelectValue("ATM");
+            else if (sv < 0) setStrikeTypeSelectValue(`ITM_${Math.abs(sv)}`);
+            else setStrikeTypeSelectValue(`OTM_${Math.abs(sv)}`);
+          } else {
+            setStrikeTypeNumber(sv);
+          }
+        }
+      }
+    } else {
+      // new selection reset
+      setPosition(LEG1_DEFAULTS.position);
+      setOptionType(LEG1_DEFAULTS.optionType);
+      setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
+      setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
+    }
+  }, [selectedInstrument, editing]);
 
-  // unified builder for StrategyScriptList (time & indicator)
+  // unified builder for StrategyScriptList (single leg only)
   useEffect(() => {
     if (!selectedInstrument) return;
     const isTime = selectedStrategyTypes?.[0] === "time";

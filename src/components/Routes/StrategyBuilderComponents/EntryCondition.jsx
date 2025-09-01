@@ -23,7 +23,7 @@ const initialCondition = {
 };
 
 const EntryCondition = () => {
-  const { setValue, watch } = useFormContext();
+  const { setValue, watch, getValues } = useFormContext();
   const [conditions, setConditions] = useState([{ ...initialCondition }]);
   const [exitBlocks, setExitBlocks] = useState([{ ...initialCondition }]); // NEW: exit condition blocks
   const [useCombinedChart, setUseCombinedChart] = useState(false);
@@ -73,6 +73,57 @@ const EntryCondition = () => {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indicatorData]);
+
+  // Prefill from existing form indicator equations (edit mode)
+  useEffect(() => {
+    const mapEquationArr = (arr) => {
+      if (!Array.isArray(arr) || !arr.length) return [{ ...initialCondition }];
+      return arr.map((eq) => ({
+        long: {
+          indicatorId: eq.indicator?.indicatorId || 0,
+          params: (eq.indicator?.IndicatorParamList || []).reduce((acc, p) => {
+            acc[p.ParamId] = p.IndicatorParamValue;
+            return acc;
+          }, {}),
+          rightIndicatorId: eq.comparerIndicator?.indicatorId || 0,
+          rightParams: (eq.comparerIndicator?.IndicatorParamList || []).reduce(
+            (acc, p) => {
+              acc[p.ParamId] = p.IndicatorParamValue;
+              return acc;
+            },
+            {}
+          ),
+          comparatorId: eq.comparerId || 0,
+        },
+        short: {
+          indicatorId: eq.indicator?.indicatorId || 0,
+          params: (eq.indicator?.IndicatorParamList || []).reduce((acc, p) => {
+            acc[p.ParamId] = p.IndicatorParamValue;
+            return acc;
+          }, {}),
+          rightIndicatorId: eq.comparerIndicator?.indicatorId || 0,
+          rightParams: (eq.comparerIndicator?.IndicatorParamList || []).reduce(
+            (acc, p) => {
+              acc[p.ParamId] = p.IndicatorParamValue;
+              return acc;
+            },
+            {}
+          ),
+          comparatorId: eq.comparerId || 0,
+        },
+      }));
+    };
+    const longEntry = getValues("LongEntryEquation");
+    if (Array.isArray(longEntry) && longEntry.length) {
+      setConditions(mapEquationArr(longEntry));
+    }
+    const longExit = getValues("Long_ExitEquation");
+    if (Array.isArray(longExit) && longExit.length) {
+      setExitBlocks(mapEquationArr(longExit));
+      setExitConditions(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const initParams = (indicator) => {
     if (!indicator) return {};

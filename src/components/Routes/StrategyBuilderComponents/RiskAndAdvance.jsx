@@ -6,6 +6,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   const { setValue, getValues } = useFormContext();
   const [noTradeAfter, setNoTradeAfter] = useState("15:15");
 
+  // Prefill on mount (edit mode)
+  useEffect(() => {
+    const stop = getValues("TradeStopTime") || getValues("AutoSquareOffTime");
+    if (stop) setNoTradeAfter(stop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     setValue("TradeStopTime", noTradeAfter, { shouldDirty: true });
   }, [noTradeAfter, setValue]);
@@ -133,7 +140,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             </div>
             <div className="flex flex-wrap gap-4">
               <input
-                type="text"
+                type="number"
+                defaultValue={getValues("ExitWhenTotalProfit") || ""}
                 placeholder="Exit When Over All Profit In Amount (INR)"
                 onChange={(e) =>
                   setValue("ExitWhenTotalProfit", Number(e.target.value) || 0, {
@@ -143,7 +151,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                 className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
               />
               <input
-                type="text"
+                type="number"
+                defaultValue={getValues("ExitWhenTotalLoss") || ""}
                 placeholder="Exit When Over All Loss In Amount (INR)"
                 onChange={(e) =>
                   setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, {
@@ -421,7 +430,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             </h2>
             <input
               type="text"
-              placeholder="Entry your strategy name here"
+              defaultValue={getValues("StrategyName") || ""}
+              placeholder="Enter your strategy name here"
               onChange={(e) =>
                 setValue("StrategyName", e.target.value, { shouldDirty: true })
               }
@@ -437,7 +447,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           </h2>
           <input
             type="text"
-            placeholder="Entry your strategy name here"
+            defaultValue={getValues("StrategyName") || ""}
+            placeholder="Enter your strategy name here"
             onChange={(e) =>
               setValue("StrategyName", e.target.value, { shouldDirty: true })
             }
