@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   emptyDeployedStrategy,
@@ -15,8 +15,14 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 import CreateStrategyPopup from "./CreateStrategyPopup";
-import { useUserStrategies } from "../../../hooks/strategyHooks";
+import {
+  useUserStrategies,
+  useChangeDeployedStrategyTradeMode,
+  useSquareOffStrategyMutation,
+} from "../../../hooks/strategyHooks";
 import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
+import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
+import ConfirmModal from "../../ConfirmModal";
 
 const mainTabs = [
   "My Strategies",
@@ -72,6 +78,21 @@ const StrategiesPage = () => {
 
   const [expandedBrokerIds, setExpandedBrokerIds] = useState([]);
 
+  // Trade Engine control state (similar to BrokerSection)
+  const [engineStatusOverrides, setEngineStatusOverrides] = useState({}); // BrokerClientId -> "Running"|"Stopped"
+  const [pendingBrokerId, setPendingBrokerId] = useState(null);
+  const [confirmForBrokerId, setConfirmForBrokerId] = useState(null);
+  const mutatingRef = useRef(false);
+  const { mutate: mutateTradeEngine, isPending: enginePending } =
+    useStartStopTradeEngine();
+  // Strategy trade mode mutation
+  const { mutate: mutateStrategyMode, isPending: strategyModePending } =
+    useChangeDeployedStrategyTradeMode();
+  const { mutate: mutateSquareOff, isPending: squareOffPending } =
+    useSquareOffStrategyMutation();
+  const [strategyOverrides, setStrategyOverrides] = useState({}); // compositeKey -> {running,isLiveMode}
+  const [squareOffPendingIds, setSquareOffPendingIds] = useState(new Set()); // composite keys currently squaring off
+
   const toggleExpand = (code) => {
     setExpandedBrokerIds((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
@@ -111,13 +132,128 @@ const StrategiesPage = () => {
           name: b.BrokerName,
           code: b.BrokerClientId,
           logo: b.brokerLogoUrl,
+          tradeEngineStatus: b.TradeEngineStatus,
+          tradeEngineName:
+            b.TradeEngineName || b.TradeEngine || b.tradeEngineName,
+          brokerId: b.BrokerId,
         },
         runningCount,
         deployedCount,
         totalPnl,
         strategies,
+        raw: b,
       };
     });
+
+  const getEffectiveTradeEngineStatus = (brokerItem) => {
+    const override = engineStatusOverrides[brokerItem.broker.code];
+    return override || brokerItem.broker.tradeEngineStatus;
+  };
+
+  const computeStrategyKey = (brokerItem, strategy) =>
+    `${brokerItem.broker.code}_${strategy.id}`;
+
+  const getStrategyEffective = (brokerItem, strategy) => {
+    const key = computeStrategyKey(brokerItem, strategy);
+    const o = strategyOverrides[key];
+    if (!o) return strategy;
+    return { ...strategy, ...o };
+  };
+
+  const updateStrategyOverride = (brokerItem, strategy, patch) => {
+    const key = computeStrategyKey(brokerItem, strategy);
+    setStrategyOverrides((prev) => ({
+      ...prev,
+      [key]: { ...(prev[key] || {}), ...patch },
+    }));
+  };
+
+  const handleStrategyToggleRunning = (brokerItem, strategy, nextRunning) => {
+    // Keep live mode as-is (do not force) so running toggle only affects running state.
+    const effective = getStrategyEffective(brokerItem, strategy);
+    const actionType = nextRunning ? "Start" : "Stop";
+    updateStrategyOverride(brokerItem, strategy, { running: nextRunning });
+    mutateStrategyMode({
+      StrategyId: String(strategy.id),
+      BrokerClientId: brokerItem.broker.code,
+      BrokerId: brokerItem.raw?.BrokerId,
+      isLiveMode: effective.isLiveMode, // send current live mode
+      ActionType: actionType,
+    });
+  };
+
+  const handleStrategyToggleLiveForward = (brokerItem, strategy, toLive) => {
+    const actionType = toLive ? "Live" : "Paper";
+    updateStrategyOverride(brokerItem, strategy, { isLiveMode: toLive });
+    const effective = getStrategyEffective(brokerItem, strategy);
+    mutateStrategyMode({
+      StrategyId: String(strategy.id),
+      BrokerClientId: brokerItem.broker.code,
+      BrokerId: brokerItem.raw?.BrokerId,
+      isLiveMode: toLive,
+      ActionType: actionType,
+      // running state remains whatever it was
+    });
+  };
+
+  const handleStrategySquareOff = (brokerItem, strategy) => {
+    const compositeKey = computeStrategyKey(brokerItem, strategy);
+    setSquareOffPendingIds((prev) => new Set(prev).add(compositeKey));
+    mutateSquareOff(
+      {
+        StrategyId: String(strategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: brokerItem.broker.brokerId || brokerItem.raw?.BrokerId,
+      },
+      {
+        onSettled: () => {
+          setSquareOffPendingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(compositeKey);
+            return next;
+          });
+        },
+      }
+    );
+  };
+
+  const performToggleTradeEngine = (brokerItem, nextAction) => {
+    if (!brokerItem || enginePending || mutatingRef.current) return;
+    mutatingRef.current = true;
+    setPendingBrokerId(brokerItem.broker.code);
+    mutateTradeEngine(
+      {
+        TradeEngineName: brokerItem.broker.tradeEngineName,
+        BrokerClientId: brokerItem.broker.code,
+        ConnectOptions: nextAction,
+      },
+      {
+        onSuccess: () => {
+          setEngineStatusOverrides((prev) => ({
+            ...prev,
+            [brokerItem.broker.code]:
+              nextAction === "Start" ? "Running" : "Stopped",
+          }));
+        },
+        onSettled: () => {
+          mutatingRef.current = false;
+          setPendingBrokerId(null);
+          setConfirmForBrokerId(null);
+        },
+      }
+    );
+  };
+
+  const handleToggleTradeEngine = (brokerItem) => {
+    if (!brokerItem || enginePending || mutatingRef.current) return;
+    const currentStatus = getEffectiveTradeEngineStatus(brokerItem);
+    const nextAction = currentStatus === "Running" ? "Stop" : "Start";
+    if (nextAction === "Start") {
+      setConfirmForBrokerId(brokerItem.broker.code);
+      return;
+    }
+    performToggleTradeEngine(brokerItem, nextAction);
+  };
 
   const renderMyStrategies = () => {
     if (strategiesLoading) return <div>Loading strategies...</div>;
@@ -281,7 +417,25 @@ const StrategiesPage = () => {
         </div>
       );
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 relative">
+        <ConfirmModal
+          open={!!confirmForBrokerId}
+          title="Start Trade Engine?"
+          message={
+            "This will begin live trading for all eligible strategies under this broker. Ensure configurations are correct."
+          }
+          confirmLabel="OK"
+          cancelLabel="Cancel"
+          loading={enginePending}
+          onCancel={() => setConfirmForBrokerId(null)}
+          onConfirm={() => {
+            const brokerItem = deployedStrategies.find(
+              (b) => b.broker.code === confirmForBrokerId
+            );
+            setConfirmForBrokerId(null);
+            if (brokerItem) performToggleTradeEngine(brokerItem, "Start");
+          }}
+        />
         {deployedStrategies?.length === 0 ? (
           <div className="flex h-[50vh] items-center justify-center">
             <img src={emptyDeployedStrategy} alt="No deployed strategies" />
@@ -289,6 +443,9 @@ const StrategiesPage = () => {
         ) : (
           deployedStrategies.map((brokerItem) => {
             const expanded = expandedBrokerIds.includes(brokerItem.broker.code);
+            const tradeEngineStatus = getEffectiveTradeEngineStatus(brokerItem);
+            const rowPending =
+              pendingBrokerId === brokerItem.broker.code && enginePending;
             return (
               <div
                 key={brokerItem.broker.code}
@@ -311,7 +468,7 @@ const StrategiesPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex gap-4 md:gap-8">
+                  <div className="flex gap-4 md:gap-8 items-center flex-wrap">
                     <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400">
                       Running {String(brokerItem.runningCount).padStart(2, "0")}
                     </div>
@@ -319,6 +476,26 @@ const StrategiesPage = () => {
                       Deployed{" "}
                       {String(brokerItem.deployedCount).padStart(2, "0")}
                     </div>
+                    <button
+                      onClick={() => handleToggleTradeEngine(brokerItem)}
+                      disabled={rowPending}
+                      className={`px-4 py-1.5 text-xs font-medium rounded-md border transition flex items-center gap-2 ${
+                        tradeEngineStatus === "Running"
+                          ? "bg-green-50 border-green-500 text-green-600 dark:bg-green-900/20 dark:border-green-600"
+                          : "bg-[#F5F8FA] dark:bg-[#2A2A2E] border-[#E4EAF0] dark:border-[#2D2F36] text-[#2E3A59] dark:text-gray-200"
+                      } ${
+                        rowPending
+                          ? "opacity-60 cursor-not-allowed"
+                          : "hover:brightness-105"
+                      }`}
+                    >
+                      {rowPending && (
+                        <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
+                      )}
+                      {tradeEngineStatus === "Running"
+                        ? "Stop Engine"
+                        : "Start Engine"}
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-6">
@@ -355,83 +532,139 @@ const StrategiesPage = () => {
 
                 {expanded && brokerItem.strategies.length > 0 && (
                   <div className="border-t border-[#E4EAF0] dark:border-[#2D2F36] px-5 py-4 space-y-4">
-                    {brokerItem.strategies.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium">{s.name}</span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-md ${
-                              s.isLiveMode
-                                ? "bg-emerald-100 text-emerald-600"
-                                : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
-                            }`}
-                          >
-                            {s.isLiveMode ? "Live" : "Paper"}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-6 text-xs text-[#718EBF] dark:text-gray-400">
-                          <div>
-                            <p className="mb-0.5">Max Profit</p>
-                            <p className="font-semibold text-[#2E3A59] dark:text-white">
-                              {s.maxProfit ?? "-"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="mb-0.5">Max Loss</p>
-                            <p className="font-semibold text-[#2E3A59] dark:text-white">
-                              {s.maxLoss ?? "-"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="mb-0.5">Qty Multiplier</p>
-                            <p className="font-semibold text-[#2E3A59] dark:text-white">
-                              {s.qtyMultiplier}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="mb-0.5">Square Off</p>
-                            <p className="font-semibold text-[#2E3A59] dark:text-white">
-                              {s.squareOff}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#718EBF] dark:text-gray-400">
-                              Stop
-                            </span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="sr-only"
-                                defaultChecked={s.running}
-                                onChange={() => {}}
-                              />
-                              <span className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] rounded-full peer peer-checked:bg-green-600 transition"></span>
-                              <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
-                            </label>
+                    {brokerItem.strategies.map((rawS) => {
+                      const s = getStrategyEffective(brokerItem, rawS);
+                      const compositeKey = `${brokerItem.broker.code}_${rawS.id}`;
+                      return (
+                        <div
+                          key={compositeKey}
+                          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]"
+                        >
+                          <div className="flex items-center gap-3">
                             <span className="text-sm font-medium">
-                              {s.running ? "Running" : "Stopped"}
+                              {s.name}
                             </span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-[#718EBF] dark:text-gray-400">
-                              PnL
-                            </p>
-                            <p
-                              className={`text-sm font-semibold ${
-                                s.pnl >= 0 ? "text-green-600" : "text-red-500"
+                            <span
+                              className={`text-xs px-2 py-1 rounded-md ${
+                                s.isLiveMode
+                                  ? "bg-emerald-100 text-emerald-600"
+                                  : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
                               }`}
                             >
-                              ₹{s.pnl}
-                            </p>
+                              {s.isLiveMode ? "Live" : "Paper"}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-6 text-xs text-[#718EBF] dark:text-gray-400">
+                            <div>
+                              <p className="mb-0.5">Max Profit</p>
+                              <p className="font-semibold text-[#2E3A59] dark:text-white">
+                                {s.maxProfit ?? "-"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="mb-0.5">Max Loss</p>
+                              <p className="font-semibold text-[#2E3A59] dark:text-white">
+                                {s.maxLoss ?? "-"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6 flex-wrap">
+                            {/* Mode Toggle */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
+                                Mode
+                              </span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={!!s.isLiveMode}
+                                  onChange={(e) =>
+                                    handleStrategyToggleLiveForward(
+                                      brokerItem,
+                                      rawS,
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                                <span className="w-12 h-6 bg-gray-200 dark:bg-[#2D2F36] rounded-full peer-checked:bg-blue-600 transition"></span>
+                                <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition peer-checked:translate-x-6"></span>
+                              </label>
+                              <span
+                                className={`text-xs font-medium ${
+                                  s.isLiveMode
+                                    ? "text-emerald-600"
+                                    : "text-gray-500 dark:text-gray-300"
+                                }`}
+                              >
+                                {s.isLiveMode ? "Live" : "Forward"}
+                              </span>
+                            </div>
+                            {/* Run Status Toggle */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
+                                Status
+                              </span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={!!s.running}
+                                  onChange={(e) =>
+                                    handleStrategyToggleRunning(
+                                      brokerItem,
+                                      rawS,
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                                <span className="w-12 h-6 bg-gray-200 dark:bg-[#2D2F36] rounded-full peer-checked:bg-green-600 transition"></span>
+                                <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition peer-checked:translate-x-6"></span>
+                              </label>
+                              <span
+                                className={`text-xs font-medium ${
+                                  s.running
+                                    ? "text-green-600"
+                                    : "text-gray-500 dark:text-gray-300"
+                                }`}
+                              >
+                                {s.running ? "Running" : "Paused"}
+                              </span>
+                            </div>
+                            {/* Square Off Button */}
+                            <button
+                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center gap-2"
+                              disabled={
+                                strategyModePending ||
+                                squareOffPendingIds.has(compositeKey)
+                              }
+                              onClick={() =>
+                                handleStrategySquareOff(brokerItem, rawS)
+                              }
+                            >
+                              {squareOffPendingIds.has(compositeKey) && (
+                                <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
+                              )}
+                              {squareOffPendingIds.has(compositeKey)
+                                ? "Squaring"
+                                : "Square Off"}
+                            </button>
+                            <div className="text-right ml-auto">
+                              <p className="text-xs text-[#718EBF] dark:text-gray-400">
+                                PnL
+                              </p>
+                              <p
+                                className={`text-sm font-semibold ${
+                                  s.pnl >= 0 ? "text-green-600" : "text-red-500"
+                                }`}
+                              >
+                                ₹{s.pnl}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -62,3 +62,49 @@ export const getIndicatorMaster = async () => {
   }
   return Data; // { Indicators, PriceActionIndicators, Comparers, Intervals }
 };
+
+// Change deployed strategy trade mode / running state
+// Payload shape example:
+// { StrategyId, BrokerClientId, BrokerId, isLiveMode: boolean, ActionType: 'Start'|'Stop'|'Live'|'Paper' }
+export const changeDeployedStrategyTradeMode = async (payload) => {
+  const response = await axiosInstance.post(
+    "/strategies/DeployedStrategyChangeTradeMode",
+    payload
+  );
+  return response?.data; // {Status, Message, ...}
+};
+
+// Square off (close) a deployed strategy positions
+// Payload: { StrategyId, BrokerClientId, BrokerId }
+export const squareOffStrategy = async (payload) => {
+  const response = await axiosInstance.post(
+    "/strategies/SquareOffStrategy",
+    payload
+  );
+  return response?.data; // {Status, Message}
+};
+
+// Duplicate an existing strategy (from marketplace or user) into the user's account
+// Expected payload (assumed): { StrategyId: string|number, StrategyName: string }
+// Returns: { Status, Message, Data }
+export const duplicateStrategy = async (payload) => {
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/DuplicateStrategy",
+      payload
+    );
+    const { Status, Message, Data } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to duplicate strategy");
+    }
+    return { Message, Data };
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to duplicate strategy";
+    throw new Error(serverMsg);
+  }
+};

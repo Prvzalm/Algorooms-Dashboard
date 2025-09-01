@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import {
   searchInstrument,
   userCreatedStrategies,
   createStrategy,
   getIndicatorMaster,
+  changeDeployedStrategyTradeMode,
+  squareOffStrategy,
+  duplicateStrategy,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -62,5 +66,61 @@ export const useIndicatorMaster = (enabled = true) => {
     queryFn: () => getIndicatorMaster(),
     enabled,
     staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useChangeDeployedStrategyTradeMode = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => changeDeployedStrategyTradeMode(payload),
+    onSuccess: (data) => {
+      const status = data?.Status?.toLowerCase();
+      if (status === "success") {
+        toast.success(data?.Message || "Updated Successfully");
+      } else {
+        toast.error(data?.Message || "Update failed");
+      }
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useSquareOffStrategyMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => squareOffStrategy(payload),
+    onSuccess: (data) => {
+      const status = data?.Status?.toLowerCase();
+      if (status === "success") {
+        toast.success(data?.Message || "Squared Off");
+      } else {
+        toast.error(data?.Message || "Square off failed");
+      }
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useDuplicateStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => duplicateStrategy(payload),
+    onSuccess: (data) => {
+      toast.success(data?.Message || "Strategy duplicated");
+      // Invalidate user strategies so new copy shows up
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.message || err?.response?.data?.Message || "Duplication failed";
+      toast.error(msg);
+    },
   });
 };

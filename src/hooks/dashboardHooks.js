@@ -21,10 +21,22 @@ export const useBrokerwiseStrategies = (orderBy = "Name") => {
   });
 };
 
-export const useMarketplaceStrategies = ({ page = 1, pageSize = 10 }) => {
+export const useMarketplaceStrategies = ({
+  page = 1,
+  pageSize = 10,
+  orderBy = "Recent",
+  filterMargins = "",
+}) => {
   return useQuery({
-    queryKey: ["marketplace-strategies", page, pageSize],
-    queryFn: () => getMarketplaceStrategies({ page, pageSize }),
+    queryKey: [
+      "marketplace-strategies",
+      page,
+      pageSize,
+      orderBy,
+      filterMargins,
+    ],
+    queryFn: () =>
+      getMarketplaceStrategies({ page, pageSize, orderBy, filterMargins }),
     keepPreviousData: true,
     staleTime: 300000,
   });
