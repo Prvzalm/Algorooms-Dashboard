@@ -557,9 +557,9 @@ const MyPortfolioTab = () => {
                 Strategy Comparison
               </h2>
               <div className="overflow-x-auto">
-                <table className="min-w-max whitespace-nowrap text-xs md:text-sm">
+                <table className="w-full whitespace-nowrap text-xs md:text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 dark:text-gray-400 border-b">
+                    <tr className="text-center text-gray-500 dark:text-gray-400 border-b">
                       <th className="py-2 pr-4 w-56">Metric</th>
                       {perStrategy.map((p) => (
                         <th
@@ -573,7 +573,10 @@ const MyPortfolioTab = () => {
                   </thead>
                   <tbody>
                     {pivotComparison.map((row) => (
-                      <tr key={row.key} className="border-b last:border-b-0">
+                      <tr
+                        key={row.key}
+                        className="text-center border-b last:border-b-0"
+                      >
                         <td className="py-2 pr-4 font-medium">{row.label}</td>
                         {row.values.map(({ strategyId, value }) => {
                           const isPositive = [
