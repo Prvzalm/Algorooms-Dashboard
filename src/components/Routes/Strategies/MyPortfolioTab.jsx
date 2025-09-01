@@ -552,7 +552,7 @@ const MyPortfolioTab = () => {
           />
           {/* Strategy Comparison (Pivot) */}
           {perStrategy.length >= 1 && (
-            <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8 p-4">
+            <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8">
               <h2 className="text-lg font-semibold text-black dark:text-white mb-4">
                 Strategy Comparison
               </h2>
