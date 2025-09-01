@@ -236,32 +236,32 @@ const BacktestStrategyComponent = () => {
           </span>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setShowExportMenu((prev) => !prev)}
-            className="text-sm px-4 py-3 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
-          >
-            Export to PDF <FiChevronDown />
-          </button>
+        <div className="flex justify-between items-center gap-2">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              className="text-sm px-4 py-3 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
+            >
+              Export to PDF <FiChevronDown />
+            </button>
 
-          {showExportMenu && (
-            <div className="absolute right-0 mt-2 bg-white dark:bg-[#1E2027] border rounded shadow-md w-44 z-10">
-              {exportOptions.map((option, idx) => (
-                <div
-                  key={idx}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2A2C33] cursor-pointer text-sm"
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    alert(`Selected: ${option}`);
-                  }}
-                >
-                  {option}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 bg-white dark:bg-[#1E2027] border rounded shadow-md w-44 z-10">
+                {exportOptions.map((option, idx) => (
+                  <div
+                    key={idx}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2A2C33] cursor-pointer text-sm"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      alert(`Selected: ${option}`);
+                    }}
+                  >
+                    {option}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             className={`ml-3 text-sm px-4 py-2 rounded-md text-white ${
               isFetching ? "bg-gray-400" : "bg-[#0096FF]"
