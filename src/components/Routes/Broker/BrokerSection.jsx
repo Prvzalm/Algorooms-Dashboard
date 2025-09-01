@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useUserBrokerData } from "../../../hooks/dashboardHooks";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
 import { emptyDeployedStrategy } from "../../../assets";
+import ConfirmModal from "../../ConfirmModal";
 
 const BrokerSection = () => {
   // Local UI override states (so UI feels instant after mutation)
   const [engineStatusOverrides, setEngineStatusOverrides] = useState({}); // BrokerClientId -> "Running"|"Stopped"
   const [pendingBrokerId, setPendingBrokerId] = useState(null); // track which broker row is mutating
   const mutatingRef = useRef(false);
+  const [confirmForBrokerId, setConfirmForBrokerId] = useState(null); // BrokerClientId awaiting start confirmation
   const navigate = useNavigate();
 
   const { data: brokers = [], isLoading, isError } = useUserBrokerData();
@@ -30,13 +32,10 @@ const BrokerSection = () => {
     window.location.href = broker.APILoginUrl;
   };
 
-  const handleToggleTradeEngine = (broker) => {
+  const performToggleTradeEngine = (broker, nextAction) => {
     if (!broker || isPending || mutatingRef.current) return;
-    const currentStatus = getEffectiveTradeEngineStatus(broker);
-    const nextAction = currentStatus === "Running" ? "Stop" : "Start";
     mutatingRef.current = true;
     setPendingBrokerId(broker.BrokerClientId);
-
     mutateTradeEngine(
       {
         TradeEngineName:
@@ -57,9 +56,21 @@ const BrokerSection = () => {
         onSettled: () => {
           mutatingRef.current = false;
           setPendingBrokerId(null);
+          setConfirmForBrokerId(null);
         },
       }
     );
+  };
+
+  const handleToggleTradeEngine = (broker) => {
+    if (!broker || isPending || mutatingRef.current) return;
+    const currentStatus = getEffectiveTradeEngineStatus(broker);
+    const nextAction = currentStatus === "Running" ? "Stop" : "Start";
+    if (nextAction === "Start") {
+      setConfirmForBrokerId(broker.BrokerClientId);
+      return;
+    }
+    performToggleTradeEngine(broker, nextAction);
   };
 
   return (
@@ -93,7 +104,25 @@ const BrokerSection = () => {
             <img src={emptyDeployedStrategy} alt="No brokers" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 relative">
+            <ConfirmModal
+              open={!!confirmForBrokerId}
+              title="Start Trade Engine?"
+              message={
+                "This will begin live trading for the selected broker.\nEnsure strategies & margins are configured."
+              }
+              confirmLabel="OK"
+              cancelLabel="Cancel"
+              loading={isPending}
+              onCancel={() => setConfirmForBrokerId(null)}
+              onConfirm={() => {
+                const broker = brokers.find(
+                  (b) => b.BrokerClientId === confirmForBrokerId
+                );
+                setConfirmForBrokerId(null);
+                if (broker) performToggleTradeEngine(broker, "Start");
+              }}
+            />
             {brokers.map((broker, index) => {
               const tradeEngineStatus = getEffectiveTradeEngineStatus(broker);
               const rowPending =

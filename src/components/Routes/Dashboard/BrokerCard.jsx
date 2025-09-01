@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
+import ConfirmModal from "../../ConfirmModal";
 
 const BrokerCard = ({ brokers = [] }) => {
   const [selectedBroker, setSelectedBroker] = useState(null);
@@ -8,6 +9,7 @@ const BrokerCard = ({ brokers = [] }) => {
   const dropdownRef = useRef(null);
   const { mutate, isPending } = useStartStopTradeEngine();
   const mutatingRef = useRef(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (brokers.length > 0) {
@@ -30,14 +32,9 @@ const BrokerCard = ({ brokers = [] }) => {
     setDropdownOpen(false);
   };
 
-  const handleToggleTradeEngine = (e) => {
-    e.stopPropagation();
+  const performToggleTradeEngine = (nextAction) => {
     if (!selectedBroker || isPending || mutatingRef.current) return;
     mutatingRef.current = true;
-
-    const nextAction =
-      selectedBroker.tradeEngineStatus === "Running" ? "Stop" : "Start";
-
     mutate(
       {
         TradeEngineName: selectedBroker.tradeEngineName,
@@ -45,7 +42,7 @@ const BrokerCard = ({ brokers = [] }) => {
         ConnectOptions: nextAction,
       },
       {
-        onSuccess: (resp) => {
+        onSuccess: () => {
           setSelectedBroker((prev) =>
             prev
               ? {
@@ -57,15 +54,42 @@ const BrokerCard = ({ brokers = [] }) => {
           );
         },
         onSettled: () => {
-          // allow future toggles
           mutatingRef.current = false;
         },
       }
     );
   };
 
+  const handleToggleTradeEngine = (e) => {
+    e.stopPropagation();
+    if (!selectedBroker || isPending || mutatingRef.current) return;
+    const nextAction =
+      selectedBroker.tradeEngineStatus === "Running" ? "Stop" : "Start";
+    // Show confirm only when starting
+    if (nextAction === "Start") {
+      setConfirmOpen(true);
+      return;
+    }
+    performToggleTradeEngine(nextAction);
+  };
+
   return (
     <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white overflow-hidden">
+      <ConfirmModal
+        open={confirmOpen}
+        title="Start Trade Engine?"
+        message={
+          "This will start executing live trades for the selected broker.\nMake sure your strategies and margins are configured."
+        }
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={isPending}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          performToggleTradeEngine("Start");
+        }}
+      />
       {isPending && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm bg-white/70 dark:bg-black/50">
           <div className="w-14 h-14 border-4 border-t-transparent border-blue-500 rounded-full animate-spin mb-3"></div>
