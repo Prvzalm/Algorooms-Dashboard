@@ -240,7 +240,7 @@ const BacktestStrategyComponent = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowExportMenu((prev) => !prev)}
-              className="text-sm px-4 py-3 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
+              className="text-sm px-4 py-2 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
             >
               Export to PDF <FiChevronDown />
             </button>

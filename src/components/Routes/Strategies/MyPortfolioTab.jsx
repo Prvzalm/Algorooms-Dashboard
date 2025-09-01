@@ -453,7 +453,34 @@ const MyPortfolioTab = () => {
             </button>
           ))}
         </div>
+      </div>
 
+      {showCustomRange && (
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-sm">Select Date Range:</span>
+          <DatePicker
+            selectsRange
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setCustomRange(update)}
+            isClearable
+            placeholderText="Choose range"
+            className="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-[#2D2F36] bg-white dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
+          />
+        </div>
+      )}
+
+      <div className="flex border rounded-xl items-center px-4 py-2 justify-between mb-4 text-sm font-medium">
+        <div>
+          Backtest Credit:{" "}
+          <span className="text-black dark:text-white">
+            {counter
+              ? `${
+                  counter.AllowedBacktestCount - counter.RunningBacktestCount
+                }/${counter.AllowedBacktestCount}`
+              : "--/--"}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative" ref={dropdownRef}>
             <button
@@ -500,34 +527,6 @@ const MyPortfolioTab = () => {
           >
             {isFetchingMulti ? "Running..." : "Run Backtest"}
           </button>
-        </div>
-      </div>
-
-      {showCustomRange && (
-        <div className="mb-4 flex items-center gap-3">
-          <span className="text-sm">Select Date Range:</span>
-          <DatePicker
-            selectsRange
-            startDate={startDate}
-            endDate={endDate}
-            onChange={(update) => setCustomRange(update)}
-            isClearable
-            placeholderText="Choose range"
-            className="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-[#2D2F36] bg-white dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
-          />
-        </div>
-      )}
-
-      <div className="flex border rounded-xl items-center px-4 py-2 justify-between mb-4 text-sm font-medium">
-        <div>
-          Backtest Credit:{" "}
-          <span className="text-black dark:text-white">
-            {counter
-              ? `${
-                  counter.AllowedBacktestCount - counter.RunningBacktestCount
-                }/${counter.AllowedBacktestCount}`
-              : "--/--"}
-          </span>
         </div>
       </div>
 
