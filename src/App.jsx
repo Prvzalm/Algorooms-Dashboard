@@ -93,6 +93,10 @@ function App() {
                       element={<StrategyBuilder />}
                     />
                     <Route
+                      path="/trading/strategy-builder/:strategyId"
+                      element={<StrategyBuilder />}
+                    />
+                    <Route
                       path="/trading/signals"
                       element={<TradingviewSignalsPage />}
                     />

@@ -1,7 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { useCreateStrategyMutation } from "../../../hooks/strategyHooks";
+import {
+  useCreateStrategyMutation,
+  useStrategyDetailsForEdit,
+} from "../../../hooks/strategyHooks";
 import { toast } from "react-toastify";
+import { useParams, useNavigate } from "react-router-dom";
 import Leg1 from "./Leg1";
 import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
@@ -9,6 +13,8 @@ import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
 
 const StrategyBuilder = () => {
+  const { strategyId } = useParams();
+  const editing = !!strategyId;
   const initialFormValuesRef = useRef({
     StrategyName: "",
     StrategyType: "time",
@@ -103,6 +109,12 @@ const StrategyBuilder = () => {
   });
   const { handleSubmit, setValue, reset, getValues } = methods;
   const { mutate, isPending } = useCreateStrategyMutation();
+  const {
+    data: editDetails,
+    isLoading: editLoading,
+    isError: editError,
+  } = useStrategyDetailsForEdit(strategyId, editing);
+  const navigate = useNavigate();
   const [selectedStrategyTypes, setSelectedStrategyTypes] = useState(["time"]);
   const [selectedInstrument, setSelectedInstrument] = useState("");
   const [selectedEquityInstruments, setSelectedEquityInstruments] = useState(
@@ -122,6 +134,85 @@ const StrategyBuilder = () => {
     setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([id]);
   };
+
+  // Prefill when in edit mode and API data loaded
+  useEffect(() => {
+    if (!editing) return;
+    if (editLoading || editError) return;
+    if (!editDetails) return;
+    try {
+      // Map API shape to form values; using direct fields when name matches
+      const d = editDetails;
+      const mapped = {
+        StrategyName: d.StrategyName || "",
+        StrategyType:
+          d.StrategyType === "Select" ? "time" : d.StrategyType || "time",
+        StrategySegmentType:
+          d.StrategySegmentType === "OPTION"
+            ? "Option"
+            : d.StrategySegmentType || "Option",
+        ProductType: d.ProductType || 0,
+        TradeStartTime: d.TradeStartTime || "09:16",
+        AutoSquareOffTime: d.AutoSquareOffTime || d.TradeStopTime || "15:15",
+        ActiveDays: d.ActiveDays || ["MON", "TUE", "WED", "THU", "FRI"],
+        ExitWhenTotalProfit: d.ExitWhenTotalProfit || 0,
+        ExitWhenTotalLoss: d.ExitWhenTotalLoss || d.ExitWhenTotalLoss || 0,
+        TrailProfitType: d.TrailProfitType || 0,
+        LockProfitAt: d.LockProfitAt || 0,
+        LockProfit: d.LockProfit || 0,
+        TrailProfitBy: d.TrailProfitBy || 0,
+        Trail_SL: d.Trail_SL || 0,
+        SquareOffAllOptionLegOnSl: d.SquareOffAllOptionLegOnSl || false,
+        StrategyScriptList: d.StrategyScriptList || [],
+        LongEntryEquation: d.LongEntryEquation || [],
+        ShortEntryEquation: d.ShortEntryEquation || [],
+        Long_ExitEquation: d.Long_ExitEquation || [],
+        Short_ExitEquation: d.Short_ExitEquation || [],
+        IsChartOnOptionStrike: d.IsChartOnOptionStrike || false,
+        isBtSt: d.isBtSt || false,
+        StrategyId: d.StrategyId || 0,
+        Interval: d.Interval || 1,
+        SL: d.SL || 0,
+        Target: d.Target || 0,
+        Privacy: d.Privacy || "Private",
+        Copy_Allowed: d.Copy_Allowed || false,
+        StrategyExecuterId: d.StrategyExecuterId || 0,
+        OrderType: d.OrderType || 0,
+        TransactionType: d.TransactionType || 0,
+        TpSLType: d.TpSLType || 0,
+        MinimumCapital: d.MinimumCapital || 0,
+        ProfitTranches: d.ProfitTranches || 0,
+        strategyTag: d.strategyTag || "any",
+        RiskDescription: d.RiskDescription || null,
+        subscriptionprice: d.subscriptionprice || 0,
+        subscriptiondays: d.subscriptiondays || 0,
+        MaxTrade: d.MaxTrade || 0,
+        MaxDD: d.MaxDD || 0,
+        Roi: d.Roi || 0,
+        isTradeOnTriggerCandle: d.isTradeOnTriggerCandle || false,
+        BuyWhen: d.BuyWhen || null,
+        ShortWhen: d.ShortWhen || null,
+        IsContiniousTriggerCandle: d.IsContiniousTriggerCandle || false,
+        ChartType: d.ChartType || 1,
+        EntryDaysBeforExpiry: d.EntryDaysBeforExpiry || 0,
+        ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
+      };
+      reset(mapped);
+      setSelectedStrategyTypes([mapped.StrategyType]);
+      // Instrument inference
+      if (mapped.StrategyScriptList?.[0]) {
+        setSelectedInstrument({
+          Name: mapped.StrategyScriptList[0].InstrumentName,
+          InstrumentToken: mapped.StrategyScriptList[0].InstrumentToken,
+          SegmentType: mapped.StrategySegmentType,
+          LotSize: mapped.StrategyScriptList[0].Qty || 0,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to prefill edit strategy", e);
+      toast.error("Failed to load strategy for edit");
+    }
+  }, [editing, editDetails, editLoading, editError, reset]);
 
   useEffect(() => {
     setValue("StrategyType", selectedStrategyTypes[0] || "", {
@@ -553,12 +644,31 @@ const StrategyBuilder = () => {
     (selectedEquityInstruments.length > 0 ||
       (selectedInstrument && selectedInstrument.SegmentType === "Equity"));
 
+  if (editing && editLoading) {
+    return <div className="p-6">Loading strategy...</div>;
+  }
+  if (editing && editError) {
+    return <div className="p-6 text-red-500">Failed to load strategy.</div>;
+  }
+
   return (
     <FormProvider {...methods}>
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-6 text-sm text-gray-700 dark:text-gray-200 overflow-hidden"
       >
+        {editing && (
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => navigate("/strategies")}
+              className="inline-flex items-center gap-2 text-sm text-[#0096FF] hover:underline"
+            >
+              <span className="text-lg">←</span>
+              <span>Back to Strategies</span>
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -679,7 +789,13 @@ const StrategyBuilder = () => {
             disabled={isPending}
             className="ml-auto bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50"
           >
-            {isPending ? "Saving..." : "Create"}
+            {isPending
+              ? editing
+                ? "Saving..."
+                : "Saving..."
+              : editing
+              ? "Save"
+              : "Create"}
           </button>
         </div>
       </form>

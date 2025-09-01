@@ -8,6 +8,8 @@ import {
   changeDeployedStrategyTradeMode,
   squareOffStrategy,
   duplicateStrategy,
+  getStrategyDetailsForEdit,
+  deleteStrategy,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -120,6 +122,30 @@ export const useDuplicateStrategy = () => {
     },
     onError: (err) => {
       const msg = err?.message || err?.response?.data?.Message || "Duplication failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useStrategyDetailsForEdit = (strategyId, enabled = true) => {
+  return useQuery({
+    queryKey: ["strategy-details-edit", strategyId],
+    queryFn: () => getStrategyDetailsForEdit(strategyId),
+    enabled: !!strategyId && enabled,
+    staleTime: 1000 * 60,
+  });
+};
+
+export const useDeleteStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (strategyId) => deleteStrategy(strategyId),
+    onSuccess: (data) => {
+      toast.success(data?.Message || "Strategy deleted");
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.message || err?.response?.data?.Message || "Delete failed";
       toast.error(msg);
     },
   });

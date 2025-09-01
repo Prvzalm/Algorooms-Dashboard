@@ -108,3 +108,52 @@ export const duplicateStrategy = async (payload) => {
     throw new Error(serverMsg);
   }
 };
+
+// Fetch strategy details for editing
+// Returns raw StrategyDetails object
+export const getStrategyDetailsForEdit = async (strategyId) => {
+  if (!strategyId) throw new Error("strategyId required");
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/GetStrategyDetailsOnEdit",
+      { StrategyId: Number(strategyId) }
+    );
+    const { Status, Data, Message } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to load strategy details");
+    }
+    return Data?.StrategyDetails || null;
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to load strategy details";
+    throw new Error(serverMsg);
+  }
+};
+
+// Delete a strategy by id
+export const deleteStrategy = async (strategyId) => {
+  if (!strategyId) throw new Error("strategyId required");
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/DeleteStrategy",
+      { StrategyId: Number(strategyId) }
+    );
+    const { Status, Message } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to delete strategy");
+    }
+    return { Message };
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to delete strategy";
+    throw new Error(serverMsg);
+  }
+};

@@ -19,7 +19,10 @@ import {
   useUserStrategies,
   useChangeDeployedStrategyTradeMode,
   useSquareOffStrategyMutation,
+  useDuplicateStrategy,
+  useDeleteStrategy,
 } from "../../../hooks/strategyHooks";
+import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
 import ConfirmModal from "../../ConfirmModal";
@@ -54,6 +57,13 @@ const StrategiesPage = () => {
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
   const [showStrategyPopup, setShowStrategyPopup] = useState(false);
   const navigate = useNavigate();
+  const [actionMenuOpenId, setActionMenuOpenId] = useState(null);
+  const [dupModalOpen, setDupModalOpen] = useState(false);
+  const [dupTarget, setDupTarget] = useState(null);
+  const { mutate: mutateDuplicate, isPending: duplicating } =
+    useDuplicateStrategy();
+  const { mutate: mutateDelete, isPending: deleting } = useDeleteStrategy();
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // pagination state for "Strategies" sub tab
   const pageSize = 10;
@@ -344,12 +354,12 @@ const StrategiesPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {userStrategies.map((strategy, index) => (
+            {userStrategies.map((strategy) => (
               <div
-                key={index}
-                className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5"
+                key={strategy.StrategyId}
+                className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5 relative"
               >
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-2 relative">
                   <div>
                     <h3 className="text-base font-semibold text-[#2E3A59] dark:text-white">
                       {strategy.StrategyName}
@@ -358,9 +368,53 @@ const StrategiesPage = () => {
                       By {strategy.CreatedBy}
                     </p>
                   </div>
-                  <div className="text-gray-400 dark:text-gray-500 text-xl">
+                  <button
+                    className="text-gray-400 dark:text-gray-500 text-xl px-2 py-1 hover:text-[#0096FF]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActionMenuOpenId((prev) =>
+                        prev === strategy.StrategyId
+                          ? null
+                          : strategy.StrategyId
+                      );
+                    }}
+                  >
                     ⋮
-                  </div>
+                  </button>
+                  {actionMenuOpenId === strategy.StrategyId && (
+                    <div className="absolute right-0 top-7 z-30 w-40 rounded-lg border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg text-xs py-2">
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36]"
+                        onClick={() => {
+                          navigate(
+                            `/trading/strategy-builder/${strategy.StrategyId}`
+                          );
+                          setActionMenuOpenId(null);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36]"
+                        onClick={() => {
+                          setDupTarget(strategy);
+                          setDupModalOpen(true);
+                          setActionMenuOpenId(null);
+                        }}
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                        onClick={() => {
+                          setConfirmDeleteId(strategy.StrategyId);
+                          setActionMenuOpenId(null);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-4 text-xs text-[#718EBF] dark:text-gray-400 mt-3">
@@ -414,6 +468,43 @@ const StrategiesPage = () => {
             ))}
           </div>
         )}
+        <DuplicateStrategyModal
+          open={dupModalOpen}
+          originalName={dupTarget?.StrategyName}
+          loading={duplicating}
+          onCancel={() => {
+            setDupModalOpen(false);
+            setDupTarget(null);
+          }}
+          onSubmit={(newName) => {
+            if (!dupTarget) return;
+            mutateDuplicate(
+              { StrategyId: dupTarget.StrategyId, StrategyName: newName },
+              {
+                onSuccess: () => {
+                  setDupModalOpen(false);
+                  setDupTarget(null);
+                },
+              }
+            );
+          }}
+        />
+        <ConfirmModal
+          open={!!confirmDeleteId}
+          title="Delete Strategy?"
+          message="This action cannot be undone. Are you sure you want to delete this strategy?"
+          confirmLabel={deleting ? "Deleting..." : "Delete"}
+          cancelLabel="Cancel"
+          loading={deleting}
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            if (!confirmDeleteId) return;
+            mutateDelete(confirmDeleteId, {
+              onSuccess: () => setConfirmDeleteId(null),
+              onError: () => {},
+            });
+          }}
+        />
       </>
     );
   };
