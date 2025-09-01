@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   emptyDeployedStrategy,
   emptyStrategy,
@@ -46,7 +46,11 @@ const mockSignalStrategies = [
 ];
 
 const StrategiesPage = () => {
-  const [activeTab, setActiveTab] = useState("My Strategies");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(
+    // prefer navigation state if provided
+    location?.state?.activeTab || "My Strategies"
+  );
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
   const [showStrategyPopup, setShowStrategyPopup] = useState(false);
   const navigate = useNavigate();
@@ -57,6 +61,14 @@ const StrategiesPage = () => {
   useEffect(() => {
     setStrategyPage(1); // reset page on sub tab change
   }, [activeSubTab, activeTab]);
+
+  // If navigation provides an activeTab (via location.state), ensure we pick it up
+  useEffect(() => {
+    if (location?.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.state?.activeTab, location?.pathname]);
 
   const {
     data: userStrategies = [],

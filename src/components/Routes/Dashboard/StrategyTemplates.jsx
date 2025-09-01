@@ -86,18 +86,20 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
             ref={filterRef}
           >
             <div className="relative">
-              <button
-                onClick={() => setShowFilters((o) => !o)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E2027] text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#262a31]"
-              >
-                Filters
-                {(orderBy !== "Recent" || filterMargins) && (
-                  <span className="ml-1 inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 px-2 py-0.5 rounded-full">
-                    {orderBy !== "Recent" && <span>{orderBy}</span>}
-                    {filterMargins && <span>{filterMargins}</span>}
-                  </span>
-                )}
-              </button>
+              {!showSeeAll && (
+                <button
+                  onClick={() => setShowFilters((o) => !o)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E2027] text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#262a31]"
+                >
+                  Filters
+                  {(orderBy !== "Recent" || filterMargins) && (
+                    <span className="ml-1 inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                      {orderBy !== "Recent" && <span>{orderBy}</span>}
+                      {filterMargins && <span>{filterMargins}</span>}
+                    </span>
+                  )}
+                </button>
+              )}
               {showFilters && (
                 <div className="absolute right-0 mt-2 z-50 w-[420px] max-w-[90vw] bg-white dark:bg-[#1F1F24] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden flex text-sm animate-fadeIn">
                   {/* Categories */}
@@ -227,7 +229,11 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
             </div>
             {showSeeAll && (
               <button
-                onClick={() => navigate("/strategies")}
+                onClick={() =>
+                  navigate("/strategies", {
+                    state: { activeTab: "Strategy Templates" },
+                  })
+                }
                 className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
               >
                 See All
@@ -245,12 +251,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
           >
             <div>
               <p className="font-semibold mb-2">{item.StrategyName}</p>
-
-              <p className="text-gray-600 dark:text-gray-400 text-xs mb-3">
-                Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam
-                mi ornare senectus orci.
-              </p>
-              <div className="flex text-xs gap-x-6">
+              <div className="flex justify-between items-center text-xs gap-x-6">
                 <p>
                   Max DD:{" "}
                   <span className="text-red-400">{item.MaxDD ?? "N/A"}</span>
