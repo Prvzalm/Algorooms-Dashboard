@@ -93,6 +93,7 @@ const TradingviewSignalsPage = () => {
               onClose={() => setShowInstrumentModal(false)}
               selected={selectedInstrument}
               setSelected={setSelectedInstrument}
+              selectedStrategyTypes={selectedStrategyTypes}
             />
           </div>
 

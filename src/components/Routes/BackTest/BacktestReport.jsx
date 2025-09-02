@@ -10,16 +10,15 @@ import { Line } from "react-chartjs-2";
 
 ChartJS.register(LineElement, LinearScale, CategoryScale, PointElement);
 
-const BacktestReport = () => {
+const BacktestReport = ({ overall, equityCurve }) => {
+  const labels = equityCurve?.labels || [];
+  const values = equityCurve?.values || [];
   const chartData = {
-    labels: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+    labels,
     datasets: [
       {
         label: "Equity Curve",
-        data: [
-          0, 1000, 2000, 2500, 2200, 2200, 2600, 2600, 2600, 2600, 3000, 3500,
-          4000,
-        ],
+        data: values,
         fill: true,
         backgroundColor: "rgba(0, 150, 255, 0.08)",
         borderColor: "#0096FF",
@@ -54,10 +53,26 @@ const BacktestReport = () => {
     <div className="w-full bg-white dark:bg-darkbg text-[#2E3A59] dark:text-white rounded-xl">
       <div className="flex flex-col justify-between mb-4">
         <p className="text-lg font-medium">
-          P&amp;L: <span className="text-red-500">₹ -722.40</span>
+          P&amp;L:{" "}
+          <span
+            className={
+              overall?.TotalProfitLoss >= 0 ? "text-green-500" : "text-red-500"
+            }
+          >
+            ₹{" "}
+            {overall?.TotalProfitLoss?.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
         </p>
         <p className="text-lg font-medium">
-          Max. Draw down: <span className="text-red-500">₹ 5,589.40</span>
+          Max. Draw down:{" "}
+          <span className="text-red-500">
+            ₹{" "}
+            {overall?.CommulitiveDrawDown?.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
         </p>
       </div>
 

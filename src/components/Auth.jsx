@@ -7,11 +7,8 @@ import { jwtDecode } from "jwt-decode";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
 import {
-  useChangePasswordMutation,
   useForgotPasswordMutation,
   useGoogleLoginMutation,
-  useLoginMutation,
-  useRegisterMutation,
   useRequestEmailOtpMutation,
   useRequestMobileOtpMutation,
   useResetPasswordMutation,
@@ -19,8 +16,10 @@ import {
   useValidateMobileOtpMutation,
 } from "../hooks/loginHooks";
 import SignupFlow from "./SignupFlow";
+import { useAuth } from "../context/AuthContext";
 
 export default function Auth() {
+  const { login } = useAuth();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,11 +27,9 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-  const [name, setName] = useState("");
   const [resetTicket, setResetTicket] = useState(null);
   const otpRefs = useRef([]);
 
-  const { mutate: loginUser } = useLoginMutation();
   const { mutate: googleLoginUser } = useGoogleLoginMutation();
   const { mutate: forgotPasswordUser } = useForgotPasswordMutation();
   const { mutate: resetPasswordUser } = useResetPasswordMutation();
@@ -75,32 +72,21 @@ export default function Auth() {
     otpRefs.current[focusIndex]?.focus();
   };
 
-  const handleLogin = (email, password) => {
+  const handleLogin = async (email, password) => {
     if (!email || !password) return toast.info("Enter email and password");
 
-    loginUser(
-      {
-        UserId: email,
-        Password: password,
-        ApiKey: "abc",
-      },
-      {
-        onSuccess: (res) => {
-          if (res.data.Status === "Success") {
-            localStorage.setItem("token", res.data.Data.AccessToken);
-            axiosInstance.defaults.headers.common[
-              "Authorization"
-            ] = `Bearer ${res.data.Data.AccessToken}`;
-            window.location.reload();
-            toast.success("Logged in successfully");
-            navigate("/");
-          } else {
-            toast.error(res.data.Message || "Login failed");
-          }
-        },
-        onError: () => toast.error("Login error"),
-      }
-    );
+    const res = await login({
+      UserId: email,
+      Password: password,
+      ApiKey: "abc",
+    });
+
+    if (res.success) {
+      toast.success("Logged in successfully");
+      navigate("/");
+    } else {
+      toast.error(res.message || "Login failed");
+    }
   };
 
   const handleForgot = (email) => {
@@ -154,7 +140,6 @@ export default function Auth() {
     if (!newPassword) return toast.info("Enter new password");
 
     if (resetTicket) {
-      // Use resetPassword when we have a reset ticket from OTP verification
       resetPasswordUser(
         {
           ResetTicket: resetTicket,
@@ -291,9 +276,12 @@ export default function Auth() {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const userInfo = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        }).then((r) => r.json());
+        const userInfo = await fetch(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          }
+        ).then((r) => r.json());
 
         const { email: gEmail, name: gName, picture: gPicture } = userInfo;
 

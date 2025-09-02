@@ -1,16 +1,22 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { queryClient } from "../queryClient";
-import { useNavigate } from "react-router-dom";
+import { getProfileData } from "../api/profileApi";
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+  token: null,
+  user: null,
+  login: async () => ({ success: false }),
+  logout: () => {},
+  loading: true,
+});
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate();
+  const loadingProfileRef = useRef(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -19,22 +25,29 @@ export const AuthProvider = ({ children }) => {
       axiosInstance.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${storedToken}`;
-      fetchUserProfile();
+      ensureProfile();
     } else {
       setLoading(false);
     }
   }, []);
 
-  const fetchUserProfile = async () => {
+  const ensureProfile = async () => {
+    if (loadingProfileRef.current || user) return; // avoid duplicate
+    loadingProfileRef.current = true;
     try {
-      const res = await axiosInstance.get("/profile/getProfileData");
-      if (res.data.Status === "Success") {
-        setUser(res.data.Data);
-        navigate("/", { replace: true });
+      // Try cache first
+      const cached = queryClient.getQueryData(["profile"]);
+      if (cached) {
+        setUser(cached);
+        return;
       }
+      const data = await getProfileData();
+      setUser(data);
+      queryClient.setQueryData(["profile"], data);
     } catch (err) {
       console.error("Profile fetch error", err);
     } finally {
+      loadingProfileRef.current = false;
       setLoading(false);
     }
   };
@@ -57,7 +70,7 @@ export const AuthProvider = ({ children }) => {
           "Authorization"
         ] = `Bearer ${Data.AccessToken}`;
 
-        await fetchUserProfile();
+        await ensureProfile();
 
         return { success: true };
       } else {
