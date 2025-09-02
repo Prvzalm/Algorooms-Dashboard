@@ -1,26 +1,76 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserBrokerData } from "../../../hooks/dashboardHooks";
+import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
+import { emptyDeployedStrategy } from "../../../assets";
+import ConfirmModal from "../../ConfirmModal";
 
 const BrokerSection = () => {
-  const [terminalToggles, setTerminalToggles] = useState({});
-  const [engineToggles, setEngineToggles] = useState({});
+  // Local UI override states (so UI feels instant after mutation)
+  const [engineStatusOverrides, setEngineStatusOverrides] = useState({}); // BrokerClientId -> "Running"|"Stopped"
+  const [pendingBrokerId, setPendingBrokerId] = useState(null); // track which broker row is mutating
+  const mutatingRef = useRef(false);
+  const [confirmForBrokerId, setConfirmForBrokerId] = useState(null); // BrokerClientId awaiting start confirmation
   const navigate = useNavigate();
 
   const { data: brokers = [], isLoading, isError } = useUserBrokerData();
+  const { mutate: mutateTradeEngine, isPending } = useStartStopTradeEngine();
 
-  const handleToggleTerminal = (id) => {
-    setTerminalToggles((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  const getEffectiveTradeEngineStatus = (broker) => {
+    const override = engineStatusOverrides[broker.BrokerClientId];
+    return override || broker.TradeEngineStatus;
   };
 
-  const handleToggleEngine = (id) => {
-    setEngineToggles((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  const handleTerminalLogin = (broker) => {
+    if (!broker?.APILoginUrl) return; // nothing to do
+    // Save identifiers for ConnectBroker route to process
+    localStorage.setItem("selected-broker-client-id", broker.BrokerClientId);
+    localStorage.setItem(
+      "broker-auth-query-key",
+      broker.brokerAuthQueryString || "request_token"
+    );
+    window.location.href = broker.APILoginUrl;
+  };
+
+  const performToggleTradeEngine = (broker, nextAction) => {
+    if (!broker || isPending || mutatingRef.current) return;
+    mutatingRef.current = true;
+    setPendingBrokerId(broker.BrokerClientId);
+    mutateTradeEngine(
+      {
+        TradeEngineName:
+          broker.TradeEngineName ||
+          broker.TradeEngine ||
+          broker.tradeEngineName,
+        BrokerClientId: broker.BrokerClientId,
+        ConnectOptions: nextAction,
+      },
+      {
+        onSuccess: () => {
+          setEngineStatusOverrides((prev) => ({
+            ...prev,
+            [broker.BrokerClientId]:
+              nextAction === "Start" ? "Running" : "Stopped",
+          }));
+        },
+        onSettled: () => {
+          mutatingRef.current = false;
+          setPendingBrokerId(null);
+          setConfirmForBrokerId(null);
+        },
+      }
+    );
+  };
+
+  const handleToggleTradeEngine = (broker) => {
+    if (!broker || isPending || mutatingRef.current) return;
+    const currentStatus = getEffectiveTradeEngineStatus(broker);
+    const nextAction = currentStatus === "Running" ? "Stop" : "Start";
+    if (nextAction === "Start") {
+      setConfirmForBrokerId(broker.BrokerClientId);
+      return;
+    }
+    performToggleTradeEngine(broker, nextAction);
   };
 
   return (
@@ -54,70 +104,146 @@ const BrokerSection = () => {
             <img src={emptyDeployedStrategy} alt="No brokers" />
           </div>
         ) : (
-          <div className="space-y-4">
-            {brokers.map((broker, index) => (
-              <div
-                key={index}
-                className="border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={broker.brokerLogoUrl}
-                    alt={`${broker.BrokerName} logo`}
-                    className="w-12 h-12 sm:w-16 sm:h-16"
-                  />
-                  <div>
-                    <p className="font-semibold text-[#2E3A59] dark:text-white">
-                      {broker.BrokerName}
+          <div className="space-y-4 relative">
+            <ConfirmModal
+              open={!!confirmForBrokerId}
+              title="Start Trade Engine?"
+              message={
+                "This will begin live trading for the selected broker.\nEnsure strategies & margins are configured."
+              }
+              confirmLabel="OK"
+              cancelLabel="Cancel"
+              loading={isPending}
+              onCancel={() => setConfirmForBrokerId(null)}
+              onConfirm={() => {
+                const broker = brokers.find(
+                  (b) => b.BrokerClientId === confirmForBrokerId
+                );
+                setConfirmForBrokerId(null);
+                if (broker) performToggleTradeEngine(broker, "Start");
+              }}
+            />
+            {brokers.map((broker, index) => {
+              const tradeEngineStatus = getEffectiveTradeEngineStatus(broker);
+              const rowPending =
+                pendingBrokerId === broker.BrokerClientId && isPending;
+              return (
+                <div
+                  key={index}
+                  className="relative border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                >
+                  {rowPending && (
+                    <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center bg-white/70 dark:bg-black/40 backdrop-blur-sm z-10">
+                      <div className="w-10 h-10 border-4 border-t-transparent border-[#0096FF] rounded-full animate-spin mb-2" />
+                      <p className="text-xs text-[#2E3A59] dark:text-gray-300 font-medium">
+                        Updating...
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={broker.brokerLogoUrl}
+                      alt={`${broker.BrokerName} logo`}
+                      className="w-12 h-12 sm:w-16 sm:h-16"
+                    />
+                    <div>
+                      <p className="font-semibold text-[#2E3A59] dark:text-white">
+                        {broker.BrokerName}
+                      </p>
+                      <p className="text-[11px] text-[#718EBF]">
+                        {broker.BrokerClientId}
+                      </p>
+                      <p className="mt-1 text-[11px]">
+                        <span className="text-[#718EBF] dark:text-[#A0AEC0]">
+                          Login:
+                        </span>{" "}
+                        <span
+                          className={
+                            broker.BrokerLoginStatus
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-500"
+                          }
+                        >
+                          {broker.BrokerLoginStatus
+                            ? "Connected"
+                            : "Not Connected"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-center sm:text-left hidden sm:block">
+                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                      Strategy Performance
                     </p>
-                    <p className="text-xs text-[#718EBF]">
-                      {broker.BrokerClientId}
+                    <p className="font-semibold text-[#2E3A59] dark:text-white">
+                      0.00
                     </p>
                   </div>
+
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                      Terminal
+                    </p>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        onChange={() => handleTerminalLogin(broker)}
+                        // Reflect login status visually (checked if logged in)
+                        checked={!!broker.BrokerLoginStatus}
+                        // Prevent direct toggle of checked state (managed by server refresh)
+                        readOnly
+                        disabled={rowPending}
+                      />
+                      <div
+                        className={`w-11 h-6 relative rounded-full transition-colors ${
+                          broker.BrokerLoginStatus
+                            ? "bg-[#0096FF]"
+                            : "bg-gray-200 dark:bg-[#2D2F36]"
+                        } ${rowPending ? "opacity-60" : ""}`}
+                      >
+                        <span
+                          className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                            broker.BrokerLoginStatus ? "translate-x-full" : ""
+                          }`}
+                        />
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                      Trading Engine
+                    </p>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={tradeEngineStatus === "Running"}
+                        onChange={() => handleToggleTradeEngine(broker)}
+                        disabled={rowPending}
+                      />
+                      <div
+                        className={`w-11 h-6 relative rounded-full transition-colors ${
+                          tradeEngineStatus === "Running"
+                            ? "bg-green-600"
+                            : "bg-gray-200 dark:bg-[#2D2F36]"
+                        } ${rowPending ? "opacity-60" : ""}`}
+                      >
+                        <span
+                          className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                            tradeEngineStatus === "Running"
+                              ? "translate-x-full"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                    </label>
+                  </div>
                 </div>
-
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                    Strategy Performance
-                  </p>
-                  <p className="font-semibold text-[#2E3A59] dark:text-white">
-                    0.00
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                    Terminal
-                  </p>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={terminalToggles[broker.id] || false}
-                      onChange={() => handleToggleTerminal(broker.id)}
-                    />
-
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none rounded-full peer peer-checked:bg-[#0096FF] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                    Trading Engine
-                  </p>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={engineToggles[broker.id] || false}
-                      onChange={() => handleToggleEngine(broker.id)}
-                    />
-
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none rounded-full peer peer-checked:bg-[#0096FF] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                  </label>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

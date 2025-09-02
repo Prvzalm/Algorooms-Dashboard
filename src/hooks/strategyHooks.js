@@ -1,12 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { searchInstrument, userCreatedStrategies, createStrategy } from "../api/strategies";
+import { toast } from "react-toastify";
+import {
+  searchInstrument,
+  userCreatedStrategies,
+  createStrategy,
+  getIndicatorMaster,
+  changeDeployedStrategyTradeMode,
+  squareOffStrategy,
+  duplicateStrategy,
+  getStrategyDetailsForEdit,
+  deleteStrategy,
+} from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
 export const useSearchInstrument = (segmentType, query, enabled = true) => {
   return useQuery({
     queryKey: ["search-instrument", segmentType, query],
     queryFn: () => searchInstrument({ segmentType, query }),
-    enabled: enabled && !!query,
+    enabled: enabled,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -47,6 +58,95 @@ export const useCreateStrategyMutation = () => {
     mutationFn: (payload) => createStrategy(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["strategies"] });
+    },
+  });
+};
+
+export const useIndicatorMaster = (enabled = true) => {
+  return useQuery({
+    queryKey: ["indicator-master"],
+    queryFn: () => getIndicatorMaster(),
+    enabled,
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useChangeDeployedStrategyTradeMode = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => changeDeployedStrategyTradeMode(payload),
+    onSuccess: (data) => {
+      const status = data?.Status?.toLowerCase();
+      if (status === "success") {
+        toast.success(data?.Message || "Updated Successfully");
+      } else {
+        toast.error(data?.Message || "Update failed");
+      }
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useSquareOffStrategyMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => squareOffStrategy(payload),
+    onSuccess: (data) => {
+      const status = data?.Status?.toLowerCase();
+      if (status === "success") {
+        toast.success(data?.Message || "Squared Off");
+      } else {
+        toast.error(data?.Message || "Square off failed");
+      }
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useDuplicateStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => duplicateStrategy(payload),
+    onSuccess: (data) => {
+      toast.success(data?.Message || "Strategy duplicated");
+      // Invalidate user strategies so new copy shows up
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.message || err?.response?.data?.Message || "Duplication failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useStrategyDetailsForEdit = (strategyId, enabled = true) => {
+  return useQuery({
+    queryKey: ["strategy-details-edit", strategyId],
+    queryFn: () => getStrategyDetailsForEdit(strategyId),
+    enabled: !!strategyId && enabled,
+    staleTime: 1000 * 60,
+  });
+};
+
+export const useDeleteStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (strategyId) => deleteStrategy(strategyId),
+    onSuccess: (data) => {
+      toast.success(data?.Message || "Strategy deleted");
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.message || err?.response?.data?.Message || "Delete failed";
+      toast.error(msg);
     },
   });
 };

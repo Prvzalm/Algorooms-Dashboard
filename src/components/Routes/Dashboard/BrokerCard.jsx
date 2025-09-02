@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { FiChevronDown } from "react-icons/fi";
+import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
+import ConfirmModal from "../../ConfirmModal";
 
 const BrokerCard = ({ brokers = [] }) => {
   const [selectedBroker, setSelectedBroker] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { mutate, isPending } = useStartStopTradeEngine();
+  const mutatingRef = useRef(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (brokers.length > 0) {
@@ -27,8 +32,75 @@ const BrokerCard = ({ brokers = [] }) => {
     setDropdownOpen(false);
   };
 
+  const performToggleTradeEngine = (nextAction) => {
+    if (!selectedBroker || isPending || mutatingRef.current) return;
+    mutatingRef.current = true;
+    mutate(
+      {
+        TradeEngineName: selectedBroker.tradeEngineName,
+        BrokerClientId: selectedBroker.code,
+        ConnectOptions: nextAction,
+      },
+      {
+        onSuccess: () => {
+          setSelectedBroker((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  tradeEngineStatus:
+                    nextAction === "Start" ? "Running" : "Stopped",
+                }
+              : prev
+          );
+        },
+        onSettled: () => {
+          mutatingRef.current = false;
+        },
+      }
+    );
+  };
+
+  const handleToggleTradeEngine = (e) => {
+    e.stopPropagation();
+    if (!selectedBroker || isPending || mutatingRef.current) return;
+    const nextAction =
+      selectedBroker.tradeEngineStatus === "Running" ? "Stop" : "Start";
+    // Show confirm only when starting
+    if (nextAction === "Start") {
+      setConfirmOpen(true);
+      return;
+    }
+    performToggleTradeEngine(nextAction);
+  };
+
   return (
-    <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white">
+    <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white overflow-hidden">
+      <ConfirmModal
+        open={confirmOpen}
+        title="Start Trade Engine?"
+        message={
+          "This will start executing live trades for the selected broker.\nMake sure your strategies and margins are configured."
+        }
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={isPending}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          performToggleTradeEngine("Start");
+        }}
+      />
+      {isPending && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm bg-white/70 dark:bg-black/50">
+          <div className="w-14 h-14 border-4 border-t-transparent border-blue-500 rounded-full animate-spin mb-3"></div>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Updating Trade Engine...
+          </p>
+          <p className="text-[11px] mt-1 text-gray-500 dark:text-gray-400">
+            This may take up some time
+          </p>
+        </div>
+      )}
       <div className="text-sm text-[#718EBF] dark:text-gray-400 mb-2">
         Broker
       </div>
@@ -93,7 +165,23 @@ const BrokerCard = ({ brokers = [] }) => {
         <div className="flex flex-col items-center text-sm space-y-1">
           <span className="text-[#718EBF] dark:text-gray-400">Terminal</span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" disabled />
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              onChange={() => {
+                if (!selectedBroker?.loginUrl) return;
+                localStorage.setItem(
+                  "selected-broker-client-id",
+                  selectedBroker.code
+                );
+                // Save expected query param key provided by API (fallback handled earlier)
+                localStorage.setItem(
+                  "broker-auth-query-key",
+                  selectedBroker.brokerAuthQueryString
+                );
+                window.location.href = selectedBroker.loginUrl;
+              }}
+            />
             <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
           </label>
         </div>
@@ -106,9 +194,20 @@ const BrokerCard = ({ brokers = [] }) => {
               type="checkbox"
               className="sr-only peer"
               checked={selectedBroker?.tradeEngineStatus === "Running"}
-              readOnly
+              onChange={handleToggleTradeEngine}
+              disabled={isPending}
             />
-            <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            <div
+              className={`w-11 h-6 ${
+                selectedBroker?.tradeEngineStatus === "Running"
+                  ? "bg-green-600"
+                  : "bg-gray-200 dark:bg-[#2D2F36]"
+              } relative rounded-full transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                selectedBroker?.tradeEngineStatus === "Running"
+                  ? "after:translate-x-full"
+                  : ""
+              } ${isPending ? "opacity-60" : ""}`}
+            ></div>
           </label>
         </div>
       </div>

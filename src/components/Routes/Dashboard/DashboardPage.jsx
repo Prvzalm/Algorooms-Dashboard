@@ -51,6 +51,8 @@ const Dashboard = () => {
       loginUrl: item.APILoginUrl,
       isLoggedIn: item.BrokerLoginStatus,
       tradeEngineStatus: item.TradeEngineStatus,
+      tradeEngineName: item.TradeEngineName || item.TradeEngine || null,
+      brokerAuthQueryString: item.brokerAuthQueryString,
     })) || [];
 
   const handleCloseNotice = () => {

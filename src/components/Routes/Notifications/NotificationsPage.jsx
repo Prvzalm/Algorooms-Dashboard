@@ -200,7 +200,7 @@ const NotificationsPage = () => {
   };
 
   return (
-    <div className="w-full px-4 md:px-6 py-6 text-[#2E3A59] dark:text-white">
+    <div className="w-full md:px-6 md:py-6 text-[#2E3A59] dark:text-white">
       <h2 className="text-xl font-semibold mb-4">My Notifications</h2>
 
       <div className="bg-white dark:bg-[#15171C] rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] p-4 md:p-6">

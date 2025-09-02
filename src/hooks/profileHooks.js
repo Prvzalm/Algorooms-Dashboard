@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { getProfileData } from "../api/profileApi";
 
-export const useProfileQuery = () =>
-  useQuery({
+export const useProfileQuery = () => {
+  const { user } = useAuth();
+  return useQuery({
     queryKey: ["profile"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/profile/getProfileData");
-      if (res.data.Status !== "Success")
-        throw new Error("Failed to load profile");
-      return res.data.Data;
-    },
+    queryFn: getProfileData,
     staleTime: 5 * 60 * 1000,
+    enabled: !user, // if context already has user, skip network
+    initialData: user || undefined,
   });
+};
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();

@@ -14,14 +14,19 @@ export const getBrokerwiseDeployedStrategies = async ({ orderBy = "Name" }) => {
   return response?.data?.Data;
 };
 
-export const getMarketplaceStrategies = async ({ page = 1, pageSize = 10 }) => {
+export const getMarketplaceStrategies = async ({
+  page = 1,
+  pageSize = 10,
+  orderBy = "Recent",
+  filterMargins = "",
+} = {}) => {
   const response = await axiosInstance.post(
     "/strategies/GetMarketPlaceStrategy",
     {
       FilterMarket: "",
       FilterStrategyTypes: "",
-      FilterMargins: "",
-      OrderBy: "Recent",
+      FilterMargins: filterMargins, // e.g. "1-100000"
+      OrderBy: orderBy, // "Recent" | "MaxSubscriptions" | "Margin"
       PageIndex: page,
       PageSize: pageSize,
     }
