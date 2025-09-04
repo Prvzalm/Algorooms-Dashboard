@@ -16,15 +16,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  if (token && !axiosInstance.defaults.headers.common["Authorization"]) {
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+
   const loadingProfileRef = useRef(false);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-      axiosInstance.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${storedToken}`;
+    if (token) {
       ensureProfile();
     } else {
       setLoading(false);
@@ -32,20 +31,23 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const ensureProfile = async () => {
-    if (loadingProfileRef.current || user) return; // avoid duplicate
+    if (loadingProfileRef.current || user) return;
     loadingProfileRef.current = true;
     try {
-      // Try cache first
-      const cached = queryClient.getQueryData(["profile"]);
-      if (cached) {
-        setUser(cached);
-        return;
-      }
+      console.log(
+        "Calling profile API with token:",
+        axiosInstance.defaults.headers.common["Authorization"]
+      );
       const data = await getProfileData();
+      console.log("Profile API response:", data);
       setUser(data);
       queryClient.setQueryData(["profile"], data);
     } catch (err) {
-      console.error("Profile fetch error", err);
+      console.error(
+        "Profile fetch error",
+        err.response?.status,
+        err.response?.data
+      );
     } finally {
       loadingProfileRef.current = false;
       setLoading(false);

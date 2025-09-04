@@ -4,8 +4,8 @@ import { queryClient } from "../queryClient";
 const axiosInstance = axios.create({
   baseURL: "/api",
   headers: {
-    "Content-Type": "application/json-patch+json",
-    Accept: "*/*",
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
