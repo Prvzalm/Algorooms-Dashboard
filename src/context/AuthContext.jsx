@@ -34,12 +34,7 @@ export const AuthProvider = ({ children }) => {
     if (loadingProfileRef.current || user) return;
     loadingProfileRef.current = true;
     try {
-      console.log(
-        "Calling profile API with token:",
-        axiosInstance.defaults.headers.common["Authorization"]
-      );
       const data = await getProfileData();
-      console.log("Profile API response:", data);
       setUser(data);
       queryClient.setQueryData(["profile"], data);
     } catch (err) {
