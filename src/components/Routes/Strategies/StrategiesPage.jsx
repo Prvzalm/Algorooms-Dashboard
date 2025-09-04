@@ -26,6 +26,9 @@ import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
 import ConfirmModal from "../../ConfirmModal";
+import { calculatePnlRow } from "../../../services/utils/calc";
+import { getExchangeCode } from "../../../services/utils/exchanges";
+import octopusInstance from "../../../services/WebSockets/feeds/octopusInstance";
 
 const mainTabs = [
   "My Strategies",
@@ -47,6 +50,100 @@ const mockSignalStrategies = [
     action: "BUY NIFTY BANK ATM 0PE",
   },
 ];
+
+// Sum helpers
+const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+// Recalculate from positions upward
+const recomputeStrategyPnl = (strategy) => {
+  const positions = strategy.positions || [];
+  const pnl = sum(
+    positions.map((p) => {
+      const { PNL } = calculatePnlRow(p);
+      return Number(PNL) || 0;
+    })
+  );
+  return { ...strategy, strategyPNL: pnl };
+};
+
+const recomputeBrokerPnl = (brokerItem) => {
+  const brokerPNL = sum(
+    (brokerItem.strategies || []).map((s) => Number(s.strategyPNL) || 0)
+  );
+  return { ...brokerItem, brokerPNL };
+};
+
+const computeGrandTotal = (brokers) =>
+  sum(brokers.map((b) => Number(b.brokerPNL) || 0));
+
+// Build initial in-memory model from API payload
+const buildLiveModelFromApi = (apiData = []) => {
+  const brokers = apiData.map((b) => {
+    const strategies = [];
+    let runningCount = 0;
+    let deployedCount = 0;
+
+    b.DeploymentDetail?.forEach((s) => {
+      s.DeploymentDetail?.forEach((d) => {
+        deployedCount += 1;
+        if (d.Running_Status) runningCount += 1;
+
+        
+
+        // Prefer real positions if present; otherwise fallback to counts
+        const positions = s.OrderDetails || [];
+        const orders = s.OrderDetails || [];
+
+        const strategy = recomputeStrategyPnl({
+          id: s.strategyId,
+          name: s.StrategyName,
+          running: d.Running_Status,
+          isLiveMode: d.isLiveMode,
+          maxLoss: d.MaxLoss,
+          maxProfit: d.MaxProfit,
+          tradeCycle: d.MaxTradeCycle,
+          qtyMultiplier: d.QtyMultiplier,
+          squareOff: d.AutoSquareOffTime,
+          deploymentTime: d.deploymentTimeStamp,
+          positions,
+          orders,
+          // if API had a cached TotalPnl but we have positions, we recomputed anyway
+          strategyPNL: positions.length === 0 ? d.TotalPnl ?? 0 : undefined,
+          pendingOrders: d.PendingOrdersCount,
+        });
+
+        strategies.push(
+          positions.length === 0
+            ? strategy // no positions; keep API pnl
+            : recomputeStrategyPnl(strategy) // positions exist; ensure computed
+        );
+      });
+    });
+
+    const brokerItem = {
+      broker: {
+        name: b.BrokerName,
+        code: b.BrokerClientId,
+        logo: b.brokerLogoUrl,
+        tradeEngineStatus: b.TradeEngineStatus,
+        tradeEngineName:
+          b.TradeEngineName || b.TradeEngine || b.tradeEngineName,
+        brokerId: b.BrokerId,
+      },
+      runningCount,
+      deployedCount,
+      strategies,
+      raw: b,
+    };
+
+    return recomputeBrokerPnl(brokerItem);
+  });
+
+  return {
+    brokers,
+    grandTotalPnl: computeGrandTotal(brokers),
+  };
+};
 
 const StrategiesPage = () => {
   const location = useLocation();
@@ -121,51 +218,102 @@ const StrategiesPage = () => {
     );
   };
 
-  const transformDeployedData = (apiData = []) =>
-    apiData.map((b) => {
-      let strategies = [];
-      let runningCount = 0;
-      let deployedCount = 0;
-      let totalPnl = 0;
-      b.DeploymentDetail?.forEach((s) => {
-        s.DeploymentDetail?.forEach((d) => {
-          deployedCount += 1;
-          if (d.Running_Status) runningCount += 1;
-          totalPnl += d.TotalPnl ?? 0;
-          strategies.push({
-            id: s.strategyId,
-            name: s.StrategyName,
-            running: d.Running_Status,
-            isLiveMode: d.isLiveMode,
-            maxLoss: d.MaxLoss,
-            maxProfit: d.MaxProfit,
-            tradeCycle: d.MaxTradeCycle,
-            qtyMultiplier: d.QtyMultiplier,
-            squareOff: d.AutoSquareOffTime,
-            deploymentTime: d.deploymentTimeStamp,
-            pnl: d.TotalPnl ?? 0,
-            positions: d.RunningPositionsCount,
-            pendingOrders: d.PendingOrdersCount,
+  // state to hold live, render-ready structure
+  const [live, setLive] = useState({ brokers: [], grandTotalPnl: 0 });
+
+  // keep refs to handlers so we can unsubscribe cleanly
+  const wsHandlersRef = useRef([]);
+  const isSubscribingRef = useRef(false);
+
+  // Build initial live model when API payload changes
+  useEffect(() => {
+    if (!deployedData || deployedLoading || deployedError) return;
+
+    // Stop any existing subscriptions before rebuilding
+    wsHandlersRef.current.forEach((h) => h?.unsubscribe?.());
+    wsHandlersRef.current = [];
+
+    const model = buildLiveModelFromApi(deployedData);
+    setLive(model);
+
+    // Wire WebSocket subscriptions for all positions
+    // We DO NOT depend on `live` in this effect to avoid resubscribing on every tick
+    isSubscribingRef.current = true;
+
+    console.log(model);
+
+    model.brokers.forEach((brokerItem, i) => {
+      brokerItem.strategies.forEach((stgy, j) => {
+        (stgy.positions || []).forEach((pos, k) => {
+          const subscriptionLocation = `${
+            pos.OrderId || pos.id || "pos"
+          }_${i}_${j}_${k}`;
+          const identifier = `${i}_${j}_${k}`;
+          const exchangeCode =
+            getExchangeCode(pos.exchange || pos.orderRequest?._exchange) || "-";
+          const instrumentToken =
+            pos.ExchangeToken ?? pos.instrumentToken ?? -1;
+
+          const handler = octopusInstance.wsHandler({
+            messageType: "CompactMarketDataMessage",
+            subscriptionLocation,
+            identifier,
+            payload: { exchangeCode, instrumentToken },
           });
+
+          wsHandlersRef.current.push(handler);
+
+          handler
+            .subscribe(({ msg }) => {
+              const ltp = msg?.ltp;
+              if (ltp == null) return;
+
+              // Functional update: touch only the path we need
+              setLive((prev) => {
+                const brokers = [...prev.brokers];
+
+                // clone nested nodes along the path (i, j, k)
+                const b = { ...brokers[i] };
+                const strategies = [...b.strategies];
+                const s = { ...strategies[j] };
+                const positions = [...(s.positions || [])];
+                const position = { ...positions[k], LTP: ltp };
+
+                // position PnL
+                position.PNL = calculatePnlRow(position).PNL;
+
+                positions[k] = position;
+                s.positions = positions;
+
+                // recompute strategy & broker
+                const sRe = recomputeStrategyPnl(s);
+                strategies[j] = sRe;
+                b.strategies = strategies;
+                const bRe = recomputeBrokerPnl(b);
+                brokers[i] = bRe;
+
+                return {
+                  brokers,
+                  grandTotalPnl: computeGrandTotal(brokers),
+                };
+              });
+            })
+            .catch((e) => {
+              // optional: toast/log
+              console.error("WS subscribe error", e);
+            });
         });
       });
-      return {
-        broker: {
-          name: b.BrokerName,
-          code: b.BrokerClientId,
-          logo: b.brokerLogoUrl,
-          tradeEngineStatus: b.TradeEngineStatus,
-          tradeEngineName:
-            b.TradeEngineName || b.TradeEngine || b.tradeEngineName,
-          brokerId: b.BrokerId,
-        },
-        runningCount,
-        deployedCount,
-        totalPnl,
-        strategies,
-        raw: b,
-      };
     });
+
+    isSubscribingRef.current = false;
+
+    // cleanup when API payload changes/unmount
+    return () => {
+      wsHandlersRef.current.forEach((h) => h?.unsubscribe?.());
+      wsHandlersRef.current = [];
+    };
+  }, [deployedData, deployedLoading, deployedError]);
 
   const getEffectiveTradeEngineStatus = (brokerItem) => {
     const override = engineStatusOverrides[brokerItem.broker.code];
@@ -510,7 +658,7 @@ const StrategiesPage = () => {
   };
 
   const renderDeployedStrategies = () => {
-    const deployedStrategies = transformDeployedData(deployedData);
+    const { brokers: deployedStrategies, grandTotalPnl } = live;
     if (deployedLoading)
       return <div className="text-center py-10">Loading...</div>;
     if (deployedError)
@@ -615,7 +763,7 @@ const StrategiesPage = () => {
                               : "text-red-500"
                           }`}
                         >
-                          ₹{brokerItem.totalPnl}
+                          ₹{brokerItem.brokerPNL.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -758,10 +906,10 @@ const StrategiesPage = () => {
                               </p>
                               <p
                                 className={`text-sm font-semibold ${
-                                  s.pnl >= 0 ? "text-green-600" : "text-red-500"
+                                  s.strategyPNL >= 0 ? "text-green-600" : "text-red-500"
                                 }`}
                               >
-                                ₹{s.pnl}
+                                ₹{s.strategyPNL.toFixed(2)}
                               </p>
                             </div>
                           </div>

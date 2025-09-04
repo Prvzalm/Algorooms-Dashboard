@@ -1,0 +1,6 @@
+{
+  "CompactMarketDataMessage": {
+    "mode": "compact_marketdata",
+    "code": "2"
+  }
+}
