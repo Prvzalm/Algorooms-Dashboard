@@ -21,27 +21,14 @@ import Auth from "./components/Auth";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import LivePCRGauge from "./components/LivePCR";
-<<<<<<< HEAD
 import { Outlet } from "react-router-dom";
-=======
-import ConnectBroker from "./components/Routes/Broker/ConnectBroker";
->>>>>>> main
 
 const ProtectedRoute = () => {
   const { token, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) return <div className="text-center pt-20">Loading...</div>;
 
-<<<<<<< HEAD
   return token ? <Outlet /> : <Navigate to="/signin" replace />;
-=======
-  return token ? (
-    children
-  ) : (
-    <Navigate to="/signin" replace state={{ from: location }} />
-  );
->>>>>>> main
 };
 
 function App() {
@@ -69,9 +56,12 @@ function App() {
         hideProgressBar
       />
 
-{token && (
+      {token && (
         <>
-          <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+          <Sidebar
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setIsSidebarCollapsed}
+          />
           <Header />
         </>
       )}
