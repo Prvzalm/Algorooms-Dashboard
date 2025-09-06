@@ -9,7 +9,9 @@ export const useUserBrokerData = () => {
   return useQuery({
     queryKey: ["user-broker-data"],
     queryFn: getUserBrokerData,
-    staleTime: 3000,
+    staleTime: 300000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 

@@ -1,9 +1,14 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserBrokerData } from "../../../hooks/dashboardHooks";
-import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
+import {
+  useStartStopTradeEngine,
+  useDeleteBroker,
+  useSquareOffBroker,
+} from "../../../hooks/brokerHooks";
 import { emptyDeployedStrategy } from "../../../assets";
 import ConfirmModal from "../../ConfirmModal";
+import { FiMoreVertical } from "react-icons/fi";
 
 const BrokerSection = () => {
   // Local UI override states (so UI feels instant after mutation)
@@ -15,6 +20,10 @@ const BrokerSection = () => {
 
   const { data: brokers = [], isLoading, isError } = useUserBrokerData();
   const { mutate: mutateTradeEngine, isPending } = useStartStopTradeEngine();
+  const { mutate: mutateDeleteBroker, isPending: deletingBroker } =
+    useDeleteBroker();
+  const { mutate: mutateSquareOffBroker, isPending: squaringOff } =
+    useSquareOffBroker();
 
   const getEffectiveTradeEngineStatus = (broker) => {
     const override = engineStatusOverrides[broker.BrokerClientId];
@@ -72,6 +81,24 @@ const BrokerSection = () => {
     }
     performToggleTradeEngine(broker, nextAction);
   };
+
+  // Kebab menu state: which broker menu is open
+  const [openMenuId, setOpenMenuId] = useState(null);
+  // Confirm modals for delete & square off
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmSquareId, setConfirmSquareId] = useState(null);
+
+  // Close menu on outside click (stable and per-opened menu)
+  // Uses a unique id for each row menu container to avoid ref conflicts
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = (e) => {
+      const el = document.getElementById(`broker-menu-${openMenuId}`);
+      if (el && !el.contains(e.target)) setOpenMenuId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openMenuId]);
 
   return (
     <div className="w-full md:p-4">
@@ -170,6 +197,54 @@ const BrokerSection = () => {
                         </span>
                       </p>
                     </div>
+                    {/* Kebab menu */}
+                    <div
+                      className="ml-2 relative"
+                      id={`broker-menu-${broker.BrokerClientId}`}
+                    >
+                      <button
+                        type="button"
+                        aria-label="Actions"
+                        className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId((prev) =>
+                            prev === broker.BrokerClientId
+                              ? null
+                              : broker.BrokerClientId
+                          );
+                        }}
+                        disabled={rowPending || deletingBroker || squaringOff}
+                      >
+                        <FiMoreVertical className="text-gray-600 dark:text-gray-300" />
+                      </button>
+                      {openMenuId === broker.BrokerClientId && (
+                        <div className="absolute z-20 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg">
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              setConfirmSquareId(broker.BrokerClientId);
+                            }}
+                            disabled={rowPending || squaringOff}
+                          >
+                            Square Off
+                          </button>
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              setConfirmDeleteId(broker.BrokerClientId);
+                            }}
+                            disabled={rowPending || deletingBroker}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-center sm:text-left hidden sm:block">
@@ -244,6 +319,53 @@ const BrokerSection = () => {
                 </div>
               );
             })}
+            {/* Confirm: Start Trade Engine (existing) is above. Add broker SquareOff/Delete modals below */}
+            <ConfirmModal
+              open={!!confirmDeleteId}
+              title="Delete Broker?"
+              message={
+                "This will remove the broker connection from your account. You can add it again later."
+              }
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              loading={deletingBroker}
+              onCancel={() => setConfirmDeleteId(null)}
+              onConfirm={() => {
+                const id = confirmDeleteId;
+                setConfirmDeleteId(null);
+                if (!id) return;
+                setPendingBrokerId(id);
+                mutateDeleteBroker(
+                  { BrokerClientId: id },
+                  {
+                    onSettled: () => setPendingBrokerId(null),
+                  }
+                );
+              }}
+            />
+            <ConfirmModal
+              open={!!confirmSquareId}
+              title="Square Off Broker?"
+              message={
+                "This will square off all open positions under this broker. Proceed?"
+              }
+              confirmLabel="Square Off"
+              cancelLabel="Cancel"
+              loading={squaringOff}
+              onCancel={() => setConfirmSquareId(null)}
+              onConfirm={() => {
+                const id = confirmSquareId;
+                setConfirmSquareId(null);
+                if (!id) return;
+                setPendingBrokerId(id);
+                mutateSquareOffBroker(
+                  { BrokerClientId: id },
+                  {
+                    onSettled: () => setPendingBrokerId(null),
+                  }
+                );
+              }}
+            />
           </div>
         )}
       </div>

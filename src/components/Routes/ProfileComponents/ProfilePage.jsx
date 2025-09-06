@@ -266,12 +266,12 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-1/3 space-y-3">
+      <div className="flex flex-col md:flex-row items-stretch gap-6">
+        <div className="w-full md:w-1/3 space-y-3 flex flex-col">
           <div className="text-xl font-semibold text-[#2E3A59] dark:text-white">
             Change Password
           </div>
-          <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-6 space-y-6">
+          <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-6 space-y-6 flex-1">
             <div className="space-y-1">
               <label className="text-sm font-medium text-[#718EBF] dark:text-gray-400">
                 Old Password
@@ -306,11 +306,11 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-3 flex flex-col">
           <div className="text-xl font-semibold text-[#2E3A59] dark:text-white">
             Subscriptions
           </div>
-          <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-6 space-y-6">
+          <div className="bg-white dark:bg-[#15171C] border border-[#DFEAF2] dark:border-[#1E2027] rounded-2xl p-6 space-y-6 flex-1">
             <div className="grid grid-cols-3 gap-6 text-sm text-[#2E3A59] dark:text-white">
               <div>
                 <div className="text-sm text-[#718EBF] mb-1 dark:text-gray-400">

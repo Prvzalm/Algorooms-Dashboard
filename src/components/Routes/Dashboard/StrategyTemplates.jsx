@@ -24,6 +24,9 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
     filterMargins,
   });
 
+  // Ensure safe access when loading
+  const items = Array.isArray(templates) ? templates : [];
+
   const navigate = useNavigate();
 
   const [dupOpen, setDupOpen] = useState(false);
@@ -73,7 +76,6 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
     };
   }, [showFilters]);
 
-  if (isLoading) return <div>Loading strategies...</div>;
   if (isError) return <div>Failed to load strategies.</div>;
 
   return (
@@ -216,9 +218,9 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
               <span className="px-3 py-2 font-medium select-none">{page}</span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={templates.length < pageSize || isLoading}
+                disabled={items.length < pageSize || isLoading}
                 className={`px-3 py-2 flex items-center gap-1 transition ${
-                  templates.length < pageSize || isLoading
+                  items.length < pageSize || isLoading
                     ? "opacity-40 cursor-not-allowed"
                     : "hover:bg-white dark:hover:bg-[#2A2D33]"
                 }`}
@@ -244,60 +246,87 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {templates.map((item, idx) => (
-          <div
-            key={idx}
-            className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between"
-          >
-            <div>
-              <p className="font-semibold mb-2">{item.StrategyName}</p>
-              <div className="flex justify-between items-center text-xs gap-x-6">
-                <p>
-                  Max DD:{" "}
-                  <span className="text-red-400">{item.MaxDD ?? "N/A"}</span>
-                </p>
-                <p>
-                  Margin:{" "}
-                  <span className="text-green-500">
-                    ₹{item.MinimumCapital ?? "N/A"}
-                  </span>
-                </p>
-              </div>
+        {isLoading
+          ? Array.from({ length: pageSize }).map((_, idx) => (
+              <div
+                key={`skeleton-${idx}`}
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between animate-pulse"
+              >
+                <div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
+                  <div className="flex justify-between items-center text-xs gap-x-6">
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                  </div>
 
-              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
-                <MiniCumulativeChart
-                  data={
-                    item?.BackTestResultData?.StrategyScriptList?.[0]
-                      ?.DataPointList || []
-                  }
-                  height={140}
-                  className="w-full"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
-                  <span>Cumulative PnL</span>
-                  <span
-                    className={`${
-                      item?.BackTestResultData?.TotalPNL >= 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    } font-medium`}
-                  >
-                    {Math.round(
-                      item?.BackTestResultData?.TotalPNL || 0
-                    ).toLocaleString()}
-                  </span>
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <div className="w-full h-[140px] bg-gray-100 dark:bg-[#1E2027] rounded" />
+                    <div className="mt-1 flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <button
-              className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-md text-sm transition"
-              onClick={() => openDuplicate(item)}
-            >
-              Add to my strategy
-            </button>
-          </div>
-        ))}
+                <div className="mt-4 w-1/2 h-10 bg-gray-200 dark:bg-gray-700 rounded-md" />
+              </div>
+            ))
+          : items.map((item, idx) => (
+              <div
+                key={idx}
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between"
+              >
+                <div>
+                  <p className="font-semibold mb-2">{item.StrategyName}</p>
+                  <div className="flex justify-between items-center text-xs gap-x-6">
+                    <p>
+                      Max DD:{" "}
+                      <span className="text-red-400">
+                        {item.MaxDD ?? "N/A"}
+                      </span>
+                    </p>
+                    <p>
+                      Margin:{" "}
+                      <span className="text-green-500">
+                        ₹{item.MinimumCapital ?? "N/A"}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <MiniCumulativeChart
+                      data={
+                        item?.BackTestResultData?.StrategyScriptList?.[0]
+                          ?.DataPointList || []
+                      }
+                      height={140}
+                      className="w-full"
+                    />
+                    <div className="mt-1 flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
+                      <span>Cumulative PnL</span>
+                      <span
+                        className={`${
+                          item?.BackTestResultData?.TotalPNL >= 0
+                            ? "text-green-600"
+                            : "text-red-500"
+                        } font-medium`}
+                      >
+                        {Math.round(
+                          item?.BackTestResultData?.TotalPNL || 0
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-md text-sm transition"
+                  onClick={() => openDuplicate(item)}
+                >
+                  Add to my strategy
+                </button>
+              </div>
+            ))}
       </div>
       <DuplicateStrategyModal
         open={dupOpen}

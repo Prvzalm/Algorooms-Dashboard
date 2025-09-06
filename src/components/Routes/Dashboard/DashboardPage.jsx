@@ -150,8 +150,36 @@ const Dashboard = () => {
     },
   ];
 
-  if (isBrokerLoading || isStrategyLoading) return <div>Loading data...</div>;
-  if (isBrokerError || isStrategyError) return <div>Error fetching data.</div>;
+  // Component-wise loading & error handling: avoid blocking the whole page
+  const HeaderSkeleton = () => (
+    <div className="col-span-1">
+      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-5 w-40 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      </div>
+    </div>
+  );
+
+  const BrokerCardSkeleton = () => (
+    <div className="col-span-1">
+      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] h-full">
+        <div className="h-5 w-28 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      </div>
+    </div>
+  );
+
+  const StrategiesSkeleton = () => (
+    <div className="md:col-span-3 col-span-1">
+      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-5 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -190,7 +218,7 @@ const Dashboard = () => {
             )}
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48">
+              <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48 max-h-64 overflow-y-auto">
                 {uniqueBrokers.map((broker, index) => (
                   <div
                     key={index}
@@ -216,29 +244,57 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mt-6">
+      <div className="grid md:grid-cols-3 gap-4 mt-6 items-start">
         <div
           className={
-            brokers.length === 0 ? "md:col-span-2 col-span-1" : "col-span-1"
+            isBrokerLoading
+              ? "col-span-1"
+              : brokers.length === 0
+              ? "md:col-span-2 col-span-1"
+              : "col-span-1"
           }
         >
-          <HeaderCard
-            totalPnl="5,756"
-            topGainer="Nifty Options S1"
-            topLoser="Nifty Options S1"
-            accountImg={upStoxJas}
-            brokers={brokers}
-          />
+          {isBrokerLoading ? (
+            <HeaderSkeleton />
+          ) : isBrokerError ? (
+            <div className="p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] text-red-500">
+              Failed to load broker accounts.
+            </div>
+          ) : (
+            <HeaderCard
+              totalPnl="5,756"
+              topGainer="Nifty Options S1"
+              topLoser="Nifty Options S1"
+              accountImg={upStoxJas}
+              brokers={brokers}
+            />
+          )}
         </div>
 
-        {brokers.length > 0 && <BrokerCard brokers={brokers} />}
+        {isBrokerLoading ? (
+          <BrokerCardSkeleton />
+        ) : isBrokerError ? (
+          <div className="col-span-1 p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] text-red-500">
+            Error loading brokers.
+          </div>
+        ) : (
+          brokers.length > 0 && <BrokerCard brokers={brokers} />
+        )}
 
-        <StrategyDeployed
-          strategies={selectedBrokerStrategies}
-          selectedBroker={selectedBroker}
-          uniqueBrokers={uniqueBrokers}
-          handleSelect={handleSelect}
-        />
+        {isStrategyLoading ? (
+          <StrategiesSkeleton />
+        ) : isStrategyError ? (
+          <div className="md:col-span-3 col-span-1 p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] text-red-500">
+            Error fetching strategies.
+          </div>
+        ) : (
+          <StrategyDeployed
+            strategies={selectedBrokerStrategies}
+            selectedBroker={selectedBroker}
+            uniqueBrokers={uniqueBrokers}
+            handleSelect={handleSelect}
+          />
+        )}
       </div>
 
       <StrategyTemplates />
