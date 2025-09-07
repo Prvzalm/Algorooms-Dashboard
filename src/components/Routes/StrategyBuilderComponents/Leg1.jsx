@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
 
 const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
-  const { setValue, getValues } = useFormContext(); // added getValues
+  const { setValue, getValues, watch } = useFormContext();
+  const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   // local UI state
   const [position, setPosition] = useState("BUY");
   const [optionType, setOptionType] = useState("Call");
@@ -101,7 +102,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   // }, [position, optionType, prePunchSL, signalCandleCondition, setValue]);
 
   // UPDATED: instrument change effect (removed setValue for Leg1)
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!selectedInstrument) {
       setPosition(LEG1_DEFAULTS.position);
       setOptionType(LEG1_DEFAULTS.optionType);
@@ -109,58 +110,58 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
       return;
     }
-    // On edit, try to prefill from existing first long strike
-    if (editing) {
-      const scripts = getValues("StrategyScriptList") || [];
-      const first = scripts[0];
-      const long0 = first?.LongEquationoptionStrikeList?.[0];
-      if (long0) {
-        setPosition(long0.TransactionType || "BUY");
-        // infer optionType from StrikeType only in time strategy
-        if (selectedStrategyTypes?.[0] === "time") {
-          setOptionType(long0.StrikeType === "PE" ? "Put" : "Call");
+    // Prefill from existing strike at current leg (edit or when switching legs)
+    const scripts = getValues("StrategyScriptList") || [];
+    const first = scripts[0];
+    const longAt = first?.LongEquationoptionStrikeList?.[activeLegIndex];
+    if (longAt) {
+      setPosition(longAt.TransactionType || "BUY");
+      if (selectedStrategyTypes?.[0] === "time") {
+        setOptionType(longAt.StrikeType === "PE" ? "Put" : "Call");
+      }
+      setExpiryType(longAt.ExpiryType || "WEEKLY");
+      setSlTypeSel(longAt.SLType === "slpt" ? "SL pt" : "SL%");
+      setTpTypeSel(longAt.TargetType === "tgpt" ? "TP pt" : "TP%");
+      setStopLossQty(Number(longAt.StopLoss) || 30);
+      setTargetValue(Number(longAt.Target) || 0);
+      setPrePunchSL(!!longAt.isPrePunchSL);
+      setSlAction(
+        longAt.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+      );
+      setTpAction(
+        longAt.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+      );
+      const typeMapRev = {
+        ATM: "ATM_PT",
+        ATMPER: "ATM_PERCENT",
+        CPNEAR: "CP",
+        CPGREATERTHAN: "CP_GTE",
+        CPLESSTHAN: "CP_LTE",
+      };
+      const t = longAt.strikeTypeobj?.type;
+      const svNum = Number(longAt?.strikeTypeobj?.StrikeValue) || 0;
+      if (t) {
+        const mapped =
+          typeMapRev[t] || (String(t).startsWith("CP") ? "CP" : "ATM_PT");
+        setSelectedStrikeCriteria(mapped);
+        if (t === "ATM" || t === "ATMPER") {
+          if (svNum === 0) setStrikeTypeSelectValue("ATM");
+          else if (svNum < 0)
+            setStrikeTypeSelectValue(`ITM_${Math.abs(svNum)}`);
+          else setStrikeTypeSelectValue(`OTM_${Math.abs(svNum)}`);
+        } else {
+          setStrikeTypeNumber(svNum);
         }
-        setExpiryType(long0.ExpiryType || "WEEKLY");
-        if (long0.SLType === "slpt") setSlTypeSel("SL pt");
-        if (long0.TargetType === "tgpt") setTpTypeSel("TP pt");
-        setStopLossQty(Number(long0.StopLoss) || 30);
-        setTargetValue(Number(long0.Target) || 0);
-        setPrePunchSL(!!long0.isPrePunchSL);
-        setSlAction(
-          long0.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
-        );
-        setTpAction(
-          long0.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
-        );
-        // strike criteria mapping
-        const typeMapRev = {
-          ATM: "ATM_PT",
-          ATMPER: "ATM_PERCENT",
-          CPNear: "CP",
-          CPGREATERTHAN: "CP_GTE",
-          CPLESSTHAN: "CP_LTE",
-        };
-        const t = long0.strikeTypeobj?.type;
-        if (t) {
-          if (t === "ATM" || t === "ATMPER")
-            setSelectedStrikeCriteria(typeMapRev[t] || "ATM_PT");
-          if (t.startsWith("CP"))
-            setSelectedStrikeCriteria(typeMapRev[t] || "CP");
-        }
-        if (long0.strikeTypeobj) {
-          const sv = Number(long0.strikeTypeobj.StrikeValue) || 0;
-          if (
-            selectedStrikeCriteria === "ATM_PT" ||
-            selectedStrikeCriteria === "ATM_PERCENT"
-          ) {
-            // convert numeric back to ladder value
-            if (sv === 0) setStrikeTypeSelectValue("ATM");
-            else if (sv < 0) setStrikeTypeSelectValue(`ITM_${Math.abs(sv)}`);
-            else setStrikeTypeSelectValue(`OTM_${Math.abs(sv)}`);
-          } else {
-            setStrikeTypeNumber(sv);
-          }
-        }
+      }
+      // set qty multiplier per leg from saved Qty
+      const lot = selectedInstrument?.LotSize || 0;
+      const legQty = Number(longAt.Qty) || 0;
+      if (lot > 0 && legQty > 0) {
+        const mult = Math.max(1, Math.round(legQty / lot));
+        setQtyMultiplier(mult);
+      } else {
+        // default qty multiplier for fresh legs
+        setQtyMultiplier(1);
       }
     } else {
       // new selection reset
@@ -168,10 +169,11 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setOptionType(LEG1_DEFAULTS.optionType);
       setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
+      setQtyMultiplier(1);
     }
-  }, [selectedInstrument, editing]);
+  }, [selectedInstrument, editing, activeLegIndex]);
 
-  // unified builder for StrategyScriptList (single leg only)
+  // unified builder for StrategyScriptList (apply to active leg only)
   useEffect(() => {
     if (!selectedInstrument) return;
     const isTime = selectedStrategyTypes?.[0] === "time";
@@ -279,14 +281,31 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       isTime ? optionStrikeType : longCondition // time-based from optionType
     );
 
-    if (isTime) {
-      base.LongEquationoptionStrikeList = [longStrike];
-      base.ShortEquationoptionStrikeList = [];
-    } else {
+    // ensure arrays
+    const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+      ? [...base.LongEquationoptionStrikeList]
+      : [];
+    const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+      ? [...base.ShortEquationoptionStrikeList]
+      : [];
+
+    // grow arrays to fit active index
+    while (longArr.length < activeLegIndex + 1) longArr.push(undefined);
+    if (!isTime)
+      while (shortArr.length < activeLegIndex + 1) shortArr.push(undefined);
+
+    // set current leg strike(s)
+    longArr[activeLegIndex] = longStrike;
+    if (!isTime) {
       const shortStrike = buildStrike(shortCondition);
-      base.LongEquationoptionStrikeList = [longStrike];
-      base.ShortEquationoptionStrikeList = [shortStrike];
+      shortArr[activeLegIndex] = shortStrike;
     }
+
+    base.LongEquationoptionStrikeList = longArr.filter((x) => x !== undefined);
+    if (!isTime)
+      base.ShortEquationoptionStrikeList = shortArr.filter(
+        (x) => x !== undefined
+      );
 
     setValue("StrategyScriptList", [base], { shouldDirty: true });
   }, [
@@ -311,18 +330,14 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     slAction,
     tpAction,
     expiryType,
+    activeLegIndex,
   ]);
 
   // reset strike related controlled values when strategy type toggles
   useEffect(() => {
     setStrikeTypeSelectValue("ATM");
     setStrikeTypeNumber(0);
-  }, [selectedStrategyTypes, selectedStrikeCriteria]);
-
-  // updating strikeTypeobj.type when criteria changes (already handled in effect above)
-  const handleSelectStrikeCriteria = (val) => {
-    setSelectedStrikeCriteria(val);
-  };
+  }, [selectedStrategyTypes]);
 
   // derive lot size & exchange for display
   const exchange =
@@ -344,7 +359,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C] text-black dark:text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-lg">Leg1</h2>
+            <h2 className="font-semibold text-lg">{`Leg ${
+              activeLegIndex + 1
+            }`}</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500">
               Lorem Ipsum donor
             </p>

@@ -15,6 +15,48 @@ const OrderType = ({ selectedStrategyTypes }) => {
   const [startTime, setStartTime] = useState("09:16");
   const [squareOffTime, setSquareOffTime] = useState("15:15");
   const [productType, setProductType] = useState("MIS");
+  const [legs, setLegs] = useState(["L1"]);
+
+  // helper: default strike row used when adding/removing legs
+  const createDefaultStrike = () => ({
+    TransactionType: "SELL",
+    StrikeType: "CE",
+    StrikeValueType: 0,
+    StrikeValue: 0,
+    SLActionTypeId: "ONPRICE",
+    TargetActionTypeId: "ONPRICE",
+    TargetType: "tgpr",
+    SLType: "slpr",
+    Target: "0",
+    StopLoss: "30",
+    Qty: "0",
+    ExpiryType: "WEEKLY",
+    strikeTypeobj: { type: "ATM", StrikeValue: 0, RangeFrom: 0, RangeTo: 0 },
+    isTrailSL: false,
+    IsMoveSLCTC: false,
+    isExitAll: false,
+    IsPriceDiffrenceConstrant: false,
+    PriceDiffrenceConstrantValue: 0,
+    isPrePunchSL: false,
+    reEntry: {
+      isRentry: false,
+      RentryType: "REN",
+      TradeCycle: 0,
+      RentryActionTypeId: "ON_CLOSE",
+    },
+    waitNTrade: {
+      isWaitnTrade: false,
+      isPerPt: "wtpr_+",
+      typeId: "wtpr_+",
+      MovementValue: 0,
+    },
+    TrailingSL: {
+      TrailingType: "tslpr",
+      InstrumentMovementValue: 0,
+      TrailingValue: 0,
+    },
+    lotSize: 0,
+  });
 
   // Prefill from form values (edit mode)
   useEffect(() => {
@@ -33,7 +75,6 @@ const OrderType = ({ selectedStrategyTypes }) => {
 
   const orderTypes = ["MIS", "CNC", "BTST"];
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
-  const legs = ["L1", "L2"];
 
   const toggleDay = (day) => {
     setSelectedDays((prev) =>
@@ -58,6 +99,114 @@ const OrderType = ({ selectedStrategyTypes }) => {
     setValue("ProductType", productTypeMap[productType], { shouldDirty: true });
     setValue("isBtSt", productType === "BTST", { shouldDirty: true });
   }, [productType, setValue]);
+
+  // Initialize legs from form or create first leg
+  useEffect(() => {
+    const scripts = getValues("StrategyScriptList") || [];
+    const firstScript = scripts[0] || {};
+    const longList = Array.isArray(firstScript.LongEquationoptionStrikeList)
+      ? firstScript.LongEquationoptionStrikeList
+      : [];
+    const count = Math.max(1, longList.length);
+    const newLegs = Array.from({ length: count }, (_, i) => `L${i + 1}`);
+    setLegs(newLegs);
+    // ensure ActiveLegIndex exists
+    if (getValues("ActiveLegIndex") === undefined) {
+      setValue("ActiveLegIndex", 0, { shouldDirty: false });
+    }
+    setSelectedLeg(`L${(getValues("ActiveLegIndex") ?? 0) + 1}`);
+  }, []);
+
+  // sync selectedLeg with form ActiveLegIndex
+  useEffect(() => {
+    const index = Math.max(0, legs.indexOf(selectedLeg));
+    setValue("ActiveLegIndex", index, { shouldDirty: true });
+  }, [selectedLeg, legs, setValue]);
+
+  const handleAddLeg = () => {
+    const idx = legs.length; // new leg index
+    const nextLegs = [...legs, `L${idx + 1}`];
+    setLegs(nextLegs);
+    setSelectedLeg(`L${idx + 1}`);
+
+    // Append placeholder strike rows into StrategyScriptList[0]
+    const scripts = getValues("StrategyScriptList") || [];
+    const base = { ...(scripts[0] || {}) };
+    const ensureArrays = () => {
+      base.LongEquationoptionStrikeList = Array.isArray(
+        base.LongEquationoptionStrikeList
+      )
+        ? base.LongEquationoptionStrikeList
+        : [];
+      base.ShortEquationoptionStrikeList = Array.isArray(
+        base.ShortEquationoptionStrikeList
+      )
+        ? base.ShortEquationoptionStrikeList
+        : [];
+    };
+    ensureArrays();
+
+    // For time-based we keep only long side rows; for indicator we duplicate to short
+    const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+    base.LongEquationoptionStrikeList = [
+      ...base.LongEquationoptionStrikeList,
+      { ...createDefaultStrike() },
+    ];
+    if (isIndicator) {
+      base.ShortEquationoptionStrikeList = [
+        ...base.ShortEquationoptionStrikeList,
+        { ...createDefaultStrike() },
+      ];
+    }
+
+    setValue("StrategyScriptList", [base], { shouldDirty: true });
+  };
+
+  const handleRemoveLeg = (removeIndex) => {
+    if (legs.length <= 1) return; // must keep at least one leg
+
+    const scripts = getValues("StrategyScriptList") || [];
+    const base = { ...(scripts[0] || {}) };
+
+    const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+      ? [...base.LongEquationoptionStrikeList]
+      : [];
+    const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+      ? [...base.ShortEquationoptionStrikeList]
+      : [];
+
+    if (removeIndex >= 0 && removeIndex < longArr.length)
+      longArr.splice(removeIndex, 1);
+    if (shortArr.length && removeIndex >= 0 && removeIndex < shortArr.length)
+      shortArr.splice(removeIndex, 1);
+
+    const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+    // ensure at least one row remains
+    if (longArr.length === 0) {
+      longArr.push(createDefaultStrike());
+      if (isIndicator) shortArr.push(createDefaultStrike());
+    }
+
+    base.LongEquationoptionStrikeList = longArr;
+    if (isIndicator) base.ShortEquationoptionStrikeList = shortArr;
+
+    setValue("StrategyScriptList", [base], { shouldDirty: true });
+
+    // rebuild legs and update selected/active index
+    const newCount = longArr.length;
+    const newLegs = Array.from({ length: newCount }, (_, i) => `L${i + 1}`);
+
+    const currentIndex = Math.max(0, legs.indexOf(selectedLeg));
+    let newSelectedIndex = currentIndex;
+    if (removeIndex === currentIndex) {
+      newSelectedIndex = Math.min(removeIndex, newCount - 1);
+    } else if (removeIndex < currentIndex) {
+      newSelectedIndex = Math.max(0, currentIndex - 1);
+    }
+
+    setLegs(newLegs);
+    setSelectedLeg(`L${newSelectedIndex + 1}`);
+  };
 
   return (
     <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C]">
@@ -133,29 +282,45 @@ const OrderType = ({ selectedStrategyTypes }) => {
       <div className="text-sm font-semibold text-black dark:text-white">
         Strategy Legs
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-2">
-          {legs.map((leg) => (
-            <button
-              type="button"
-              key={leg}
-              onClick={() => setSelectedLeg(leg)}
-              className={`md:px-12 px-4 py-2 rounded-lg text-sm font-medium border transition ${
-                selectedLeg === leg
-                  ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
-                  : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
-              }`}
-            >
-              {leg}
-            </button>
+      <div className="mt-2 overflow-x-auto">
+        <div className="flex items-center gap-2 min-w-max pt-2">
+          {legs.map((leg, idx) => (
+            <div key={leg} className="relative">
+              <button
+                type="button"
+                onClick={() => setSelectedLeg(leg)}
+                className={`md:px-12 px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                  selectedLeg === leg
+                    ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
+                    : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
+                }`}
+              >
+                {leg}
+              </button>
+              {legs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveLeg(idx);
+                  }}
+                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow"
+                  aria-label={`Remove ${leg}`}
+                  title="Remove leg"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           ))}
+          <button
+            type="button"
+            className="bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition"
+            onClick={handleAddLeg}
+          >
+            + Add
+          </button>
         </div>
-        <button
-          type="button"
-          className="ml-auto bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition"
-        >
-          + Add
-        </button>
       </div>
     </div>
   );

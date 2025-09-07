@@ -25,6 +25,7 @@ import Auth from "./components/Auth";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { Outlet } from "react-router-dom";
+import { algoLogo } from "./assets";
 
 //Protected layout with Sidebar + Header
 const ProtectedLayout = () => {
@@ -34,7 +35,17 @@ const ProtectedLayout = () => {
   );
   const sidebarWidth = isSidebarCollapsed ? "md:ml-16" : "md:ml-64";
 
-  if (loading) return <div className="text-center pt-20">Loading...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0f1115]">
+        <div className="flex flex-col items-center gap-6">
+          <img src={algoLogo} alt="Algorooms" className="select-none" />
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-[#0096FF] border-t-transparent animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
   if (!token) return <Navigate to="/signin" replace />;
 
   return (

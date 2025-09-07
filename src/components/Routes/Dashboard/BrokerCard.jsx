@@ -74,7 +74,7 @@ const BrokerCard = ({ brokers = [] }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between h-full relative text-black dark:text-white overflow-hidden">
+    <div className="bg-white dark:bg-[#15171C] p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl flex flex-col justify-between relative text-black dark:text-white overflow-hidden">
       <ConfirmModal
         open={confirmOpen}
         title="Start Trade Engine?"
@@ -128,7 +128,7 @@ const BrokerCard = ({ brokers = [] }) => {
         <FiChevronDown className="text-[#718EBF] dark:text-gray-400" />
 
         {dropdownOpen && (
-          <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#2a2a30] border border-gray-200 dark:border-[#3a3a3f] rounded-lg z-50 w-52">
+          <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#2a2a30] border border-gray-200 dark:border-[#3a3a3f] rounded-lg z-50 w-52 max-h-64 overflow-y-auto">
             {brokers.map((broker, index) => (
               <div
                 key={index}

@@ -6,8 +6,8 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error...</div>;
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-t-3xl h-full flex flex-col justify-between">
+    <div className="flex flex-col">
+      <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-t-3xl flex flex-col justify-between">
         {brokers.length !== 0 ? (
           <>
             <div className="text-sm mb-1">Total P&L</div>

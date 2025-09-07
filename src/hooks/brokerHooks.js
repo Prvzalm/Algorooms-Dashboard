@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axiosInstance from "../api/axiosInstance";
-import { startStopTradeEngine, updateBrokerAuthCode } from "../api/brokerApi";
+import {
+  startStopTradeEngine,
+  updateBrokerAuthCode,
+  deleteBroker,
+  squareOffBroker,
+  addBroker,
+} from "../api/brokerApi";
 
 export const useMasterBrokerData = () => {
   return useQuery({
@@ -54,9 +60,82 @@ export const useStartStopTradeEngine = () => {
         toast.success(data?.Message || "Trade engine updated");
       }
 
-      // Invalidate any broker-related queries so UI refreshes
       queryClient.invalidateQueries(["masterBrokerData"]);
-      queryClient.invalidateQueries(["brokers"]);
+      queryClient.invalidateQueries(["user-broker-data"]);
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.Message || error?.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useAddBroker = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload) => {
+      const res = await addBroker(payload);
+      return res;
+    },
+    onSuccess: (data) => {
+      const isErr = data?.Status && data.Status.toLowerCase() === "error";
+      if (isErr) {
+        toast.error(data?.Message || "Failed to add broker");
+      } else {
+        toast.success(data?.Message || "Broker added successfully!");
+      }
+      queryClient.invalidateQueries(["user-broker-data"]);
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.Message || error?.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useDeleteBroker = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ BrokerClientId }) => {
+      const res = await deleteBroker({ BrokerClientId });
+      return res;
+    },
+    onSuccess: (data) => {
+      const isErr = data?.Status && data.Status.toLowerCase() === "error";
+      if (isErr) {
+        toast.error(data?.Message || "Failed to delete broker");
+      } else {
+        toast.success(data?.Message || "Broker deleted");
+      }
+      // Invalidate exactly this query to avoid multiple refetches
+      queryClient.invalidateQueries({ queryKey: ["user-broker-data"], exact: true });
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.Message || error?.message || "Request failed";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useSquareOffBroker = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ BrokerClientId }) => {
+      const res = await squareOffBroker({ BrokerClientId });
+      return res;
+    },
+    onSuccess: (data) => {
+      const isErr = data?.Status && data.Status.toLowerCase() === "error";
+      if (isErr) {
+        toast.error(data?.Message || "Square off failed");
+      } else {
+        toast.success(data?.Message || "Squared off successfully");
+      }
+      // Depending on backend effects, refresh brokerwise strategies and broker data
+      queryClient.invalidateQueries(["brokerwise-strategies"]);
       queryClient.invalidateQueries(["user-broker-data"]);
     },
     onError: (error) => {

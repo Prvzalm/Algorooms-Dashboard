@@ -20,6 +20,7 @@ const StrategyBuilder = () => {
     StrategyName: "",
     StrategyType: "time",
     StrategySegmentType: "",
+    ActiveLegIndex: 0,
     ProductType: 0,
     TradeStartTime: "09:16",
     AutoSquareOffTime: "15:15",
