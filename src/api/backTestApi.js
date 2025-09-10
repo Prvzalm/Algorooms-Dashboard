@@ -22,9 +22,9 @@ export const fetchBacktestResult = async (params) => {
     apiKey = "abc",
     rangeType = "fixed",
   } = params || {};
-
-  if (!strategyId || !fromDate || !toDate || !userId || !apiKey) {
-    throw new Error("Missing required backtest query params");
+  // required params check (allow apiKey default but validate others)
+  if (!strategyId || !fromDate || !toDate || !userId) {
+    throw new Error("Missing required backtest query params: strategyId, fromDate, toDate, userId");
   }
 
   const queryParams = new URLSearchParams({
@@ -37,12 +37,18 @@ export const fetchBacktestResult = async (params) => {
     RangeType: rangeType,
   });
 
-  // Use local dev proxy path to avoid CORS during development
-  const proxied = `/btapi/backtest?${queryParams.toString()}`;
-  const response = await axios.get(proxied);
+  const realBacktestHost = import.meta.env.VITE_BACKTEST_URL || "https://backtest.algorooms.com";
+
+  const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+  const url = isDev
+    ? `/btapi/backtest?${queryParams.toString()}`
+    : `${realBacktestHost.replace(/\/$/, "")}/backtest?${queryParams.toString()}`;
+
+  const response = await axios.get(url);
   const data = response?.data;
   if (data?.Status !== "Success") {
     throw new Error(data?.Message || "Failed to fetch backtest result");
   }
-  return data.Data; // normalized Data object
+  return data.Data;
 };

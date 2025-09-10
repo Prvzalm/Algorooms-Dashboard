@@ -104,7 +104,21 @@ const AddBrokerPage = () => {
           </h3>
 
           {isLoading ? (
-            <p className="text-sm text-gray-500">Loading brokers...</p>
+            <div
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center justify-center p-4 border rounded-xl border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24]"
+                >
+                  <div className="w-16 h-16 mb-2 rounded-lg bg-gray-200 dark:bg-[#2D2F36] animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
           ) : isError ? (
             <p className="text-sm text-red-500">Failed to load broker list</p>
           ) : (
@@ -147,25 +161,40 @@ const AddBrokerPage = () => {
             Lorem Ipsum donor
           </p>
 
-          {selectedBroker && (
-            <div className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 mb-6 bg-white dark:bg-[#1F1F24]">
-              <div className="flex items-center gap-3">
-                <img
-                  src={selectedBroker.BrokerLogoUrl}
-                  alt={selectedBroker.BrokerName}
-                  className="w-16 h-16"
-                />
-                <div>
-                  <p className="font-semibold text-[#2E3A59] dark:text-white">
-                    {selectedBroker.BrokerName}
-                  </p>
-                  <p className="flex items-center text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                    How to add {selectedBroker.BrokerName}?{" "}
-                    <FaYoutube className="text-red-500 text-xl ml-1" />
-                  </p>
+          {isLoading ? (
+            <div
+              className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 mb-6 bg-white dark:bg-[#1F1F24]"
+              aria-busy="true"
+            >
+              <div className="flex items-center gap-3 w-full">
+                <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-[#2D2F36] animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-40 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
+                  <div className="h-3 w-56 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
                 </div>
               </div>
             </div>
+          ) : (
+            selectedBroker && (
+              <div className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 mb-6 bg-white dark:bg-[#1F1F24]">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedBroker.BrokerLogoUrl}
+                    alt={selectedBroker.BrokerName}
+                    className="w-16 h-16"
+                  />
+                  <div>
+                    <p className="font-semibold text-[#2E3A59] dark:text-white">
+                      {selectedBroker.BrokerName}
+                    </p>
+                    <p className="flex items-center text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                      How to add {selectedBroker.BrokerName}?{" "}
+                      <FaYoutube className="text-red-500 text-xl ml-1" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           <div className="space-y-4">
