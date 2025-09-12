@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import RaAlgosData from "./RaAlgosData";
+import RaAlgosPage from "../RaAlgos/RaAlgosPage";
 
 const RaAlgos = ({ algos }) => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ const RaAlgos = ({ algos }) => {
         </button>
       </div>
 
-      <RaAlgosData algos={algos} />
+      <RaAlgosPage algos={algos} dashboard={true} />
     </div>
   );
 };

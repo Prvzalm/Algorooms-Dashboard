@@ -128,7 +128,7 @@ const BrokerCard = ({ brokers = [] }) => {
         <FiChevronDown className="text-[#718EBF] dark:text-gray-400" />
 
         {dropdownOpen && (
-          <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#2a2a30] border border-gray-200 dark:border-[#3a3a3f] rounded-lg z-50 w-52 max-h-64 overflow-y-auto">
+          <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#2a2a30] border border-gray-200 dark:border-[#3a3a3f] rounded-lg z-50 max-h-36 overflow-y-auto">
             {brokers.map((broker, index) => (
               <div
                 key={index}

@@ -11,7 +11,7 @@ import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
 import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
-import { useFormContext } from "react-hook-form";
+import "./MobileButtons.css"; // Import mobile button styles
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -766,7 +766,12 @@ const StrategyBuilder = () => {
               />
             </div>
 
-            <OrderType selectedStrategyTypes={selectedStrategyTypes} />
+            {!hideLeg1 && (
+              <OrderType
+                selectedStrategyTypes={selectedStrategyTypes}
+                hideLeg1={hideLeg1}
+              />
+            )}
           </div>
 
           <div className="overflow-x-hidden">
@@ -777,6 +782,14 @@ const StrategyBuilder = () => {
                 editing={editing}
               />
             )}
+            {hideLeg1 && (
+              <div className="mt-0">
+                <OrderType
+                  selectedStrategyTypes={selectedStrategyTypes}
+                  hideLeg1={hideLeg1}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -786,11 +799,12 @@ const StrategyBuilder = () => {
           <RiskAndAdvance selectedStrategyTypes={selectedStrategyTypes} />
         </div>
 
-        <div className="flex justify-end">
+        {/* Mobile view: fixed button at bottom */}
+        <div className="md:hidden mobile-buttons-container">
           <button
             type="submit"
             disabled={isPending}
-            className="ml-auto bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50"
+            className="bg-[#0096FF] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs"
           >
             {isPending
               ? editing
@@ -801,6 +815,26 @@ const StrategyBuilder = () => {
               : "Create"}
           </button>
         </div>
+
+        {/* Desktop view: normal button placement */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="ml-auto bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block"
+          >
+            {isPending
+              ? editing
+                ? "Saving..."
+                : "Saving..."
+              : editing
+              ? "Save"
+              : "Create"}
+          </button>
+        </div>
+
+        {/* Spacer for mobile view to prevent content from being hidden behind fixed button */}
+        <div className="mobile-button-spacer md:hidden"></div>
       </form>
     </FormProvider>
   );

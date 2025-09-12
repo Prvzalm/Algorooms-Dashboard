@@ -6,6 +6,8 @@ import { leg1CopyIcon } from "../../../assets";
 const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const { setValue, getValues, watch } = useFormContext();
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
+  const strategyScripts = watch("StrategyScriptList");
+  const advanceFeatures = watch("AdvanceFeatures");
   // local UI state
   const [position, setPosition] = useState("BUY");
   const [optionType, setOptionType] = useState("Call");
@@ -74,6 +76,14 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const [qtyMultiplier, setQtyMultiplier] = useState(1);
   // NEW: stop loss qty state (maps to StopLoss)
   const [stopLossQty, setStopLossQty] = useState(30);
+  // Additional feature states derived from first strike (wait & trade / premium difference)
+  const [waitTradeEnabled, setWaitTradeEnabled] = useState(false);
+  const [waitTradeMovement, setWaitTradeMovement] = useState(0);
+  const [waitTradeType, setWaitTradeType] = useState("% ↑");
+  const [premiumDiffEnabled, setPremiumDiffEnabled] = useState(false);
+  const [premiumDiffValue, setPremiumDiffValue] = useState(0);
+  const [showPremiumDiffInlineInput, setShowPremiumDiffInlineInput] =
+    useState(false);
 
   // compute disabled state when no instrument selected
   const isDisabled = !selectedInstrument || !selectedInstrument.InstrumentToken;
@@ -131,6 +141,31 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setTpAction(
         longAt.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
       );
+      // derive wait & trade
+      if (longAt.waitNTrade?.isWaitnTrade) {
+        setWaitTradeEnabled(true);
+        setWaitTradeMovement(Number(longAt.waitNTrade.MovementValue) || 0);
+        // map backend typeId to label
+        const wtMapRev = {
+          "wtpr_%_down": "% ↓",
+          "wtpr_%_up": "% ↑",
+          wtpr_pt_up: "pt ↑",
+          wtpr_pt_down: "pt ↓",
+          wtpr_equal: "Equal",
+        };
+        setWaitTradeType(wtMapRev[longAt.waitNTrade.typeId] || "% ↑");
+      } else {
+        setWaitTradeEnabled(false);
+        setWaitTradeMovement(0);
+      }
+      // derive premium difference
+      if (longAt.IsPriceDiffrenceConstrant) {
+        setPremiumDiffEnabled(true);
+        setPremiumDiffValue(Number(longAt.PriceDiffrenceConstrantValue) || 0);
+      } else {
+        setPremiumDiffEnabled(false);
+        setPremiumDiffValue(0);
+      }
       const typeMapRev = {
         ATM: "ATM_PT",
         ATMPER: "ATM_PERCENT",
@@ -171,143 +206,221 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
       setQtyMultiplier(1);
     }
-  }, [selectedInstrument, editing, activeLegIndex]);
+  }, [selectedInstrument, editing, activeLegIndex, strategyScripts]);
 
   // unified builder for StrategyScriptList (apply to active leg only)
   useEffect(() => {
+    // Skip processing if instrument not selected
     if (!selectedInstrument) return;
-    const isTime = selectedStrategyTypes?.[0] === "time";
 
-    const scripts = getValues("StrategyScriptList") || [];
-    const base = { ...(scripts[0] || {}) };
+    // Function to update form values - called at the end to prevent excessive renders
+    const updateFormValues = () => {
+      const isTime = selectedStrategyTypes?.[0] === "time";
 
-    // ensure instrument identity
-    base.InstrumentToken =
-      selectedInstrument.InstrumentToken || base.InstrumentToken || "";
-    base.InstrumentName = selectedInstrument.Name || base.InstrumentName || "";
-    base.StrikeTickValue = base.StrikeTickValue || 0;
+      // Get current values
+      const scripts = getValues("StrategyScriptList") || [];
+      const base = { ...(scripts[0] || {}) };
+      const existingActiveLong =
+        scripts?.[0]?.LongEquationoptionStrikeList?.[activeLegIndex];
 
-    // script level qty = single lot (backend sample)
-    const lotSizeBase = selectedInstrument?.LotSize || 0;
-    base.Qty = lotSizeBase;
+      // Set instrument identity
+      base.InstrumentToken =
+        selectedInstrument.InstrumentToken || base.InstrumentToken || "";
+      base.InstrumentName =
+        selectedInstrument.Name || base.InstrumentName || "";
+      base.StrikeTickValue = base.StrikeTickValue || 0;
 
-    // leg qty (multiplied)
-    const legQty = Math.max(1, qtyMultiplier) * lotSizeBase;
+      // Set lot sizes
+      const lotSizeBase = selectedInstrument?.LotSize || 0;
+      base.Qty = lotSizeBase;
+      const legQty = Math.max(1, qtyMultiplier) * lotSizeBase;
 
-    // derive strike value & type mapping
-    const mapCriteriaType = (crit) => {
-      if (crit === "ATM_PERCENT") return "ATMPER";
-      if (crit === "ATM_PT") return "ATM";
-      if (crit === "CP") return "CPNEAR";
-      if (crit === "CP_GTE") return "CPGREATERTHAN";
-      if (crit === "CP_LTE") return "CPLESSTHAN";
-      return crit; // CP / CP_GTE / etc.
-    };
-
-    const parseOffsetValue = (raw) => {
-      if (raw === "ATM") return 0;
-      const parts = raw.split("_");
-      if (parts.length < 2) return 0;
-      const side = parts[0]; // ITM / OTM
-      const num = parseFloat(parts[1]);
-      if (isNaN(num)) return 0;
-      // ITM should be negative, OTM positive
-      return side === "ITM" ? -num : num;
-    };
-
-    const strikeValueRaw = isATMMode ? strikeTypeSelectValue : strikeTypeNumber;
-    const strikeValueNumeric =
-      typeof strikeValueRaw === "number"
-        ? strikeValueRaw
-        : parseOffsetValue(strikeValueRaw);
-
-    const slTypeCode = slTypeSel === "SL%" ? "slpr" : "slpt";
-    const tpTypeCode = tpTypeSel === "TP%" ? "tgpr" : "tgpt";
-    const actionMap = (v) => (v === "On Close" ? "ONCLOSE" : "ONPRICE");
-
-    // helper to build strike template
-    const buildStrike = (strikeTypeSymbol) => {
-      return {
-        TransactionType: position,
-        StrikeType: strikeTypeSymbol,
-        StrikeValueType: 0,
-        // REQUIREMENT: outer StrikeValue must remain 0 always
-        StrikeValue: 0,
-        SLActionTypeId: actionMap(slAction),
-        TargetActionTypeId: actionMap(tpAction),
-        TargetType: tpTypeCode,
-        SLType: slTypeCode,
-        Target: String(targetValue),
-        StopLoss: String(stopLossQty),
-        Qty: String(legQty),
-        ExpiryType: expiryType,
-        strikeTypeobj: {
-          type: mapCriteriaType(selectedStrikeCriteria),
-          // REQUIREMENT: signed value here (negative ITM, positive OTM, 0 ATM)
-          StrikeValue: strikeValueNumeric,
-          RangeFrom: 0,
-          RangeTo: 0,
-        },
-        isTrailSL: isTime ? false : true,
-        IsMoveSLCTC: isTime ? false : true,
-        isExitAll: isTime ? false : true,
-        IsPriceDiffrenceConstrant: isTime ? false : true,
-        PriceDiffrenceConstrantValue: 0,
-        isPrePunchSL: prePunchSL && !isTime,
-        reEntry: {
-          isRentry: isTime ? false : true,
-          RentryType: "REN",
-          TradeCycle: 0,
-          RentryActionTypeId: "ON_CLOSE",
-        },
-        waitNTrade: {
-          isWaitnTrade: isTime ? false : true,
-          isPerPt: "wtpr_+",
-          typeId: "wtpr_+",
-          MovementValue: 0,
-        },
-        TrailingSL: {
-          TrailingType: "tslpr",
-          InstrumentMovementValue: 0,
-          TrailingValue: 0,
-        },
-        lotSize: lotSizeBase,
+      // Helper functions
+      const mapCriteriaType = (crit) => {
+        if (crit === "ATM_PERCENT") return "ATMPER";
+        if (crit === "ATM_PT") return "ATM";
+        if (crit === "CP") return "CPNEAR";
+        if (crit === "CP_GTE") return "CPGREATERTHAN";
+        if (crit === "CP_LTE") return "CPLESSTHAN";
+        return crit;
       };
-    };
 
-    // StrikeType selection logic
-    const optionStrikeType = optionType === "Call" ? "CE" : "PE";
-    const longStrike = buildStrike(
-      isTime ? optionStrikeType : longCondition // time-based from optionType
-    );
+      const parseOffsetValue = (raw) => {
+        if (raw === "ATM") return 0;
+        const parts = raw.split("_");
+        if (parts.length < 2) return 0;
+        const side = parts[0];
+        const num = parseFloat(parts[1]);
+        if (isNaN(num)) return 0;
+        return side === "ITM" ? -num : num;
+      };
 
-    // ensure arrays
-    const longArr = Array.isArray(base.LongEquationoptionStrikeList)
-      ? [...base.LongEquationoptionStrikeList]
-      : [];
-    const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
-      ? [...base.ShortEquationoptionStrikeList]
-      : [];
+      // Values for strike calculation
+      const strikeValueRaw = isATMMode
+        ? strikeTypeSelectValue
+        : strikeTypeNumber;
+      const strikeValueNumeric =
+        typeof strikeValueRaw === "number"
+          ? strikeValueRaw
+          : parseOffsetValue(strikeValueRaw);
 
-    // grow arrays to fit active index
-    while (longArr.length < activeLegIndex + 1) longArr.push(undefined);
-    if (!isTime)
-      while (shortArr.length < activeLegIndex + 1) shortArr.push(undefined);
+      // Type codes
+      const slTypeCode = slTypeSel === "SL%" ? "slpr" : "slpt";
+      const tpTypeCode = tpTypeSel === "TP%" ? "tgpr" : "tgpt";
+      const actionMap = (v) => (v === "On Close" ? "ONCLOSE" : "ONPRICE");
 
-    // set current leg strike(s)
-    longArr[activeLegIndex] = longStrike;
-    if (!isTime) {
-      const shortStrike = buildStrike(shortCondition);
-      shortArr[activeLegIndex] = shortStrike;
-    }
+      // Wait & Trade type mapping
+      const mapWaitTradeType = (label) => {
+        const map = {
+          "% ↓": { isPerPt: "percent", typeId: "wtpr_%_down" },
+          "% ↑": { isPerPt: "percent", typeId: "wtpr_%_up" },
+          "pt ↑": { isPerPt: "point", typeId: "wtpr_pt_up" },
+          "pt ↓": { isPerPt: "point", typeId: "wtpr_pt_down" },
+          Equal: { isPerPt: "equal", typeId: "wtpr_equal" },
+        };
+        return map[label] || map["% ↑"];
+      };
+      const wtTypeMeta = mapWaitTradeType(waitTradeType);
 
-    base.LongEquationoptionStrikeList = longArr.filter((x) => x !== undefined);
-    if (!isTime)
-      base.ShortEquationoptionStrikeList = shortArr.filter(
+      // Create strike object builder
+      const buildStrike = (strikeTypeSymbol) => {
+        // Derive effective feature states
+        const prevWait = existingActiveLong?.waitNTrade;
+        const prevPremEnabled = existingActiveLong?.IsPriceDiffrenceConstrant;
+        const prevPremValue = existingActiveLong?.PriceDiffrenceConstrantValue;
+
+        // Wait & Trade settings
+        const effectiveWaitEnabled =
+          !isTime && (waitTradeEnabled || prevWait?.isWaitnTrade);
+        let effectiveWaitObj;
+
+        if (effectiveWaitEnabled) {
+          if (waitTradeEnabled) {
+            effectiveWaitObj = {
+              isWaitnTrade: true,
+              isPerPt: wtTypeMeta.isPerPt,
+              typeId: wtTypeMeta.typeId,
+              MovementValue: waitTradeMovement,
+            };
+          } else if (prevWait?.isWaitnTrade) {
+            effectiveWaitObj = { ...prevWait };
+          }
+        } else {
+          effectiveWaitObj = {
+            isWaitnTrade: false,
+            isPerPt: wtTypeMeta.isPerPt,
+            typeId: wtTypeMeta.typeId,
+            MovementValue: 0,
+          };
+        }
+
+        // Premium difference settings
+        const globalPremEnabled = advanceFeatures?.["Premium Difference"];
+        const globalPremValue = advanceFeatures?.PremiumDifferenceValue;
+        const effectivePremiumEnabled =
+          !isTime &&
+          (premiumDiffEnabled || prevPremEnabled || globalPremEnabled);
+        const effectivePremiumValue = premiumDiffEnabled
+          ? premiumDiffValue
+          : globalPremValue !== undefined
+          ? globalPremValue
+          : prevPremEnabled
+          ? prevPremValue
+          : 0;
+
+        // Return completed strike object
+        return {
+          TransactionType: position,
+          StrikeType: strikeTypeSymbol,
+          StrikeValueType: 0,
+          StrikeValue: 0,
+          SLActionTypeId: actionMap(slAction),
+          TargetActionTypeId: actionMap(tpAction),
+          TargetType: tpTypeCode,
+          SLType: slTypeCode,
+          Target: String(targetValue),
+          StopLoss: String(stopLossQty),
+          Qty: String(legQty),
+          ExpiryType: expiryType,
+          strikeTypeobj: {
+            type: mapCriteriaType(selectedStrikeCriteria),
+            StrikeValue: strikeValueNumeric,
+            RangeFrom: 0,
+            RangeTo: 0,
+          },
+          isTrailSL: isTime ? false : true,
+          IsMoveSLCTC: isTime ? false : true,
+          isExitAll: isTime ? false : true,
+          isPrePunchSL: prePunchSL && !isTime,
+          reEntry: {
+            isRentry: isTime ? false : true,
+            RentryType: "REN",
+            TradeCycle: 0,
+            RentryActionTypeId: "ON_CLOSE",
+          },
+          waitNTrade: effectiveWaitObj,
+          TrailingSL: {
+            TrailingType: "tslpr",
+            InstrumentMovementValue: 0,
+            TrailingValue: 0,
+          },
+          lotSize: lotSizeBase,
+          IsPriceDiffrenceConstrant: effectivePremiumEnabled,
+          PriceDiffrenceConstrantValue: effectivePremiumValue,
+        };
+      };
+
+      // Create strikes
+      const optionStrikeType = optionType === "Call" ? "CE" : "PE";
+      const longStrike = buildStrike(isTime ? optionStrikeType : longCondition);
+
+      // Prepare arrays
+      const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+        ? [...base.LongEquationoptionStrikeList]
+        : [];
+      const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+        ? [...base.ShortEquationoptionStrikeList]
+        : [];
+
+      // Ensure arrays have enough slots
+      while (longArr.length <= activeLegIndex) longArr.push(undefined);
+      if (!isTime)
+        while (shortArr.length <= activeLegIndex) shortArr.push(undefined);
+
+      // Set strikes
+      longArr[activeLegIndex] = longStrike;
+      if (!isTime) {
+        const shortStrike = buildStrike(shortCondition);
+        shortArr[activeLegIndex] = shortStrike;
+      }
+
+      // Filter out undefined values
+      base.LongEquationoptionStrikeList = longArr.filter(
         (x) => x !== undefined
       );
+      if (!isTime)
+        base.ShortEquationoptionStrikeList = shortArr.filter(
+          (x) => x !== undefined
+        );
 
-    setValue("StrategyScriptList", [base], { shouldDirty: true });
+      // Compare existing and new values to avoid unnecessary updates
+      const prevJSON = JSON.stringify(scripts[0] || {});
+      const nextJSON = JSON.stringify(base);
+
+      if (prevJSON !== nextJSON) {
+        setValue("StrategyScriptList", [base], { shouldDirty: true });
+      }
+    };
+
+    // Use a timeout to debounce multiple rapid updates
+    // This is critical to prevent the maximum update depth error
+    const timeoutId = setTimeout(() => {
+      updateFormValues();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [
     selectedInstrument,
     selectedStrategyTypes,
@@ -331,6 +444,12 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     tpAction,
     expiryType,
     activeLegIndex,
+    waitTradeEnabled,
+    waitTradeMovement,
+    waitTradeType,
+    premiumDiffEnabled,
+    premiumDiffValue,
+    advanceFeatures,
   ]);
 
   // reset strike related controlled values when strategy type toggles
@@ -339,9 +458,70 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     setStrikeTypeNumber(0);
   }, [selectedStrategyTypes]);
 
+  // persist advanced feature local fields into top-level AdvanceFeatures for global visibility
+  useEffect(() => {
+    const af = getValues("AdvanceFeatures") || {};
+    const next = { ...af };
+    if (waitTradeEnabled) {
+      next["Wait & Trade"] = true;
+      next.WaitTradeMovement = waitTradeMovement;
+      next.WaitTradeType = waitTradeType;
+    } else if (af["Wait & Trade"]) {
+      // keep flag until user unticks in AdvanceFeatures panel; don't delete silently
+    }
+    if (premiumDiffEnabled) {
+      next["Premium Difference"] = true;
+      next.PremiumDifferenceValue = premiumDiffValue;
+    }
+    setValue("AdvanceFeatures", next, { shouldDirty: true });
+  }, [
+    waitTradeEnabled,
+    waitTradeMovement,
+    waitTradeType,
+    premiumDiffEnabled,
+    premiumDiffValue,
+    setValue,
+    getValues,
+  ]);
+
+  // sync local premiumDiffValue from global AdvanceFeatures when not editing locally
+  useEffect(() => {
+    const globalVal = advanceFeatures?.PremiumDifferenceValue;
+    if (
+      !premiumDiffEnabled &&
+      typeof globalVal === "number" &&
+      globalVal !== premiumDiffValue
+    ) {
+      setPremiumDiffValue(globalVal);
+    }
+  }, [
+    advanceFeatures?.PremiumDifferenceValue,
+    premiumDiffEnabled,
+    premiumDiffValue,
+  ]);
+
   // derive lot size & exchange for display
   const exchange =
     selectedInstrument?.Exchange || selectedInstrument?.Segment || "";
+
+  // derive existing feature flags for stable rendering (prevents flicker when external toggle updates before local state sync)
+  const existingActiveLong =
+    strategyScripts?.[0]?.LongEquationoptionStrikeList?.[activeLegIndex];
+  const featureWaitTradeActive =
+    advanceFeatures?.["Wait & Trade"] ||
+    waitTradeEnabled ||
+    existingActiveLong?.waitNTrade?.isWaitnTrade;
+  const featurePremiumActive =
+    advanceFeatures?.["Premium Difference"] ||
+    premiumDiffEnabled ||
+    existingActiveLong?.IsPriceDiffrenceConstrant;
+
+  // stable premium value selection (avoid 0->value flicker)
+  const globalPremiumValue = advanceFeatures?.PremiumDifferenceValue;
+  const premiumInputValue =
+    typeof globalPremiumValue === "number" && !Number.isNaN(globalPremiumValue)
+      ? globalPremiumValue
+      : premiumDiffValue;
 
   return (
     // changed: added relative group container
@@ -366,13 +546,6 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
               Lorem Ipsum donor
             </p>
           </div>
-          <button
-            type="button"
-            className="text-sm text-gray-500 dark:text-gray-400 font-medium"
-            disabled={isDisabled}
-          >
-            View All Strategies
-          </button>
         </div>
 
         <div className="border rounded-xl p-4 space-y-4 border-gray-200 dark:border-[#1E2027] dark:bg-[#1E2027]">
@@ -414,7 +587,13 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-3 text-xs">
+          <div
+            className={`grid gap-3 text-xs ${
+              selectedStrategyTypes?.[0] === "indicator"
+                ? "grid-cols-2"
+                : "grid-cols-3"
+            }`}
+          >
             <div>
               <label className="block mb-1 text-gray-600 dark:text-gray-400">
                 Qty
@@ -472,28 +651,30 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                 ))}
               </div>
             </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Option Type
-              </label>
-              <div className="flex space-x-2">
-                {["Call", "Put"].map((type) => (
-                  <button
-                    type="button"
-                    key={type}
-                    onClick={() => setOptionType(type)}
-                    className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
-                      optionType === type
-                        ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
-                        : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
-                    }`}
-                    disabled={isDisabled}
-                  >
-                    {type}
-                  </button>
-                ))}
+            {selectedStrategyTypes?.[0] !== "indicator" && (
+              <div>
+                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                  Option Type
+                </label>
+                <div className="flex space-x-2">
+                  {["Call", "Put"].map((type) => (
+                    <button
+                      type="button"
+                      key={type}
+                      onClick={() => setOptionType(type)}
+                      className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
+                        optionType === type
+                          ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
+                          : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
+                      }`}
+                      disabled={isDisabled}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-xs">
@@ -586,7 +767,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             </div>
             <div>
               <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Qty
+                Partially Qty Booked
               </label>
               <input
                 type="number"
@@ -639,7 +820,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             </div>
             <div>
               <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Qty
+                Partially Qty Booked
               </label>
               <input
                 type="number"
@@ -673,6 +854,80 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
               </select>
             </div>
           </div>
+
+          {/* Advanced Features Section */}
+          {(featureWaitTradeActive || featurePremiumActive) && (
+            <div className="mt-4 space-y-3">
+              <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
+                --- Advance Features ---
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-xs">
+                {featureWaitTradeActive && (
+                  <>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Wait & Trade
+                      </label>
+                      <select
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                        value={waitTradeType}
+                        onChange={(e) => setWaitTradeType(e.target.value)}
+                      >
+                        {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map((o) => (
+                          <option key={o}>{o}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Movement
+                      </label>
+                      <input
+                        type="number"
+                        value={waitTradeMovement}
+                        min={0}
+                        onChange={(e) =>
+                          setWaitTradeMovement(
+                            Math.max(0, Number(e.target.value) || 0)
+                          )
+                        }
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      />
+                    </div>
+                  </>
+                )}
+                {featurePremiumActive && (
+                  <div>
+                    <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                      Premium
+                    </label>
+                    <input
+                      type="number"
+                      value={premiumInputValue}
+                      min={0}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        setPremiumDiffValue(val);
+                        const af = getValues("AdvanceFeatures") || {};
+                        if (af.PremiumDifferenceValue !== val) {
+                          setValue(
+                            "AdvanceFeatures",
+                            {
+                              ...af,
+                              "Premium Difference": true,
+                              PremiumDifferenceValue: val,
+                            },
+                            { shouldDirty: true }
+                          );
+                        }
+                      }}
+                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div
             className={`flex ${

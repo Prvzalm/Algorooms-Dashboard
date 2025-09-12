@@ -278,13 +278,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
               >
                 <div>
                   <p className="font-semibold mb-2">{item.StrategyName}</p>
-                  <div className="flex justify-between items-center text-xs gap-x-6">
-                    <p>
-                      Max DD:{" "}
-                      <span className="text-red-400">
-                        {item.MaxDD ?? "N/A"}
-                      </span>
-                    </p>
+                  <div className="flex text-xs gap-x-6">
                     <p>
                       Margin:{" "}
                       <span className="text-green-500">
@@ -320,7 +314,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                 </div>
 
                 <button
-                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-3 rounded-md text-sm transition"
+                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-md text-sm transition"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy

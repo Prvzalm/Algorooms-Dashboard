@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiEdit2 } from "react-icons/fi";
 import {
   profileActivePlanIcon,
@@ -11,13 +12,16 @@ import { toast } from "react-toastify";
 import { useChangePasswordMutation } from "../../../hooks/loginHooks";
 import { useSubscriptionQuery } from "../../../hooks/subscriptionHooks";
 import { useWalletQuery } from "../../../hooks/walletHooks";
+import { useBackTestCounterDetails } from "../../../hooks/backTestHooks";
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { data: profile, isLoading } = useProfileQuery();
   const { data: wallet } = useWalletQuery();
   const { data: subscriptionData } = useSubscriptionQuery();
   const { mutate: updateProfile, isPending, error } = useUpdateProfile();
   const { mutate: changePasswordUser } = useChangePasswordMutation();
+  const { data: counter } = useBackTestCounterDetails();
 
   const [form, setForm] = useState({
     Name: "",
@@ -223,7 +227,12 @@ const ProfilePage = () => {
                   Backtest Credit
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  {subscription?.PlanDetail?.allowedBacktestCount ?? 0}
+                  {counter
+                    ? `${
+                        counter.AllowedBacktestCount -
+                        counter.RunningBacktestCount
+                      }`
+                    : "--/--"}
                 </div>
               </div>
             </div>
@@ -348,7 +357,10 @@ const ProfilePage = () => {
                 <div className="text-sm text-[#718EBF] mb-1 dark:text-gray-400">
                   Plan Action
                 </div>
-                <div className="text-base font-semibold text-blue-600 cursor-pointer hover:underline">
+                <div
+                  className="text-base font-semibold text-blue-600 cursor-pointer hover:underline"
+                  onClick={() => navigate("/subscriptions")}
+                >
                   Change Plan
                 </div>
               </div>

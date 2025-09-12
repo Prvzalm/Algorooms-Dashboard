@@ -218,7 +218,7 @@ const Dashboard = () => {
             )}
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48 max-h-64 overflow-y-auto">
+              <div className="absolute top-full mt-2 right-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48 max-h-64 overflow-y-auto">
                 {uniqueBrokers.map((broker, index) => (
                   <div
                     key={index}

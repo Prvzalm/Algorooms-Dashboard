@@ -71,7 +71,7 @@ const StrategyDeployed = ({
             </div>
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48 max-h-64 overflow-y-auto">
+              <div className="absolute top-full mt-2 right-0 bg-white dark:bg-[#1f1f24] border border-gray-200 dark:border-gray-600 rounded-lg z-50 w-48 max-h-64 overflow-y-auto">
                 {uniqueBrokers.map((broker, index) => (
                   <div
                     key={index}
@@ -100,7 +100,7 @@ const StrategyDeployed = ({
       </div>
 
       {uniqueBrokers.length !== 0 ? (
-        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-full text-black dark:text-white">
+        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-[227px] overflow-y-auto text-black dark:text-white">
           {deployedStrategies.map((s, i) => {
             const Icon = icons[i % icons.length];
             const isNegative = s.totalPnl < 0;
