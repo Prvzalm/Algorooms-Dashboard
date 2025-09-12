@@ -82,7 +82,7 @@ const InstrumentModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
         ref={modalRef}
-        className="bg-white rounded-2xl p-6 w-[90%] max-w-md dark:bg-[#15171C] relative"
+        className="bg-white rounded-2xl p-4 md:p-6 w-[95%] max-w-md dark:bg-[#15171C] relative max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center gap-2 border rounded-lg px-3 py-2 mb-4 bg-[#F5F8FA] dark:bg-[#1E2027]">
           <img src={searchIcon} alt="" />
@@ -165,7 +165,7 @@ const InstrumentModal = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-full bg-[#0096FF] text-white py-3 rounded-lg font-semibold"
+          className="w-full bg-[#0096FF] text-white py-3 rounded-lg font-semibold sticky bottom-0"
         >
           Save
         </button>

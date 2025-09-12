@@ -398,6 +398,30 @@ const MyPortfolioTab = () => {
               : "Select Strategies"}
             <FiChevronDown />
           </button>
+          {selectedStrategies.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {selectedStrategies.map((id) => {
+                const s = strategies.find((st) => String(st.StrategyId) === id);
+                const name = s?.StrategyName || s?.Name || id;
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1 bg-blue-50 dark:bg-[#0F3F62] text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-[#2D2F36] px-2 py-1 rounded-md text-xs"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => handleStrategyToggle(id)}
+                      aria-label={`Remove ${name}`}
+                      className="leading-none hover:text-blue-900 dark:hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
           {showStrategyList && (
             <div className="absolute z-20 mt-2 max-h-72 overflow-auto w-full bg-white dark:bg-[#1E2027] rounded-lg border border-gray-200 dark:border-[#2D2F36] p-2 text-sm shadow">
               {strategies.length === 0 && (
@@ -445,7 +469,7 @@ const MyPortfolioTab = () => {
               className={`text-sm px-4 py-2 rounded-md border ${
                 (activeTimeRange === range && range !== "Custom Range") ||
                 (range === "Custom Range" && showCustomRange)
-                  ? "bg-[#0096FF] text-white border-[#0096FF]"
+                  ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
                   : "border-gray-200 dark:border-[#2D2F36] text-[#2E3A59] dark:text-gray-300"
               }`}
             >
@@ -550,7 +574,7 @@ const MyPortfolioTab = () => {
             dictionaryOfDateWisePnl={aggregatedData.DictionaryOfDateWisePnl}
           />
           {/* Strategy Comparison (Pivot) */}
-          {perStrategy.length >= 1 && (
+          {perStrategy.length >= 2 && (
             <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8">
               <h2 className="text-lg font-semibold text-black dark:text-white mb-4">
                 Strategy Comparison

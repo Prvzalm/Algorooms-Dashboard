@@ -305,9 +305,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               />
               {sidebarExpanded && (
                 <div className="flex flex-col text-sm">
-                  <span className="text-gray-400">
-                    {profile?.ProfileDescription}
-                  </span>
+                  <span className="text-gray-400">{profile?.UserId}</span>
                   <span className="font-semibold text-black dark:text-white">
                     {profile?.Name}
                   </span>

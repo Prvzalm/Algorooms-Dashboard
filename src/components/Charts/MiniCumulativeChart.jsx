@@ -135,8 +135,8 @@ const MiniCumulativeChart = ({ data = [], height = 120, className = "" }) => {
           stroke="#e5e7eb"
           strokeWidth={1}
         />
-        {ticks.map((t) => (
-          <g key={t.value}>
+        {ticks.map((t, i) => (
+          <g key={`${t.value}-${i}`}>
             <line
               x1={5}
               x2={width}

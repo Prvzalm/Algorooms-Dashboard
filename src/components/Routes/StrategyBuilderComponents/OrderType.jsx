@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import TradeSettings from "./TradeSettings";
 
-const OrderType = ({ selectedStrategyTypes }) => {
+const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
   const { setValue, getValues } = useFormContext();
   const [selectedDays, setSelectedDays] = useState([
     "MON",
@@ -124,88 +124,130 @@ const OrderType = ({ selectedStrategyTypes }) => {
   }, [selectedLeg, legs, setValue]);
 
   const handleAddLeg = () => {
-    const idx = legs.length; // new leg index
-    const nextLegs = [...legs, `L${idx + 1}`];
-    setLegs(nextLegs);
-    setSelectedLeg(`L${idx + 1}`);
+    try {
+      // Get current values once
+      const idx = legs.length;
+      const nextLegName = `L${idx + 1}`;
 
-    // Append placeholder strike rows into StrategyScriptList[0]
-    const scripts = getValues("StrategyScriptList") || [];
-    const base = { ...(scripts[0] || {}) };
-    const ensureArrays = () => {
-      base.LongEquationoptionStrikeList = Array.isArray(
-        base.LongEquationoptionStrikeList
-      )
-        ? base.LongEquationoptionStrikeList
-        : [];
-      base.ShortEquationoptionStrikeList = Array.isArray(
-        base.ShortEquationoptionStrikeList
-      )
-        ? base.ShortEquationoptionStrikeList
-        : [];
-    };
-    ensureArrays();
+      // Create a function to update the form to prevent React state update loops
+      const updateFormState = () => {
+        // Update legs state
+        setLegs((prevLegs) => [...prevLegs, nextLegName]);
+        setSelectedLeg(nextLegName);
 
-    // For time-based we keep only long side rows; for indicator we duplicate to short
-    const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-    base.LongEquationoptionStrikeList = [
-      ...base.LongEquationoptionStrikeList,
-      { ...createDefaultStrike() },
-    ];
-    if (isIndicator) {
-      base.ShortEquationoptionStrikeList = [
-        ...base.ShortEquationoptionStrikeList,
-        { ...createDefaultStrike() },
-      ];
+        // Get latest script data
+        const scripts = getValues("StrategyScriptList") || [];
+        const base = { ...(scripts[0] || {}) };
+
+        // Ensure arrays exist
+        const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+          ? [...base.LongEquationoptionStrikeList]
+          : [];
+
+        const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+          ? [...base.ShortEquationoptionStrikeList]
+          : [];
+
+        // Create new strike
+        const newStrike = createDefaultStrike();
+
+        // Add strikes
+        const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+        longArr.push(newStrike);
+
+        if (isIndicator) {
+          shortArr.push({ ...newStrike });
+        }
+
+        // Update form with new data
+        base.LongEquationoptionStrikeList = longArr;
+        if (isIndicator) {
+          base.ShortEquationoptionStrikeList = shortArr;
+        }
+
+        setValue("StrategyScriptList", [base], { shouldDirty: true });
+        setValue("ActiveLegIndex", idx, { shouldDirty: true });
+      };
+
+      // Use setTimeout to avoid cascading updates in the same render cycle
+      setTimeout(updateFormState, 0);
+    } catch (err) {
+      console.error("Add leg error", err);
     }
-
-    setValue("StrategyScriptList", [base], { shouldDirty: true });
   };
 
   const handleRemoveLeg = (removeIndex) => {
-    if (legs.length <= 1) return; // must keep at least one leg
+    try {
+      if (legs.length <= 1) return; // must keep at least one leg
 
-    const scripts = getValues("StrategyScriptList") || [];
-    const base = { ...(scripts[0] || {}) };
+      // Create a function to update state in a single batch
+      const updateFormState = () => {
+        const scripts = getValues("StrategyScriptList") || [];
+        const base = { ...(scripts[0] || {}) };
 
-    const longArr = Array.isArray(base.LongEquationoptionStrikeList)
-      ? [...base.LongEquationoptionStrikeList]
-      : [];
-    const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
-      ? [...base.ShortEquationoptionStrikeList]
-      : [];
+        // Get arrays and ensure they are properly initialized
+        const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+          ? [...base.LongEquationoptionStrikeList]
+          : [];
 
-    if (removeIndex >= 0 && removeIndex < longArr.length)
-      longArr.splice(removeIndex, 1);
-    if (shortArr.length && removeIndex >= 0 && removeIndex < shortArr.length)
-      shortArr.splice(removeIndex, 1);
+        const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+          ? [...base.ShortEquationoptionStrikeList]
+          : [];
 
-    const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-    // ensure at least one row remains
-    if (longArr.length === 0) {
-      longArr.push(createDefaultStrike());
-      if (isIndicator) shortArr.push(createDefaultStrike());
+        // Remove items at index
+        if (removeIndex >= 0 && removeIndex < longArr.length) {
+          longArr.splice(removeIndex, 1);
+        }
+
+        if (
+          shortArr.length &&
+          removeIndex >= 0 &&
+          removeIndex < shortArr.length
+        ) {
+          shortArr.splice(removeIndex, 1);
+        }
+
+        // Handle edge case of removing all legs
+        const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+        if (longArr.length === 0) {
+          longArr.push(createDefaultStrike());
+          if (isIndicator) {
+            shortArr.push(createDefaultStrike());
+          }
+        }
+
+        // Update form data
+        base.LongEquationoptionStrikeList = longArr;
+        if (isIndicator) {
+          base.ShortEquationoptionStrikeList = shortArr;
+        }
+
+        // Calculate new leg names and selected index
+        const newCount = longArr.length;
+        const newLegs = Array.from({ length: newCount }, (_, i) => `L${i + 1}`);
+
+        const currentIndex = Math.max(0, legs.indexOf(selectedLeg));
+        let newSelectedIndex = currentIndex;
+
+        // Adjust selected index if needed
+        if (removeIndex === currentIndex) {
+          newSelectedIndex = Math.min(removeIndex, newCount - 1);
+        } else if (removeIndex < currentIndex) {
+          newSelectedIndex = Math.max(0, currentIndex - 1);
+        }
+
+        // Apply all updates
+        setValue("StrategyScriptList", [base], { shouldDirty: true });
+        setValue("ActiveLegIndex", newSelectedIndex, { shouldDirty: true });
+        setLegs(newLegs);
+        setSelectedLeg(`L${newSelectedIndex + 1}`);
+      };
+
+      // Use setTimeout to avoid update loops
+      setTimeout(updateFormState, 0);
+    } catch (err) {
+      console.error("Remove leg error", err);
     }
-
-    base.LongEquationoptionStrikeList = longArr;
-    if (isIndicator) base.ShortEquationoptionStrikeList = shortArr;
-
-    setValue("StrategyScriptList", [base], { shouldDirty: true });
-
-    // rebuild legs and update selected/active index
-    const newCount = longArr.length;
-    const newLegs = Array.from({ length: newCount }, (_, i) => `L${i + 1}`);
-
-    const currentIndex = Math.max(0, legs.indexOf(selectedLeg));
-    let newSelectedIndex = currentIndex;
-    if (removeIndex === currentIndex) {
-      newSelectedIndex = Math.min(removeIndex, newCount - 1);
-    } else if (removeIndex < currentIndex) {
-      newSelectedIndex = Math.max(0, currentIndex - 1);
-    }
-
-    setLegs(newLegs);
-    setSelectedLeg(`L${newSelectedIndex + 1}`);
   };
 
   return (
@@ -279,49 +321,55 @@ const OrderType = ({ selectedStrategyTypes }) => {
 
       {selectedStrategyTypes?.[0] === "indicator" && <TradeSettings />}
 
-      <div className="text-sm font-semibold text-black dark:text-white">
-        Strategy Legs
-      </div>
-      <div className="mt-2 overflow-x-auto">
-        <div className="flex items-center gap-2 min-w-max pt-2">
-          {legs.map((leg, idx) => (
-            <div key={leg} className="relative">
+      {!hideLeg1 && (
+        <>
+          <div className="text-sm font-semibold text-black dark:text-white">
+            Strategy Legs
+          </div>
+          <div className="mt-2 overflow-x-auto">
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 flex-1 mb-2 md:mb-0">
+                {legs.map((leg, idx) => (
+                  <div key={leg} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLeg(leg)}
+                      className={`md:px-12 px-6 py-2 rounded-lg text-sm font-medium border transition ${
+                        selectedLeg === leg
+                          ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
+                          : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
+                      }`}
+                    >
+                      {leg}
+                    </button>
+                    {legs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveLeg(idx);
+                        }}
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow"
+                        aria-label={`Remove ${leg}`}
+                        title="Remove leg"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedLeg(leg)}
-                className={`md:px-12 px-4 py-2 rounded-lg text-sm font-medium border transition ${
-                  selectedLeg === leg
-                    ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
-                    : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
-                }`}
+                className="bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-6 py-3 rounded-lg text-sm font-medium transition"
+                onClick={handleAddLeg}
               >
-                {leg}
+                + Add
               </button>
-              {legs.length > 1 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveLeg(idx);
-                  }}
-                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow"
-                  aria-label={`Remove ${leg}`}
-                  title="Remove leg"
-                >
-                  ×
-                </button>
-              )}
             </div>
-          ))}
-          <button
-            type="button"
-            className="bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium transition"
-            onClick={handleAddLeg}
-          >
-            + Add
-          </button>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

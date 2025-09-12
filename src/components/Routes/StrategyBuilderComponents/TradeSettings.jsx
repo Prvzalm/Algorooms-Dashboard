@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiInfo } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
 
-const transactionOptions = ["Both Side", "Only Long", "Only Shot"];
+const transactionOptions = ["Both Side", "Only Long", "Only Short"];
 const chartTypes = ["Candle", "Heikin Ashi"];
 const intervals = [
   "1 min",
@@ -24,7 +24,7 @@ const TradeSettings = () => {
   const transactionMap = {
     "Both Side": 0,
     "Only Long": 1,
-    "Only Shot": 2,
+    "Only Short": 2,
   };
   const chartTypeMap = {
     Candle: 1,

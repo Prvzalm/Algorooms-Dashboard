@@ -186,8 +186,6 @@ const StrategiesPage = () => {
     // We DO NOT depend on `live` in this effect to avoid resubscribing on every tick
     isSubscribingRef.current = true;
 
-    console.log(model);
-
     model.brokers.forEach((brokerItem, i) => {
       brokerItem.strategies.forEach((stgy, j) => {
         (stgy.positions || []).forEach((pos, k) => {
