@@ -3,26 +3,63 @@ import { getUserReport, getTradeEngineLogs } from '../api/reportsApi';
 
 // Hook to fetch user reports
 export const useUserReports = (params, options = {}) => {
+    // Break queryKey into primitives to avoid re-fetches due to object identity changes
+    const { fromDate, toDate, brokerClientFilter, strategyMode } = params || {};
+    // Normalize dates to date-only (YYYY-MM-DD) so that time component changes (like new Date().toISOString())
+    // don't create a brand new cache key when routing away/back quickly.
+    const fromKey = fromDate ? new Date(fromDate).toISOString().split('T')[0] : null;
+    const toKey = toDate ? new Date(toDate).toISOString().split('T')[0] : null;
     return useQuery({
-        queryKey: ['userReports', params],
-        queryFn: () => getUserReport(params),
-        enabled: !!(params.fromDate && params.toDate), // Only fetch if dates are provided
+        queryKey: [
+            'userReports',
+            fromKey,
+            toKey,
+            brokerClientFilter || 'all',
+            strategyMode || 'live'
+        ],
+        queryFn: () => getUserReport({
+            fromDate,
+            toDate,
+            brokerClientFilter: brokerClientFilter || 'all',
+            strategyMode: strategyMode || 'live'
+        }),
+        enabled: !!(fromDate && toDate), // Only fetch if dates are provided
         staleTime: 5 * 60 * 1000, // 5 minutes
         cacheTime: 10 * 60 * 1000, // 10 minutes
         retry: 2,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        keepPreviousData: true,
         ...options
     });
 };
 
 // Hook to fetch trade engine logs
 export const useTradeEngineLogs = (params, options = {}) => {
+    const { fromDate, toDate, brokerClientFilter, strategyMode } = params || {};
+    const fromKey = fromDate ? new Date(fromDate).toISOString().split('T')[0] : null;
+    const toKey = toDate ? new Date(toDate).toISOString().split('T')[0] : null;
     return useQuery({
-        queryKey: ['tradeEngineLogs', params],
-        queryFn: () => getTradeEngineLogs(params),
-        enabled: !!(params.fromDate && params.toDate), // Only fetch if dates are provided
+        queryKey: [
+            'tradeEngineLogs',
+            fromKey,
+            toKey,
+            brokerClientFilter || 'all',
+            strategyMode || 'live'
+        ],
+        queryFn: () => getTradeEngineLogs({
+            fromDate,
+            toDate,
+            brokerClientFilter: brokerClientFilter || 'all',
+            strategyMode: strategyMode || 'live'
+        }),
+        enabled: !!(fromDate && toDate), // Only fetch if dates are provided
         staleTime: 5 * 60 * 1000, // 5 minutes
         cacheTime: 10 * 60 * 1000, // 10 minutes
         retry: 2,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        keepPreviousData: true,
         ...options
     });
 };

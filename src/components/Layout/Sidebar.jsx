@@ -155,11 +155,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             </button>
           )}
           <div className="w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
-            <img
-              src={sidebarExpanded ? algoLogo : shrinkLogo}
-              alt="Logo"
-              className={`${sidebarExpanded ? "w-auto" : "w-6 h-6"}`}
-            />
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="focus:outline-none"
+            >
+              <img
+                src={sidebarExpanded ? algoLogo : shrinkLogo}
+                alt="Logo"
+                className={`${
+                  sidebarExpanded ? "w-auto" : "w-6 h-6"
+                } hover:opacity-90 transition`}
+              />
+            </button>
             {!isOpen && (
               <button
                 onClick={() =>

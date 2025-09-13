@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   useUserReports,
   getDefaultDateRange,
@@ -8,6 +8,7 @@ import StrategyReportDetails from "./StrategyReportDetails";
 import DonutChart from "./ui/DonutChart";
 import Heatmap from "./ui/Heatmap";
 import StrategyCard from "./ui/StrategyCard";
+import ReportsSkeleton from "./ReportsSkeleton";
 
 const Reports = () => {
   const [selectedStrategy, setSelectedStrategy] = useState(null);
@@ -17,17 +18,23 @@ const Reports = () => {
 
   const effectiveMode = strategyMode === "forward" ? "paper" : "live";
 
+  const reportParams = useMemo(
+    () => ({
+      fromDate: dateRange.fromDate,
+      toDate: dateRange.toDate,
+      brokerClientFilter: "all",
+      strategyMode: effectiveMode,
+    }),
+    [dateRange.fromDate, dateRange.toDate, effectiveMode]
+  );
+
   const {
     data: reportsData,
     isLoading,
+    isFetching,
     error,
     refetch,
-  } = useUserReports({
-    fromDate: dateRange.fromDate,
-    toDate: dateRange.toDate,
-    brokerClientFilter: "all",
-    strategyMode: effectiveMode,
-  });
+  } = useUserReports(reportParams);
 
   const formatDateForInput = (dateString) =>
     new Date(dateString).toISOString().split("T")[0];
@@ -80,18 +87,22 @@ const Reports = () => {
 
   // Monthly totals now rendered inside Heatmap (withMonthlyTotals)
 
+  if (isLoading && !reportsData) {
+    return <ReportsSkeleton />;
+  }
+
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 space-y-4 shadow-sm">
+    <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-4 shadow-sm">
       {/* Tabs */}
-      <div className="flex gap-10 text-[13px] font-medium pl-2 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex gap-10 text-[13px] font-medium pl-2 border-b border-slate-200 dark:border-[#2D2F36]">
         {["Report", "Trade Engine Logs"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`relative py-3 text-slate-500 ${
+            className={`relative py-3 text-slate-500 dark:text-slate-400 ${
               activeTab === tab
-                ? "text-slate-900 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]"
-                : "hover:text-slate-700"
+                ? "text-slate-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]"
+                : "hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             {tab}
@@ -100,9 +111,9 @@ const Reports = () => {
       </div>
 
       {/* Filters Row */}
-      <div className="flex flex-wrap items-center gap-3 text-[12px] font-medium bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-3">
+      <div className="flex flex-wrap items-center gap-3 text-[12px] font-medium bg-slate-50 dark:bg-[#15171C] rounded-lg px-3 py-3 border border-transparent dark:border-[#2D2F36]">
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">From</span>
+          <span className="text-slate-500 dark:text-slate-400">From</span>
           <input
             type="date"
             value={formatDateForInput(dateRange.fromDate)}
@@ -111,7 +122,7 @@ const Reports = () => {
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">To</span>
+          <span className="text-slate-500 dark:text-slate-400">To</span>
           <input
             type="date"
             value={formatDateForInput(dateRange.toDate)}
@@ -120,22 +131,23 @@ const Reports = () => {
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">Select Broker</span>
+          <span className="text-slate-500 dark:text-slate-400">
+            Select Broker
+          </span>
           <select className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-[12px] focus:outline-none min-w-[120px] dark:text-slate-200">
             <option value="all">All</option>
           </select>
         </div>
         <div className="flex items-center gap-2 ml-auto">
-          <div className="flex border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden">
+          <div className="flex border border-slate-200 dark:border-[#2D2F36] rounded-md overflow-hidden bg-white dark:bg-[#1E2027]">
             <button
               onClick={() => {
                 setStrategyMode("live");
-                refetch();
               }}
               className={`px-4 py-1 text-[12px] font-medium ${
                 strategyMode === "live"
                   ? "bg-[#0096FF]/10 text-[#0096FF]"
-                  : "text-slate-500"
+                  : "text-slate-500 dark:text-slate-400"
               }`}
             >
               Live
@@ -143,12 +155,11 @@ const Reports = () => {
             <button
               onClick={() => {
                 setStrategyMode("forward");
-                refetch();
               }}
               className={`px-4 py-1 text-[12px] font-medium ${
                 strategyMode === "forward"
                   ? "bg-[#0096FF]/10 text-[#0096FF]"
-                  : "text-slate-500"
+                  : "text-slate-500 dark:text-slate-400"
               }`}
             >
               Forward
@@ -166,9 +177,9 @@ const Reports = () => {
 
       {/* Top Breakdown Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-slate-800">
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-[#15171C]">
           <div>
-            <h4 className="text-[12px] font-medium text-slate-600 mb-3">
+            <h4 className="text-[12px] font-medium text-slate-600 dark:text-slate-300 mb-3">
               Strategy Breakdown
             </h4>
             <DonutChart size={140} stroke={20} segments={donutSegments} />
@@ -206,7 +217,7 @@ const Reports = () => {
             )}
           </ul>
         </div>
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col gap-3 bg-white dark:bg-slate-800">
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex flex-col gap-3 bg-white dark:bg-[#15171C]">
           <Heatmap data={heatmapData} withMonthlyTotals />
         </div>
       </div>

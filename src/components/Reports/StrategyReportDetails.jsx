@@ -42,19 +42,19 @@ const StrategyReportDetails = ({
   // Monthly totals now rendered inside Heatmap (withMonthlyTotals)
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 space-y-5 shadow-sm">
+    <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-5 shadow-sm">
       {/* Top Bar */}
-      <div className="flex gap-10 text-[13px] font-medium border-b border-slate-200 dark:border-slate-700">
+      <div className="flex gap-10 text-[13px] font-medium border-b border-slate-200 dark:border-[#2D2F36]">
         <button
           onClick={onBack}
-          className="pr-4 text-slate-500 hover:text-slate-700 flex items-center gap-1"
+          className="pr-4 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1"
         >
           <span className="text-[16px]">&larr;</span> Back
         </button>
-        <button className="relative py-3 text-slate-900 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]">
+        <button className="relative py-3 text-slate-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]">
           Report
         </button>
-        <button className="py-3 text-slate-500 hover:text-slate-700 hidden">
+        <button className="py-3 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hidden">
           Trade Engine Logs
         </button>
         {/* Controls hidden per request; keeping date display only */}
@@ -70,9 +70,9 @@ const StrategyReportDetails = ({
 
       {/* Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-slate-800">
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-[#15171C]">
           <div>
-            <h4 className="text-[12px] font-medium text-slate-600 mb-3">
+            <h4 className="text-[12px] font-medium text-slate-600 dark:text-slate-300 mb-3">
               Strategy Breakdown
             </h4>
             <DonutChart size={140} stroke={20} segments={donutSegments} />
@@ -118,17 +118,17 @@ const StrategyReportDetails = ({
             )}
           </ul>
         </div>
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col gap-3 bg-white dark:bg-slate-800">
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex flex-col gap-3 bg-white dark:bg-[#15171C]">
           <Heatmap data={heatmapData} withMonthlyTotals />
         </div>
       </div>
 
       {/* Strategy Expanded Card with Equity + Stats */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900/40">
+      <div className="rounded-xl border border-slate-200 dark:border-[#2D2F36] overflow-hidden bg-white dark:bg-[#15171C]">
         <div className="p-5 flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
             <div className="flex items-center gap-6 mb-4">
-              <h3 className="font-medium text-[15px] text-slate-800 dark:text-slate-200">
+              <h3 className="font-medium text-[15px] text-slate-800 dark:text-slate-100">
                 {strategy.StrategyName}
               </h3>
               <div className="flex gap-6 text-[11px] font-medium">
@@ -225,16 +225,16 @@ const StrategyReportDetails = ({
         </div>
 
         {/* Transactions */}
-        <div className="border-t border-slate-200 dark:border-slate-700">
+        <div className="border-t border-slate-200 dark:border-[#2D2F36]">
           <div className="p-5 pb-3">
-            <h4 className="font-medium text-[13px] text-slate-800 dark:text-slate-200">
+            <h4 className="font-medium text-[13px] text-slate-800 dark:text-slate-100">
               Transaction Details
             </h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800/60">
+                <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-[#1E2027]">
                   <th className="text-left px-5 py-2 font-medium">Date</th>
                   <th className="text-left px-5 py-2 font-medium">Type</th>
                   <th className="text-left px-5 py-2 font-medium">Symbol</th>
