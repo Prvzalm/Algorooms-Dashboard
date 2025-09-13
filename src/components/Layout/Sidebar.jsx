@@ -114,6 +114,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       path: "/broker",
     },
     {
+      icon: strategiesIcon,
+      selectedIcon: selectedStrategyIcon,
+      name: "Reports",
+      path: "/reports",
+    },
+    {
       icon: subscriptionIcon,
       selectedIcon: selectedSubscriptionIcon,
       name: "Subscription",
