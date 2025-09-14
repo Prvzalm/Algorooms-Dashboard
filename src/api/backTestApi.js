@@ -34,27 +34,8 @@ export const fetchBacktestResult = async (params) => {
     RangeType: rangeType,
   });
 
-  let response;
-  const finalUrl = `/btapi/backtest?${queryParams.toString()}`;
-  try {
-    response = await axios.get(finalUrl, { validateStatus: () => true });
-  } catch (e) {
-    // Network / CORS style error (shouldn't happen same-origin unless proxy missing and server blocks)
-    throw new Error("Backtest request failed (network). Ensure /btapi proxy is configured in production.");
-  }
-
-  // If proxy not configured in prod, static host likely returns 404 HTML page
-  if (response.status === 404) {
-    const ct = response.headers?.["content-type"] || "";
-    if (typeof response.data === "string" && ct.includes("text/html")) {
-      throw new Error("/btapi proxy not configured on production host. Add reverse proxy to backtest service.");
-    }
-  }
-
-  const data = response.data;
-  if (!data || typeof data !== "object") {
-    throw new Error("Unexpected backtest response format. Proxy may be returning HTML instead of JSON.");
-  }
+  const response = await axios.get(`/backtest?${queryParams.toString()}`);
+  const data = response?.data;
   if (data?.Status !== "Success") {
     throw new Error(data?.Message || "Failed to fetch backtest result");
   }
