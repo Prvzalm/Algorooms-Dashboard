@@ -28,6 +28,7 @@ import {
 } from "../../assets";
 import { useAuth } from "../../context/AuthContext";
 import { useProfileQuery } from "../../hooks/profileHooks";
+import Avatar from "../common/Avatar";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -312,10 +313,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   : "flex justify-center"
               }`}
             >
-              <img
+              <Avatar
                 src={profile?.AvtarURL}
-                alt="User"
+                name={profile?.Name}
                 className="w-10 h-10 rounded-full"
+                fontSize="text-xs"
               />
               {sidebarExpanded && (
                 <div className="flex flex-col text-sm">
@@ -335,10 +337,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               >
                 <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 space-y-4">
                   <div className="flex items-center space-x-4">
-                    <img
+                    <Avatar
                       src={profile?.AvtarURL}
-                      alt="User"
+                      name={profile?.Name}
                       className="w-14 h-14 rounded-full"
+                      fontSize="text-lg"
                     />
                     <div>
                       <div className="text-xs text-gray-500">

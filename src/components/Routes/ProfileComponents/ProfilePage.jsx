@@ -13,6 +13,7 @@ import { useChangePasswordMutation } from "../../../hooks/loginHooks";
 import { useSubscriptionQuery } from "../../../hooks/subscriptionHooks";
 import { useWalletQuery } from "../../../hooks/walletHooks";
 import { useBackTestCounterDetails } from "../../../hooks/backTestHooks";
+import Avatar from "../../common/Avatar";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -93,10 +94,11 @@ const ProfilePage = () => {
     <div className="text-sm text-gray-800 dark:text-white space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
         <div className="relative w-full md:w-1/3 rounded-2xl overflow-hidden">
-          <img
-            src={profile?.AvtarURL || profileMan}
-            alt={profile?.Name}
+          <Avatar
+            src={profile?.AvtarURL}
+            name={profile?.Name}
             className="w-full h-64 object-cover"
+            fontSize="text-6xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#343C6A] to-[#343C6A00]" />
           {isEditing ? (
