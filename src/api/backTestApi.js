@@ -10,8 +10,6 @@ export const fetchBackTestCounterDetails = async () => {
   return response.data.Data;
 };
 
-// Direct backtest result API (external base URL)
-// params: { strategyId, fromDate, toDate, isMarketPlaceStrategy=false, userId, apiKey, rangeType="fixed" }
 export const fetchBacktestResult = async (params) => {
   const {
     strategyId,
@@ -22,7 +20,6 @@ export const fetchBacktestResult = async (params) => {
     apiKey = "abc",
     rangeType = "fixed",
   } = params || {};
-  // required params check (allow apiKey default but validate others)
   if (!strategyId || !fromDate || !toDate || !userId) {
     throw new Error("Missing required backtest query params: strategyId, fromDate, toDate, userId");
   }
@@ -37,8 +34,27 @@ export const fetchBacktestResult = async (params) => {
     RangeType: rangeType,
   });
 
-  const response = await axios.get(`/btapi/backtest?${queryParams.toString()}`);
-  const data = response?.data;
+  let response;
+  const finalUrl = `/btapi/backtest?${queryParams.toString()}`;
+  try {
+    response = await axios.get(finalUrl, { validateStatus: () => true });
+  } catch (e) {
+    // Network / CORS style error (shouldn't happen same-origin unless proxy missing and server blocks)
+    throw new Error("Backtest request failed (network). Ensure /btapi proxy is configured in production.");
+  }
+
+  // If proxy not configured in prod, static host likely returns 404 HTML page
+  if (response.status === 404) {
+    const ct = response.headers?.["content-type"] || "";
+    if (typeof response.data === "string" && ct.includes("text/html")) {
+      throw new Error("/btapi proxy not configured on production host. Add reverse proxy to backtest service.");
+    }
+  }
+
+  const data = response.data;
+  if (!data || typeof data !== "object") {
+    throw new Error("Unexpected backtest response format. Proxy may be returning HTML instead of JSON.");
+  }
   if (data?.Status !== "Success") {
     throw new Error(data?.Message || "Failed to fetch backtest result");
   }
