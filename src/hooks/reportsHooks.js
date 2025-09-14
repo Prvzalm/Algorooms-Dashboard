@@ -25,11 +25,6 @@ export const useUserReports = (params, options = {}) => {
         }),
         enabled: !!(fromDate && toDate), // Only fetch if dates are provided
         staleTime: 5 * 60 * 1000, // 5 minutes
-        cacheTime: 10 * 60 * 1000, // 10 minutes
-        retry: 2,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        keepPreviousData: true,
         ...options
     });
 };
@@ -55,11 +50,6 @@ export const useTradeEngineLogs = (params, options = {}) => {
         }),
         enabled: !!(fromDate && toDate), // Only fetch if dates are provided
         staleTime: 5 * 60 * 1000, // 5 minutes
-        cacheTime: 10 * 60 * 1000, // 10 minutes
-        retry: 2,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        keepPreviousData: true,
         ...options
     });
 };
