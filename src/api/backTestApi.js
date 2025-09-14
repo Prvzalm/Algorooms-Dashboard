@@ -34,7 +34,15 @@ export const fetchBacktestResult = async (params) => {
     RangeType: rangeType,
   });
 
-  const response = await axios.get(`/backtest?${queryParams.toString()}`);
+  const isLocalDev =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+  const externalHost = (import.meta.env.VITE_BACKTEST_URL || "https://backtest.algorooms.com").replace(/\/$/, "");
+  const finalUrl = isLocalDev
+    ? `/backtest?${queryParams.toString()}`
+    : `${externalHost}/backtest?${queryParams.toString()}`;
+
+  const response = await axios.get(finalUrl);
   const data = response?.data;
   if (data?.Status !== "Success") {
     throw new Error(data?.Message || "Failed to fetch backtest result");
