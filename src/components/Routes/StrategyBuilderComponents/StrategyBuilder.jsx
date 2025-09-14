@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { FormProvider, useForm } from "react-hook-form";
 import {
   useCreateStrategyMutation,
   useStrategyDetailsForEdit,
+  useUserStrategies,
 } from "../../../hooks/strategyHooks";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
@@ -11,6 +13,7 @@ import OrderType from "./OrderType";
 import RiskAndAdvance from "./RiskAndAdvance";
 import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
+import BacktestStrategyComponent from "../BackTest/BacktestStrategyComponent";
 import "./MobileButtons.css"; // Import mobile button styles
 
 const StrategyBuilder = () => {
@@ -116,6 +119,13 @@ const StrategyBuilder = () => {
     isLoading: editLoading,
     isError: editError,
   } = useStrategyDetailsForEdit(strategyId, editing);
+
+  // Hook to refetch user strategies after creation
+  const { refetch: refetchUserStrategies } = useUserStrategies({
+    page: 1,
+    pageSize: 100, // Large page size to get all strategies
+    strategyType: "created",
+  });
   const navigate = useNavigate();
   const [selectedStrategyTypes, setSelectedStrategyTypes] = useState(["time"]);
   const [selectedInstrument, setSelectedInstrument] = useState("");
@@ -123,6 +133,9 @@ const StrategyBuilder = () => {
     []
   );
   const [showInstrumentModal, setShowInstrumentModal] = useState(false);
+  const [showBacktestModal, setShowBacktestModal] = useState(false);
+  const [showBacktestComponent, setShowBacktestComponent] = useState(false);
+  const [createdStrategyId, setCreatedStrategyId] = useState(null);
 
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
@@ -450,7 +463,28 @@ const StrategyBuilder = () => {
       );
     }
 
-    const valuesNorm = normalized;
+    // Store normalized values to be used when creating strategy
+    window.strategyFormData = normalized;
+
+    // If in edit mode, directly save without showing popup
+    if (editing) {
+      handleCreateStrategy(false); // Save and go to strategies page
+      return;
+    }
+
+    // If backtest component is already showing, directly create/update strategy
+    // without showing the popup again
+    if (showBacktestComponent) {
+      handleCreateStrategy(true); // Automatically backtest since component is shown
+      return;
+    }
+
+    // Show backtest confirmation modal only for first time creation
+    setShowBacktestModal(true);
+  };
+
+  const handleCreateStrategy = (shouldBacktest = false) => {
+    const valuesNorm = window.strategyFormData;
 
     const segmentMap = {
       Option: "OPTION",
@@ -613,6 +647,9 @@ const StrategyBuilder = () => {
       ExitRule: null,
       Long_ExitEquation: toNullIfEmpty(valuesNorm.Long_ExitEquation),
       Short_ExitEquation: toNullIfEmpty(valuesNorm.Short_ExitEquation),
+      // Include existing strategy ID if backtest component is shown (for patch operation)
+      StrategyId:
+        showBacktestComponent && createdStrategyId ? createdStrategyId : 0,
     };
 
     // Include entry equations only for indicator strategies
@@ -631,14 +668,96 @@ const StrategyBuilder = () => {
     const payload = payloadBase;
 
     mutate(payload, {
-      onSuccess: () => {
-        toast.success("Strategy created");
-        reset();
+      onSuccess: async (data) => {
+        const isUpdating = showBacktestComponent && createdStrategyId;
+
+        if (isUpdating) {
+          // If updating existing strategy, show success message and keep backtest component
+          toast.success("Strategy updated successfully");
+          // No need to refetch or find strategy ID since we already have it
+          // Just scroll to backtest section if user chose to backtest
+          if (shouldBacktest) {
+            setTimeout(() => {
+              const backtestElement =
+                document.getElementById("backtest-section");
+              if (backtestElement) {
+                backtestElement.scrollIntoView({ behavior: "smooth" });
+              }
+            }, 100);
+          }
+        } else {
+          // Creating new strategy
+          toast.success("Strategy created successfully");
+
+          // Since response doesn't contain ID, fetch strategy by name
+          try {
+            const strategiesResponse = await refetchUserStrategies();
+            const strategies = strategiesResponse?.data || [];
+
+            // Find the created strategy by matching name
+            const createdStrategy = strategies.find(
+              (strategy) => strategy.StrategyName === valuesNorm.StrategyName
+            );
+
+            if (createdStrategy) {
+              setCreatedStrategyId(createdStrategy.StrategyId);
+
+              if (shouldBacktest) {
+                // Don't reset form, show backtest component
+                setShowBacktestComponent(true);
+                // Scroll to backtest section after a short delay
+                setTimeout(() => {
+                  const backtestElement =
+                    document.getElementById("backtest-section");
+                  if (backtestElement) {
+                    backtestElement.scrollIntoView({ behavior: "smooth" });
+                  }
+                }, 100);
+              } else {
+                // Reset form and navigate to strategies
+                reset();
+                navigate("/strategies");
+              }
+            } else {
+              // Fallback if strategy not found in list
+              console.warn(
+                "Created strategy not found in user strategies list"
+              );
+              if (shouldBacktest) {
+                toast.warning(
+                  "Strategy created but couldn't find ID for backtest. Please navigate to backtest manually."
+                );
+              }
+              if (!shouldBacktest) {
+                reset();
+                navigate("/strategies");
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching strategies after creation:", error);
+            toast.warning(
+              "Strategy created successfully, but couldn't load backtest. Please refresh and try again."
+            );
+            if (!shouldBacktest) {
+              reset();
+              navigate("/strategies");
+            }
+          }
+        }
+
+        // If user chose "No, Skip" and we're updating, navigate to strategies
+        if (isUpdating && !shouldBacktest) {
+          reset();
+          navigate("/strategies");
+        }
       },
       onError: (e) => {
         toast.error(e?.message || "Failed to create strategy");
       },
     });
+
+    // Close modal
+    setShowBacktestModal(false);
   };
 
   const hideLeg1 =
@@ -835,7 +954,68 @@ const StrategyBuilder = () => {
 
         {/* Spacer for mobile view to prevent content from being hidden behind fixed button */}
         <div className="mobile-button-spacer md:hidden"></div>
+
+        {/* Backtest Confirmation Modal */}
+        {showBacktestModal &&
+          createPortal(
+            <div
+              onClick={() => setShowBacktestModal(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-[#15171C] rounded-lg p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700"
+              >
+                <h3 className="text-lg font-semibold mb-4 dark:text-white">
+                  Create Strategy
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Do you want to backtest this strategy after creating it?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleCreateStrategy(true)}
+                    disabled={isPending}
+                    className="flex-1 bg-[#0096FF] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                  >
+                    {isPending ? "Creating..." : "Yes, Backtest"}
+                  </button>
+                  <button
+                    onClick={() => handleCreateStrategy(false)}
+                    disabled={isPending}
+                    className="flex-1 bg-gray-200 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                  >
+                    {isPending ? "Creating..." : "No, Skip"}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
       </form>
+
+      {/* Backtest Component - shown below the form when user chooses to backtest */}
+      {showBacktestComponent && createdStrategyId && (
+        <div
+          id="backtest-section"
+          className="mt-8 border-t pt-8 dark:border-[#1E2027]"
+        >
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+            <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+              Strategy Created Successfully!
+            </h2>
+            <p className="text-blue-600 dark:text-blue-300 text-sm">
+              Your strategy has been created. You can now backtest it using the
+              options below, or modify the strategy above and update it by
+              creating again.
+            </p>
+          </div>
+          <BacktestStrategyComponent
+            initialStrategyId={createdStrategyId.toString()}
+            strategyBuilder={true}
+          />
+        </div>
+      )}
     </FormProvider>
   );
 };

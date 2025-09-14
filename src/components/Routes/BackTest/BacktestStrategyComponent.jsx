@@ -25,7 +25,10 @@ const timeRanges = [
 
 const exportOptions = ["Download PDF", "Email PDF", "View in Browser"];
 
-const BacktestStrategyComponent = () => {
+const BacktestStrategyComponent = ({
+  initialStrategyId = null,
+  strategyBuilder = false,
+}) => {
   // selected strategies can come from URL (strategyId param) or user selection
   const { strategyId } = useParams();
   const navigate = useNavigate();
@@ -92,12 +95,13 @@ const BacktestStrategyComponent = () => {
     setRunToken(0);
   }, [selectedStrategies, activeTimeRange, startDate, endDate]);
 
-  // initialize selected strategies from route param (once or when param changes)
+  // initialize selected strategies from route param or prop (once or when param/prop changes)
   useEffect(() => {
-    if (strategyId) {
-      setSelectedStrategies([String(strategyId)]);
+    const idToUse = strategyId || initialStrategyId;
+    if (idToUse) {
+      setSelectedStrategies([String(idToUse)]);
     }
-  }, [strategyId]);
+  }, [strategyId, initialStrategyId]);
 
   // profile for userId
   const { data: profile } = useProfileQuery();
@@ -418,21 +422,25 @@ const BacktestStrategyComponent = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         {/* Multi strategy selector - always visible */}
         <div className="w-full sm:w-1/3 relative" ref={strategyDropdownRef}>
-          <button
-            className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-left flex justify-between items-center"
-            onClick={() => setShowStrategyList((p) => !p)}
-          >
-            {selectedStrategies.length
-              ? `${selectedStrategies
-                  .map((s) =>
-                    (strategies || []).find((st) => String(st.StrategyId) === s)
-                  )
-                  .filter(Boolean)
-                  .map((st) => st.StrategyName || st.Name || st.StrategyId)
-                  .join(", ")} Selected`
-              : "Select Strategies"}
-            <FiChevronDown />
-          </button>
+          {!strategyBuilder && (
+            <button
+              className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-left flex justify-between items-center"
+              onClick={() => setShowStrategyList((p) => !p)}
+            >
+              {selectedStrategies.length
+                ? `${selectedStrategies
+                    .map((s) =>
+                      (strategies || []).find(
+                        (st) => String(st.StrategyId) === s
+                      )
+                    )
+                    .filter(Boolean)
+                    .map((st) => st.StrategyName || st.Name || st.StrategyId)
+                    .join(", ")} Selected`
+                : "Select Strategies"}
+              <FiChevronDown />
+            </button>
+          )}
           {selectedStrategies.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {selectedStrategies.map((id) => {
