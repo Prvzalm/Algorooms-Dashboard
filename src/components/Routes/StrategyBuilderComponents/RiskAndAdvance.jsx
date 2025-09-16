@@ -7,16 +7,59 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   const { setValue, getValues } = useFormContext();
   const [noTradeAfter, setNoTradeAfter] = useState("15:15");
 
+  // Check if equity instruments are selected in indicator-based mode
+  const isIndicatorEquityMode =
+    selectedStrategyTypes?.[0] === "indicator" &&
+    getValues("StrategySegmentType") === "Equity";
+
+  // State for equity script fields
+  const [targetSlType, setTargetSlType] = useState("Percentage(%)");
+  const [targetOnEachScript, setTargetOnEachScript] = useState("");
+  const [stopLossOnEachScript, setStopLossOnEachScript] = useState("");
+
   // Prefill on mount (edit mode)
   useEffect(() => {
     const stop = getValues("TradeStopTime") || getValues("AutoSquareOffTime");
     if (stop) setNoTradeAfter(stop);
+
+    // Prefill equity script fields if they exist
+    const targetOnScript = getValues("TargetOnEachScript");
+    const stopLossOnScript = getValues("StopLossOnEachScript");
+    const targetSlTypeValue = getValues("TargetSlType");
+
+    if (targetOnScript) setTargetOnEachScript(String(targetOnScript));
+    if (stopLossOnScript) setStopLossOnEachScript(String(stopLossOnScript));
+    if (targetSlTypeValue) setTargetSlType(targetSlTypeValue);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     setValue("TradeStopTime", noTradeAfter, { shouldDirty: true });
   }, [noTradeAfter, setValue]);
+
+  // Handle form values for equity script fields
+  useEffect(() => {
+    if (isIndicatorEquityMode && targetOnEachScript !== "") {
+      setValue("TargetOnEachScript", Number(targetOnEachScript) || 0, {
+        shouldDirty: true,
+      });
+    }
+  }, [targetOnEachScript, setValue, isIndicatorEquityMode]);
+
+  useEffect(() => {
+    if (isIndicatorEquityMode && stopLossOnEachScript !== "") {
+      setValue("StopLossOnEachScript", Number(stopLossOnEachScript) || 0, {
+        shouldDirty: true,
+      });
+    }
+  }, [stopLossOnEachScript, setValue, isIndicatorEquityMode]);
+
+  useEffect(() => {
+    if (isIndicatorEquityMode) {
+      setValue("TargetSlType", targetSlType, { shouldDirty: true });
+    }
+  }, [targetSlType, setValue, isIndicatorEquityMode]);
 
   const trailingOptions = [
     "No Trailing",
@@ -286,6 +329,40 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               />
             </div>
           </div>
+          {/* Additional fields for indicator-based equity strategies */}
+          {isIndicatorEquityMode && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <input
+                  type="number"
+                  value={targetOnEachScript}
+                  placeholder="Target on each script"
+                  onChange={(e) => setTargetOnEachScript(e.target.value)}
+                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                />
+                <input
+                  type="number"
+                  value={stopLossOnEachScript}
+                  placeholder="Stop Loss on each script"
+                  onChange={(e) => setStopLossOnEachScript(e.target.value)}
+                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                />
+                <div className="flex-1 min-w-[160px]">
+                  <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
+                    Target/SL Type
+                  </label>
+                  <select
+                    value={targetSlType}
+                    onChange={(e) => setTargetSlType(e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                  >
+                    <option value="Percentage(%)">Percentage(%)</option>
+                    <option value="Points">Points</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700 dark:text-white">
               Profit Trailing

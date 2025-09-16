@@ -13,31 +13,53 @@ const StrategyReportDetails = ({
   setStrategyMode = () => {},
   refetchParent,
 }) => {
-  const donutSegments = [
-    // replaced static segments with dynamic strategy only (treat wins/loss as separate?) Using absolute pnl slices per date for now
-    ...(strategy?.DateWiseReportList || []).map((d, i) => ({
-      id: d.Date,
-      value: Math.abs(d.pnlDayWise || 0),
-      color: ["#FFB020", "#2563EB", "#10B981", "#6366F1", "#EC4899", "#F97316"][
-        i % 6
-      ],
-    })),
-  ];
+  // Safety check for strategy object
+  if (!strategy) {
+    return (
+      <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-5 shadow-sm">
+        <div className="text-center text-slate-500 dark:text-slate-400">
+          Strategy data not available
+        </div>
+      </div>
+    );
+  }
+
+  const donutSegments =
+    strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
+      ? strategy.DateWiseReportList.map((d, i) => ({
+          id: d.Date || `date-${i}`,
+          value: Math.abs(d.pnlDayWise || 0),
+          color: [
+            "#FFB020",
+            "#2563EB",
+            "#10B981",
+            "#6366F1",
+            "#EC4899",
+            "#F97316",
+          ][i % 6],
+        }))
+      : [];
 
   const equityPoints = useMemo(() => {
-    if (!strategy?.DateWiseReportList) return [];
+    if (
+      !strategy?.DateWiseReportList ||
+      !Array.isArray(strategy.DateWiseReportList)
+    )
+      return [];
     let cumulative = 0;
     return strategy.DateWiseReportList.map((d) => {
-      cumulative += d.pnlDayWise;
+      cumulative += d.pnlDayWise || 0;
       return { x: d.Date, y: cumulative };
     });
   }, [strategy]);
 
   const heatmapData =
-    strategy?.DateWiseReportList?.map((d) => ({
-      date: d.Date,
-      value: d.pnlDayWise,
-    })).sort((a, b) => new Date(a.date) - new Date(b.date)) || [];
+    strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
+      ? strategy.DateWiseReportList.map((d) => ({
+          date: d.Date,
+          value: d.pnlDayWise || 0,
+        })).sort((a, b) => new Date(a.date) - new Date(b.date))
+      : [];
 
   // Monthly totals now rendered inside Heatmap (withMonthlyTotals)
 
@@ -78,40 +100,48 @@ const StrategyReportDetails = ({
             <DonutChart size={140} stroke={20} segments={donutSegments} />
           </div>
           <ul className="space-y-2 text-[11px] font-medium max-h-[160px] overflow-y-auto pr-2 w-44">
-            {(strategy?.DateWiseReportList || []).map((d, i) => (
-              <li key={d.Date} className="flex items-center gap-2">
-                <span
-                  className="w-3 h-3 rounded"
-                  style={{
-                    background: [
-                      "#FFB020",
-                      "#2563EB",
-                      "#10B981",
-                      "#6366F1",
-                      "#EC4899",
-                      "#F97316",
-                    ][i % 6],
-                  }}
-                ></span>
-                <span
-                  className="flex-1 truncate text-slate-500 dark:text-slate-300"
-                  title={new Date(d.Date).toLocaleDateString("en-GB")}
+            {strategy?.DateWiseReportList &&
+            Array.isArray(strategy.DateWiseReportList) &&
+            strategy.DateWiseReportList.length > 0 ? (
+              strategy.DateWiseReportList.map((d, i) => (
+                <li
+                  key={d.Date || `date-${i}`}
+                  className="flex items-center gap-2"
                 >
-                  {new Date(d.Date).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                </span>
-                <span
-                  className={`text-[10px] font-semibold ${
-                    d.pnlDayWise >= 0 ? "text-emerald-600" : "text-rose-600"
-                  }`}
-                >
-                  {d.pnlDayWise}
-                </span>
-              </li>
-            ))}
-            {!(strategy?.DateWiseReportList || []).length && (
+                  <span
+                    className="w-3 h-3 rounded"
+                    style={{
+                      background: [
+                        "#FFB020",
+                        "#2563EB",
+                        "#10B981",
+                        "#6366F1",
+                        "#EC4899",
+                        "#F97316",
+                      ][i % 6],
+                    }}
+                  ></span>
+                  <span
+                    className="flex-1 truncate text-slate-500 dark:text-slate-300"
+                    title={new Date(d.Date).toLocaleDateString("en-GB")}
+                  >
+                    {new Date(d.Date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      (d.pnlDayWise || 0) >= 0
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }`}
+                  >
+                    {d.pnlDayWise || 0}
+                  </span>
+                </li>
+              ))
+            ) : (
               <li className="text-slate-400 dark:text-slate-500 text-[10px]">
                 No data
               </li>
@@ -129,7 +159,7 @@ const StrategyReportDetails = ({
           <div className="flex-1">
             <div className="flex items-center gap-6 mb-4">
               <h3 className="font-medium text-[15px] text-slate-800 dark:text-slate-100">
-                {strategy.StrategyName}
+                {strategy.StrategyName || "Unknown Strategy"}
               </h3>
               <div className="flex gap-6 text-[11px] font-medium">
                 <div className="flex items-center gap-1">
@@ -137,19 +167,19 @@ const StrategyReportDetails = ({
                     Total Traders
                   </span>
                   <span className="text-slate-800 dark:text-slate-200">
-                    {strategy.TotalTrade}
+                    {strategy.TotalTrade || 0}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-emerald-600">P&L</span>
                   <span
                     className={`font-semibold ${
-                      strategy.pnlStrategyWise >= 0
+                      (strategy.pnlStrategyWise || 0) >= 0
                         ? "text-emerald-600"
                         : "text-rose-600"
                     }`}
                   >
-                    {formatCurrency(strategy.pnlStrategyWise)}
+                    {formatCurrency(strategy.pnlStrategyWise || 0)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -180,7 +210,7 @@ const StrategyReportDetails = ({
                 Winning streak
               </div>
               <div className="font-medium text-slate-700 dark:text-slate-200">
-                {strategy.NoOfWins}
+                {strategy.NoOfWins || 0}
               </div>
             </div>
             <div className="space-y-1">
@@ -188,7 +218,7 @@ const StrategyReportDetails = ({
                 Losing streak
               </div>
               <div className="font-medium text-slate-700 dark:text-slate-200">
-                {strategy.NoOfLosses}
+                {strategy.NoOfLosses || 0}
               </div>
             </div>
             <div className="space-y-1">
@@ -249,54 +279,66 @@ const StrategyReportDetails = ({
                 </tr>
               </thead>
               <tbody>
-                {strategy.ListOfTransactionsPerStrategy?.map((t, i) => (
-                  <tr
-                    key={i}
-                    className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    <td className="px-5 py-2">
-                      {new Date(t.TimeStamp).toLocaleDateString("en-GB")}
-                    </td>
-                    <td className="px-5 py-2 text-[#0096FF]">
-                      {t.TransactionType}
-                    </td>
-                    <td className="px-5 py-2">{t.TradingSymbol}</td>
-                    <td className="px-5 py-2">{t.Quantity}</td>
-                    <td className="px-5 py-2">
-                      <span className="px-2 py-0.5 rounded-full bg-[#0096FF]/10 text-[#0096FF] font-medium dark:bg-[#0096FF]/20">
-                        {t.OrderStatus}
-                      </span>
-                    </td>
-                    <td className="px-5 py-2">{t.EntryPrice}</td>
-                    <td className="px-5 py-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-full font-medium ${
-                          t.OrderExitType === "LONG_TARGET"
-                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                            : "bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400"
-                        }`}
-                      >
-                        {t.OrderExitType}
-                      </span>
-                    </td>
-                    <td className="px-5 py-2">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium dark:bg-emerald-500/20 dark:text-emerald-400">
-                        Completed
-                      </span>
-                    </td>
-                    <td className="px-5 py-2 font-medium">
-                      <span
-                        className={`${
-                          t.pnlPerTransaction >= 0
-                            ? "text-emerald-600"
-                            : "text-rose-600"
-                        }`}
-                      >
-                        {formatCurrency(t.pnlPerTransaction)}
-                      </span>
+                {strategy.ListOfTransactionsPerStrategy &&
+                Array.isArray(strategy.ListOfTransactionsPerStrategy) ? (
+                  strategy.ListOfTransactionsPerStrategy.map((t, i) => (
+                    <tr
+                      key={`${t.OrderId || i}`}
+                      className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      <td className="px-5 py-2">
+                        {new Date(t.TimeStamp).toLocaleDateString("en-GB")}
+                      </td>
+                      <td className="px-5 py-2 text-[#0096FF]">
+                        {t.TransactionType}
+                      </td>
+                      <td className="px-5 py-2">{t.TradingSymbol}</td>
+                      <td className="px-5 py-2">{t.Quantity}</td>
+                      <td className="px-5 py-2">
+                        <span className="px-2 py-0.5 rounded-full bg-[#0096FF]/10 text-[#0096FF] font-medium dark:bg-[#0096FF]/20">
+                          {t.OrderStatus}
+                        </span>
+                      </td>
+                      <td className="px-5 py-2">{t.EntryPrice}</td>
+                      <td className="px-5 py-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-medium ${
+                            t.OrderExitType === "LONG_TARGET"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                              : "bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400"
+                          }`}
+                        >
+                          {t.OrderExitType || "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-2">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium dark:bg-emerald-500/20 dark:text-emerald-400">
+                          Completed
+                        </span>
+                      </td>
+                      <td className="px-5 py-2 font-medium">
+                        <span
+                          className={`${
+                            (t.pnlPerTransaction || 0) >= 0
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {formatCurrency(t.pnlPerTransaction || 0)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      className="px-5 py-4 text-center text-slate-500 dark:text-slate-400"
+                    >
+                      No transactions found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

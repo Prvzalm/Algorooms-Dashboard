@@ -5,6 +5,7 @@ import {
   useCreateStrategyMutation,
   useStrategyDetailsForEdit,
   useUserStrategies,
+  useSearchInstrument,
 } from "../../../hooks/strategyHooks";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
@@ -126,6 +127,21 @@ const StrategyBuilder = () => {
     pageSize: 100, // Large page size to get all strategies
     strategyType: "created",
   });
+
+  // For fetching instrument details in edit mode
+  const [editInstrumentSearch, setEditInstrumentSearch] = useState({
+    segmentType: "",
+    instrumentName: "",
+    shouldFetch: false,
+  });
+
+  // Hook to fetch instrument details in edit mode
+  const { data: editInstrumentData = [], isLoading: editInstrumentLoading } =
+    useSearchInstrument(
+      editInstrumentSearch.segmentType,
+      editInstrumentSearch.instrumentName,
+      editInstrumentSearch.shouldFetch
+    );
   const navigate = useNavigate();
   const [selectedStrategyTypes, setSelectedStrategyTypes] = useState(["time"]);
   const [selectedInstrument, setSelectedInstrument] = useState("");
@@ -216,18 +232,67 @@ const StrategyBuilder = () => {
       setSelectedStrategyTypes([mapped.StrategyType]);
       // Instrument inference
       if (mapped.StrategyScriptList?.[0]) {
-        setSelectedInstrument({
-          Name: mapped.StrategyScriptList[0].InstrumentName,
-          InstrumentToken: mapped.StrategyScriptList[0].InstrumentToken,
-          SegmentType: mapped.StrategySegmentType,
-          LotSize: mapped.StrategyScriptList[0].Qty || 0,
-        });
+        const firstScript = mapped.StrategyScriptList[0];
+        if (firstScript.InstrumentName && mapped.StrategySegmentType) {
+          // Set up search params to fetch instrument details including lot size
+          setEditInstrumentSearch({
+            segmentType:
+              mapped.StrategySegmentType === "OPTION"
+                ? "Option"
+                : mapped.StrategySegmentType === "NSE"
+                ? "Equity"
+                : mapped.StrategySegmentType === "NFO-FUT"
+                ? "Future"
+                : mapped.StrategySegmentType === "INDICES"
+                ? "Indices"
+                : mapped.StrategySegmentType === "CDS-FUT"
+                ? "CDS"
+                : mapped.StrategySegmentType === "MCX"
+                ? "MCX"
+                : "Option",
+            instrumentName: firstScript.InstrumentName,
+            shouldFetch: true,
+          });
+        }
       }
     } catch (e) {
       console.error("Failed to prefill edit strategy", e);
       toast.error("Failed to load strategy for edit");
     }
   }, [editing, editDetails, editLoading, editError, reset]);
+
+  // Handle instrument data fetch in edit mode
+  useEffect(() => {
+    if (!editing || !editInstrumentSearch.shouldFetch) return;
+    if (editInstrumentLoading || !editInstrumentData?.length) return;
+
+    // Find the matching instrument from search results
+    const matchedInstrument = editInstrumentData.find(
+      (instrument) => instrument.Name === editInstrumentSearch.instrumentName
+    );
+
+    if (matchedInstrument) {
+      setSelectedInstrument({
+        Name: matchedInstrument.Name,
+        InstrumentToken: matchedInstrument.InstrumentToken,
+        SegmentType: editInstrumentSearch.segmentType,
+        LotSize: matchedInstrument.LotSize || 0,
+        Exchange: matchedInstrument.Exchange || matchedInstrument.Segment || "",
+      });
+    }
+
+    // Reset search params to avoid unnecessary API calls
+    setEditInstrumentSearch({
+      segmentType: "",
+      instrumentName: "",
+      shouldFetch: false,
+    });
+  }, [
+    editing,
+    editInstrumentSearch,
+    editInstrumentLoading,
+    editInstrumentData,
+  ]);
 
   useEffect(() => {
     setValue("StrategyType", selectedStrategyTypes[0] || "", {

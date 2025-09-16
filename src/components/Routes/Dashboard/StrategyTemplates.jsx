@@ -314,7 +314,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                 </div>
 
                 <button
-                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-md text-sm transition"
+                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-lg text-sm transition"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy

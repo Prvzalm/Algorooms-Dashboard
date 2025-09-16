@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://core-api.algorooms.com",
+        target: "https://uat-core-api.algorooms.com",
         changeOrigin: true,
         secure: true,
       },
