@@ -157,3 +157,48 @@ export const deleteStrategy = async (strategyId) => {
     throw new Error(serverMsg);
   }
 };
+
+export const getStrategyDetailsById = async (strategyId) => {
+  if (!strategyId) throw new Error("strategyId required");
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/GetStrategyDetailsById",
+      { StrategyId: Number(strategyId) }
+    );
+    const { Status, Data, Message } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to load strategy details");
+    }
+    return Data?.UserStrategyList || null;
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to load strategy details";
+    throw new Error(serverMsg);
+  }
+};
+
+export const deployStrategy = async (payload) => {
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/DeployStrategy",
+      payload
+    );
+    const { Status, Message, Data } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to deploy strategy");
+    }
+    return { Message, Data };
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to deploy strategy";
+    throw new Error(serverMsg);
+  }
+};

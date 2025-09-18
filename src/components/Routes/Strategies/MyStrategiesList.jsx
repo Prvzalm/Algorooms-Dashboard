@@ -11,6 +11,7 @@ import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import ConfirmModal from "../../ConfirmModal";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import StrategyCardSkeleton from "./StrategyCardSkeleton";
+import DeployStrategyModal from "./DeployStrategyModal";
 
 const subTabs = ["Strategies", "Tradingview Signals Trading"];
 
@@ -71,6 +72,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
     useDuplicateStrategy();
   const { mutate: mutateDelete, isPending: deleting } = useDeleteStrategy();
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deployTarget, setDeployTarget] = useState(null);
 
   if (strategiesLoading) return <StrategyCardSkeleton count={6} />;
   if (strategiesError) return <div>Failed to load strategies.</div>;
@@ -256,7 +258,10 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 >
                   Backtest
                 </button>
-                <button className="flex-1 py-3 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium">
+                <button
+                  className="flex-1 py-3 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium"
+                  onClick={() => setDeployTarget(strategy)}
+                >
                   Deploy
                 </button>
               </div>
@@ -301,6 +306,11 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
             onError: () => {},
           });
         }}
+      />
+      <DeployStrategyModal
+        open={!!deployTarget}
+        strategy={deployTarget}
+        onClose={() => setDeployTarget(null)}
       />
     </>
   );

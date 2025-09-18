@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { emptyDeployedStrategy } from "../../../assets";
+import { useLocation } from "react-router-dom";
 import StrategyTemplates from "../Dashboard/StrategyTemplates";
 import MyPortfolioTab from "./MyPortfolioTab";
-import { FiChevronDown, FiMoreVertical } from "react-icons/fi";
 import {
   useChangeDeployedStrategyTradeMode,
   useSquareOffStrategyMutation,
@@ -124,7 +122,6 @@ const StrategiesPage = () => {
     location?.state?.activeTab || "My Strategies"
   );
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
-  const navigate = useNavigate();
   // MyStrategiesList manages its own pagination internally
 
   // If navigation provides an activeTab (via location.state), ensure we pick it up

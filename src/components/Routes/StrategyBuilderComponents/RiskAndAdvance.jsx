@@ -538,36 +538,100 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               </div>
             </div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-sm font-medium text-gray-700 dark:text-white">
               Profit Trailing
             </p>
             <div className="flex flex-wrap w-full gap-4 text-sm">
-              {trailingOptions.map((opt) => (
+              {trailingOptions.map((opt, idx) => (
                 <label
                   key={opt}
                   className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
                 >
                   <input
-                    type="checkbox"
-                    onChange={(e) => {
-                      const map = {
-                        "No Trailing": 0,
-                        "Lock Fix Profit": 1,
-                        "Trail Profit": 2,
-                        "Lock and Trail": 3,
-                      };
-                      setValue(
-                        "TrailProfitType",
-                        e.target.checked ? map[opt] : 0,
-                        { shouldDirty: true }
-                      );
-                    }}
+                    type="radio"
+                    name="profitTrailingLeft"
+                    checked={(watch("TrailProfitType") || 0) === idx}
+                    onChange={() =>
+                      setValue("TrailProfitType", idx, { shouldDirty: true })
+                    }
                   />
                   <span>{opt}</span>
                 </label>
               ))}
             </div>
+            {/* Conditional trailing fields for non-price section */}
+            {(() => {
+              const t = watch("TrailProfitType") || 0;
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  {(t === 1 || t === 3) && (
+                    <>
+                      <input
+                        type="number"
+                        defaultValue={getValues("LockProfit") || ""}
+                        placeholder="If profit reaches"
+                        onChange={(e) =>
+                          setValue("LockProfit", Number(e.target.value) || 0, {
+                            shouldDirty: true,
+                          })
+                        }
+                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                      />
+                      <input
+                        type="number"
+                        defaultValue={getValues("LockProfitAt") || ""}
+                        placeholder="Lock profit at"
+                        onChange={(e) =>
+                          setValue(
+                            "LockProfitAt",
+                            Number(e.target.value) || 0,
+                            {
+                              shouldDirty: true,
+                            }
+                          )
+                        }
+                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                      />
+                    </>
+                  )}
+                  {(t === 2 || t === 3) && (
+                    <>
+                      <input
+                        type="number"
+                        defaultValue={getValues("ProfitTranches") || ""}
+                        placeholder="On every increase of"
+                        onChange={(e) =>
+                          setValue(
+                            "ProfitTranches",
+                            Number(e.target.value) || 0,
+                            {
+                              shouldDirty: true,
+                            }
+                          )
+                        }
+                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                      />
+                      <input
+                        type="number"
+                        defaultValue={getValues("TrailProfitBy") || ""}
+                        placeholder="Trail profit by"
+                        onChange={(e) =>
+                          setValue(
+                            "TrailProfitBy",
+                            Number(e.target.value) || 0,
+                            {
+                              shouldDirty: true,
+                            }
+                          )
+                        }
+                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           {selectedStrategyTypes?.[0] === "price" && (
             <div className="grid grid-cols-2 gap-3">
@@ -667,78 +731,106 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-sm font-medium text-gray-700 dark:text-white">
                   Profit Trailing
                 </p>
                 <div className="flex flex-wrap w-full gap-4 text-sm">
-                  {trailingOptions.map((opt) => (
+                  {trailingOptions.map((opt, idx) => (
                     <label
                       key={opt}
                       className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
                     >
                       <input
-                        type="checkbox"
-                        onChange={(e) => {
-                          const map = {
-                            "No Trailing": 0,
-                            "Lock Fix Profit": 1,
-                            "Trail Profit": 2,
-                            "Lock and Trail": 3,
-                          };
-                          setValue(
-                            "TrailProfitType",
-                            e.target.checked ? map[opt] : 0,
-                            { shouldDirty: true }
-                          );
-                        }}
+                        type="radio"
+                        name="profitTrailingRight"
+                        checked={(watch("TrailProfitType") || 0) === idx}
+                        onChange={() =>
+                          setValue("TrailProfitType", idx, {
+                            shouldDirty: true,
+                          })
+                        }
                       />
                       <span>{opt}</span>
                     </label>
                   ))}
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="If Profit Reaches"
-                  onChange={(e) =>
-                    setValue("LockProfitAt", Number(e.target.value) || 0, {
-                      shouldDirty: true,
-                    })
-                  }
-                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Lock Profit at"
-                  onChange={(e) =>
-                    setValue("LockProfit", Number(e.target.value) || 0, {
-                      shouldDirty: true,
-                    })
-                  }
-                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Every Increase In Profit By"
-                  onChange={(e) =>
-                    setValue("TrailProfitBy", Number(e.target.value) || 0, {
-                      shouldDirty: true,
-                    })
-                  }
-                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Trail Profit By"
-                  onChange={(e) =>
-                    setValue("Trail_SL", Number(e.target.value) || 0, {
-                      shouldDirty: true,
-                    })
-                  }
-                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
+                {/* Conditional trailing fields for price section */}
+                {(() => {
+                  const t = watch("TrailProfitType") || 0;
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      {(t === 1 || t === 3) && (
+                        <>
+                          <input
+                            type="number"
+                            placeholder="If profit reaches"
+                            defaultValue={getValues("LockProfit") || ""}
+                            onChange={(e) =>
+                              setValue(
+                                "LockProfit",
+                                Number(e.target.value) || 0,
+                                {
+                                  shouldDirty: true,
+                                }
+                              )
+                            }
+                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Lock profit at"
+                            defaultValue={getValues("LockProfitAt") || ""}
+                            onChange={(e) =>
+                              setValue(
+                                "LockProfitAt",
+                                Number(e.target.value) || 0,
+                                {
+                                  shouldDirty: true,
+                                }
+                              )
+                            }
+                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                          />
+                        </>
+                      )}
+                      {(t === 2 || t === 3) && (
+                        <>
+                          <input
+                            type="number"
+                            placeholder="On every increase of"
+                            defaultValue={getValues("ProfitTranches") || ""}
+                            onChange={(e) =>
+                              setValue(
+                                "ProfitTranches",
+                                Number(e.target.value) || 0,
+                                {
+                                  shouldDirty: true,
+                                }
+                              )
+                            }
+                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Trail profit by"
+                            defaultValue={getValues("TrailProfitBy") || ""}
+                            onChange={(e) =>
+                              setValue(
+                                "TrailProfitBy",
+                                Number(e.target.value) || 0,
+                                {
+                                  shouldDirty: true,
+                                }
+                              )
+                            }
+                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -10,6 +10,8 @@ import {
   duplicateStrategy,
   getStrategyDetailsForEdit,
   deleteStrategy,
+  getStrategyDetailsById,
+  deployStrategy,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -146,6 +148,34 @@ export const useDeleteStrategy = () => {
     },
     onError: (err) => {
       const msg = err?.message || err?.response?.data?.Message || "Delete failed";
+      toast.error(msg);
+    },
+  });
+};
+
+// Fetch details by id (for deploy popup)
+export const useStrategyDetailsById = (strategyId, enabled = true) => {
+  return useQuery({
+    queryKey: ["strategy-details-by-id", strategyId],
+    queryFn: () => getStrategyDetailsById(strategyId),
+    enabled: !!strategyId && enabled,
+    staleTime: 1000 * 60,
+  });
+};
+
+// Deploy strategy mutation
+export const useDeployStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => deployStrategy(payload),
+    onSuccess: (data) => {
+      if (data?.Message) toast.success(data.Message);
+      // Refresh brokerwise strategies and possibly marketplace/user lists
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err?.message || "Failed to deploy";
       toast.error(msg);
     },
   });
