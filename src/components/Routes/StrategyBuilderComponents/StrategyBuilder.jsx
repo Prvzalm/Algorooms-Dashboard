@@ -16,6 +16,8 @@ import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
 import BacktestStrategyComponent from "../BackTest/BacktestStrategyComponent";
 import "./MobileButtons.css"; // Import mobile button styles
+import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
+import { buildStrategyPayload } from "../../../utils/strategyPayload";
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -143,15 +145,47 @@ const StrategyBuilder = () => {
       editInstrumentSearch.shouldFetch
     );
   const navigate = useNavigate();
-  const [selectedStrategyTypes, setSelectedStrategyTypes] = useState(["time"]);
-  const [selectedInstrument, setSelectedInstrument] = useState("");
-  const [selectedEquityInstruments, setSelectedEquityInstruments] = useState(
-    []
+  // Centralized UI state via Zustand
+  const selectedStrategyTypes = useStrategyBuilderStore(
+    (s) => s.selectedStrategyTypes
   );
-  const [showInstrumentModal, setShowInstrumentModal] = useState(false);
-  const [showBacktestModal, setShowBacktestModal] = useState(false);
-  const [showBacktestComponent, setShowBacktestComponent] = useState(false);
-  const [createdStrategyId, setCreatedStrategyId] = useState(null);
+  const setSelectedStrategyTypes = useStrategyBuilderStore(
+    (s) => s.setSelectedStrategyTypes
+  );
+  const selectedInstrument = useStrategyBuilderStore(
+    (s) => s.selectedInstrument
+  );
+  const setSelectedInstrument = useStrategyBuilderStore(
+    (s) => s.setSelectedInstrument
+  );
+  const selectedEquityInstruments = useStrategyBuilderStore(
+    (s) => s.selectedEquityInstruments
+  );
+  const setSelectedEquityInstruments = useStrategyBuilderStore(
+    (s) => s.setSelectedEquityInstruments
+  );
+  const showInstrumentModal = useStrategyBuilderStore(
+    (s) => s.showInstrumentModal
+  );
+  const openInstrumentModal = useStrategyBuilderStore(
+    (s) => s.openInstrumentModal
+  );
+  const closeInstrumentModal = useStrategyBuilderStore(
+    (s) => s.closeInstrumentModal
+  );
+  const showBacktestModal = useStrategyBuilderStore((s) => s.showBacktestModal);
+  const openBacktestModal = useStrategyBuilderStore((s) => s.openBacktestModal);
+  const closeBacktestModal = useStrategyBuilderStore(
+    (s) => s.closeBacktestModal
+  );
+  const showBacktestComponent = useStrategyBuilderStore(
+    (s) => s.showBacktestComponent
+  );
+  const showBacktest = useStrategyBuilderStore((s) => s.showBacktest);
+  const createdStrategyId = useStrategyBuilderStore((s) => s.createdStrategyId);
+  const setCreatedStrategyId = useStrategyBuilderStore(
+    (s) => s.setCreatedStrategyId
+  );
 
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
@@ -547,192 +581,21 @@ const StrategyBuilder = () => {
     }
 
     // Show backtest confirmation modal only for first time creation
-    setShowBacktestModal(true);
+    openBacktestModal();
   };
 
   const handleCreateStrategy = (shouldBacktest = false) => {
     const valuesNorm = window.strategyFormData;
-
-    const segmentMap = {
-      Option: "OPTION",
-      Equity: "NSE",
-      Future: "NFO-FUT",
-      Indices: "INDICES",
-      CDS: "CDS-FUT",
-      MCX: "MCX",
-    };
-    const mappedSegment =
-      segmentMap[valuesNorm.StrategySegmentType] ||
-      valuesNorm.StrategySegmentType;
-
-    if (valuesNorm.StrategyType === "time" && mappedSegment !== "OPTION") {
-      console.warn(
-        "Time strategy with non-OPTION segment detected; proceeding without client-side block."
-      );
-    }
-
-    const executionType =
-      valuesNorm.StrategyType === "time"
-        ? "tb"
-        : valuesNorm.StrategyType === "indicator"
-        ? "ib"
-        : "pa";
-
-    const currentScripts = Array.isArray(valuesNorm.StrategyScriptList)
-      ? valuesNorm.StrategyScriptList
-      : [];
-    const firstScript = currentScripts[0] || {};
-    const lotSizeVal = selectedInstrument?.LotSize || firstScript.Qty || 0;
-
-    const buildDefaultStrike = (lot) => ({
-      TransactionType: "SELL",
-      StrikeType: "PE",
-      StrikeValueType: 0,
-      StrikeValue: 0,
-      Qty: lot,
-      TargetType: "tgpr",
-      SLType: "slpr",
-      Target: 0,
-      StopLoss: 30,
-      TargetActionTypeId: "ONPRICE",
-      SLActionTypeId: "ONPRICE",
-      ExpiryType: "WEEKLY",
-      lotSize: lot,
-      IsMoveSLCTC: false,
-      IsPriceDiffrenceConstrant: false,
-      PriceDiffrenceConstrantValue: 0,
-      isPrePunchSL: false,
-      reEntry: {
-        isRentry: false,
-        RentryType: "REN",
-        TradeCycle: 0,
-        RentryActionTypeId: "ON_CLOSE",
-      },
-      waitNTrade: {
-        isWaitnTrade: false,
-        isPerPt: "wtpr_+",
-        typeId: "wtpr_+",
-        MovementValue: 0,
-      },
-      strikeTypeobj: {
-        type: "ATM",
-        RangeFrom: 0,
-        RangeTo: 0,
-        StrikeValue: 0,
-      },
-      isExitAll: false,
-      isTrailSL: false,
-      TrailingSL: {
-        TrailingType: "tslpr",
-        InstrumentMovementValue: 0,
-        TrailingValue: 0,
+    const payload = buildStrategyPayload({
+      values: valuesNorm,
+      ui: {
+        selectedStrategyTypes,
+        selectedInstrument,
+        selectedEquityInstruments,
+        showBacktestComponent,
+        createdStrategyId,
       },
     });
-
-    const longOptionStrikes =
-      Array.isArray(firstScript.LongEquationoptionStrikeList) &&
-      firstScript.LongEquationoptionStrikeList.length > 0
-        ? firstScript.LongEquationoptionStrikeList.map((item) => ({
-            ...item,
-            Qty: item?.Qty || lotSizeVal,
-            lotSize: item?.lotSize || lotSizeVal,
-            IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
-            IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
-            PriceDiffrenceConstrantValue:
-              item?.PriceDiffrenceConstrantValue ?? "0",
-            isPrePunchSL: item?.isPrePunchSL ?? false,
-            reEntry: item?.reEntry ?? {
-              isRentry: false,
-              RentryType: "REN",
-              TradeCycle: "0",
-              RentryActionTypeId: "ON_CLOSE",
-            },
-            waitNTrade: item?.waitNTrade ?? {
-              isWaitnTrade: false,
-              isPerPt: "wt_eq",
-              typeId: "wt_eq",
-              MovementValue: "0",
-            },
-            strikeTypeobj: item?.strikeTypeobj ?? {
-              type: "ATM",
-              RangeFrom: 0,
-              RangeTo: 0,
-              StrikeValue: 0,
-            },
-            isExitAll: item?.isExitAll ?? false,
-            isTrailSL: item?.isTrailSL ?? false,
-            TrailingSL: item?.TrailingSL ?? {
-              TrailingType: "tslpr",
-              InstrumentMovementValue: "0",
-              TrailingValue: "0",
-            },
-          }))
-        : [buildDefaultStrike(lotSizeVal)];
-
-    const isIndicatorEquityMulti =
-      selectedStrategyTypes[0] === "indicator" &&
-      valuesNorm.StrategySegmentType === "Equity" &&
-      selectedEquityInstruments.length > 0;
-
-    let StrategyScriptListFinal;
-
-    if (isIndicatorEquityMulti) {
-      StrategyScriptListFinal = valuesNorm.StrategyScriptList;
-    } else {
-      const enrichedScripts = [
-        {
-          InstrumentToken:
-            selectedInstrument?.InstrumentToken ||
-            firstScript.InstrumentToken ||
-            "",
-          Qty: lotSizeVal,
-          LongEquationoptionStrikeList: longOptionStrikes,
-          ShortEquationoptionStrikeList: Array.isArray(
-            firstScript.ShortEquationoptionStrikeList
-          )
-            ? firstScript.ShortEquationoptionStrikeList
-            : [],
-        },
-      ];
-      StrategyScriptListFinal = enrichedScripts;
-    }
-
-    const toNullIfEmpty = (val) => {
-      if (Array.isArray(val)) return val.length > 0 ? val : null;
-      return val === "" ? null : val ?? null;
-    };
-
-    const payloadBase = {
-      ...valuesNorm,
-      StrategyType: null,
-      StrategySegmentType:
-        valuesNorm.StrategyType === "time" ? "OPTION" : mappedSegment,
-      StrategyExecutionType: executionType,
-      StrategyScriptList: StrategyScriptListFinal,
-      TradeStopTime: valuesNorm.TradeStopTime || valuesNorm.AutoSquareOffTime,
-      EntryRule: null,
-      ExitRule: null,
-      Long_ExitEquation: toNullIfEmpty(valuesNorm.Long_ExitEquation),
-      Short_ExitEquation: toNullIfEmpty(valuesNorm.Short_ExitEquation),
-      // Include existing strategy ID if backtest component is shown (for patch operation)
-      StrategyId:
-        showBacktestComponent && createdStrategyId ? createdStrategyId : 0,
-    };
-
-    // Include entry equations only for indicator strategies
-    if (valuesNorm.StrategyType === "indicator") {
-      payloadBase.LongEntryEquation = toNullIfEmpty(
-        valuesNorm.LongEntryEquation
-      );
-      payloadBase.ShortEntryEquation = toNullIfEmpty(
-        valuesNorm.ShortEntryEquation
-      );
-    } else {
-      payloadBase.LongEntryEquation = null;
-      payloadBase.ShortEntryEquation = null;
-    }
-
-    const payload = payloadBase;
 
     mutate(payload, {
       onSuccess: async (data) => {
@@ -771,7 +634,7 @@ const StrategyBuilder = () => {
 
               if (shouldBacktest) {
                 // Don't reset form, show backtest component
-                setShowBacktestComponent(true);
+                showBacktest(true);
                 // Scroll to backtest section after a short delay
                 setTimeout(() => {
                   const backtestElement =
@@ -824,7 +687,7 @@ const StrategyBuilder = () => {
     });
 
     // Close modal
-    setShowBacktestModal(false);
+    closeBacktestModal();
   };
 
   const hideLeg1 =
@@ -889,7 +752,7 @@ const StrategyBuilder = () => {
                 </h2>
                 <div
                   className="border-dashed border border-gray-300 min-h-[6rem] rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027]"
-                  onClick={() => setShowInstrumentModal(true)}
+                  onClick={openInstrumentModal}
                 >
                   <span className="text-gray-400 dark:text-gray-500 text-xl">
                     {selectedInstrument || selectedEquityInstruments.length
@@ -943,7 +806,7 @@ const StrategyBuilder = () => {
               </div>
               <InstrumentModal
                 visible={showInstrumentModal}
-                onClose={() => setShowInstrumentModal(false)}
+                onClose={closeInstrumentModal}
                 selected={selectedInstrument}
                 setSelected={setSelectedInstrument}
                 selectedList={selectedEquityInstruments}
@@ -1026,7 +889,7 @@ const StrategyBuilder = () => {
         {showBacktestModal &&
           createPortal(
             <div
-              onClick={() => setShowBacktestModal(false)}
+              onClick={closeBacktestModal}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
             >
               <div

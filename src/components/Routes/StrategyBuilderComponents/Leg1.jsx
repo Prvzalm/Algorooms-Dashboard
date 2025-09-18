@@ -348,8 +348,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         const prevTrailSL = existingActiveLong?.TrailingSL;
 
         // Wait & Trade settings
-        const effectiveWaitEnabled =
-          !isTime && (waitTradeEnabled || prevWait?.isWaitnTrade);
+        const effectiveWaitEnabled = waitTradeEnabled || prevWait?.isWaitnTrade;
         let effectiveWaitObj;
 
         if (effectiveWaitEnabled) {
@@ -376,8 +375,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         const globalPremEnabled = advanceFeatures?.["Premium Difference"];
         const globalPremValue = advanceFeatures?.PremiumDifferenceValue;
         const effectivePremiumEnabled =
-          !isTime &&
-          (premiumDiffEnabled || prevPremEnabled || globalPremEnabled);
+          premiumDiffEnabled || prevPremEnabled || globalPremEnabled;
         const effectivePremiumValue = premiumDiffEnabled
           ? String(premiumDiffValue)
           : globalPremValue !== undefined
@@ -389,8 +387,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         // Re-Entry/Execute settings
         const globalReEntryEnabled = advanceFeatures?.["Re Entry/Execute"];
         const effectiveReEntryEnabled =
-          !isTime &&
-          (reEntryEnabled || prevReEntry?.isRentry || globalReEntryEnabled);
+          reEntryEnabled || prevReEntry?.isRentry || globalReEntryEnabled;
         const effectiveReEntryObj = effectiveReEntryEnabled
           ? {
               isRentry: true,
@@ -413,10 +410,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         // Trail SL settings
         const globalTrailSlEnabled = advanceFeatures?.["Trail SL"];
         const effectiveTrailSlEnabled =
-          !isTime &&
-          (trailSlEnabled ||
-            existingActiveLong?.isTrailSL ||
-            globalTrailSlEnabled);
+          trailSlEnabled ||
+          existingActiveLong?.isTrailSL ||
+          globalTrailSlEnabled;
         const effectiveTrailSlObj = effectiveTrailSlEnabled
           ? {
               TrailingType: trailSlType === "%" ? "tslpr" : "tslpt",
@@ -456,9 +452,10 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             RangeTo: 0,
           },
           isTrailSL: effectiveTrailSlEnabled,
-          IsMoveSLCTC: isTime ? false : true,
-          isExitAll: isTime ? false : true,
-          isPrePunchSL: prePunchSL && !isTime,
+          // Respect existing flags updated via AdvanceFeatures panel
+          IsMoveSLCTC: existingActiveLong?.IsMoveSLCTC ?? false,
+          isExitAll: existingActiveLong?.isExitAll ?? false,
+          isPrePunchSL: prePunchSL,
           reEntry: effectiveReEntryObj,
           waitNTrade: effectiveWaitObj,
           TrailingSL: effectiveTrailSlObj,
