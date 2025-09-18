@@ -351,29 +351,29 @@ const StrategyBuilder = () => {
       isExitAll: true,
       TargetType: "tgpr",
       SLType: "slpr",
-      Target: 0,
-      StopLoss: 0,
-      Qty: 0,
+      Target: "0",
+      StopLoss: "0",
+      Qty: "0",
       isPrePunchSL: true,
       IsPriceDiffrenceConstrant: true,
-      PriceDiffrenceConstrantValue: 0,
+      PriceDiffrenceConstrantValue: "0",
       ExpiryType: "WEEKLY",
       reEntry: {
         isRentry: true,
         RentryType: "REN",
-        TradeCycle: 0,
+        TradeCycle: "0",
         RentryActionTypeId: "ON_CLOSE",
       },
       waitNTrade: {
         isWaitnTrade: true,
-        isPerPt: "wtpr_+",
-        typeId: "wtpr_+",
-        MovementValue: 0,
+        isPerPt: "wt_eq",
+        typeId: "wt_eq",
+        MovementValue: "0",
       },
       TrailingSL: {
         TrailingType: "tslpr",
-        InstrumentMovementValue: 0,
-        TrailingValue: 0,
+        InstrumentMovementValue: "0",
+        TrailingValue: "0",
       },
       strikeTypeobj: {
         type: "ATM",
@@ -486,13 +486,15 @@ const StrategyBuilder = () => {
                     }
                     if (stc.reEntry?.isRentry) {
                       if (
+                        stc.reEntry.TradeCycle === "0" ||
                         stc.reEntry.TradeCycle === 0 ||
                         stc.reEntry.TradeCycle === null ||
-                        stc.reEntry.TradeCycle === undefined
+                        stc.reEntry.TradeCycle === undefined ||
+                        stc.reEntry.TradeCycle === ""
                       ) {
                         stc.reEntry = {
                           ...stc.reEntry,
-                          TradeCycle: 1,
+                          TradeCycle: "1",
                         };
                         errors.push(
                           `TradeCycle auto-set to 1 (script ${
@@ -637,19 +639,19 @@ const StrategyBuilder = () => {
             IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
             IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
             PriceDiffrenceConstrantValue:
-              item?.PriceDiffrenceConstrantValue ?? 0,
+              item?.PriceDiffrenceConstrantValue ?? "0",
             isPrePunchSL: item?.isPrePunchSL ?? false,
             reEntry: item?.reEntry ?? {
               isRentry: false,
               RentryType: "REN",
-              TradeCycle: 0,
+              TradeCycle: "0",
               RentryActionTypeId: "ON_CLOSE",
             },
             waitNTrade: item?.waitNTrade ?? {
               isWaitnTrade: false,
-              isPerPt: "wtpr_+",
-              typeId: "wtpr_+",
-              MovementValue: 0,
+              isPerPt: "wt_eq",
+              typeId: "wt_eq",
+              MovementValue: "0",
             },
             strikeTypeobj: item?.strikeTypeobj ?? {
               type: "ATM",
@@ -661,8 +663,8 @@ const StrategyBuilder = () => {
             isTrailSL: item?.isTrailSL ?? false,
             TrailingSL: item?.TrailingSL ?? {
               TrailingType: "tslpr",
-              InstrumentMovementValue: 0,
-              TrailingValue: 0,
+              InstrumentMovementValue: "0",
+              TrailingValue: "0",
             },
           }))
         : [buildDefaultStrike(lotSizeVal)];

@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { infoIcon } from "../../../assets";
+import ReEntryExecuteModal from "./ReEntryExecuteModal";
+import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
 
 const RiskAndAdvance = ({ selectedStrategyTypes }) => {
-  const { setValue, getValues } = useFormContext();
+  const { setValue, getValues, watch } = useFormContext();
   const [noTradeAfter, setNoTradeAfter] = useState("15:15");
+
+  // Watch reactive values to avoid infinite loops
+  const strategyScripts = watch("StrategyScriptList");
+  const activeLegIndex = watch("ActiveLegIndex");
 
   // Check if equity instruments are selected in indicator-based mode
   const isIndicatorEquityMode =
@@ -88,6 +94,25 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
     "Trail SL": false,
   });
 
+  // Sync advState with actual form data to keep checkboxes in sync
+  useEffect(() => {
+    const scripts = strategyScripts || [];
+    const firstScript = scripts[0] || {};
+    const longs = firstScript.LongEquationoptionStrikeList || [];
+    const currentStrike = longs[activeLegIndex] || {};
+
+    setAdvState((prev) => ({
+      ...prev,
+      "Move SL to Cost": currentStrike.IsMoveSLCTC || false,
+      "Exit All on SL/Tgt": currentStrike.isExitAll || false,
+      "Pre Punch SL": currentStrike.isPrePunchSL || false,
+      "Wait & Trade": currentStrike.waitNTrade?.isWaitnTrade || false,
+      "Premium Difference": currentStrike.IsPriceDiffrenceConstrant || false,
+      "Re Entry/Execute": currentStrike.reEntry?.isRentry || false,
+      "Trail SL": currentStrike.isTrailSL || false,
+    }));
+  }, [strategyScripts, activeLegIndex]);
+
   const isDisabledAdvance = (label) => {
     // Rule 1: Move SL to Cost active -> disable all except Exit All and Premium Difference
     if (
@@ -110,26 +135,25 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   };
 
   const updateFirstStrike = (updater) => {
-    const scripts = getValues("StrategyScriptList") || [];
+    const scripts = strategyScripts || [];
     if (!Array.isArray(scripts) || scripts.length === 0) return;
     const firstScript = { ...scripts[0] };
     const longs = Array.isArray(firstScript.LongEquationoptionStrikeList)
       ? [...firstScript.LongEquationoptionStrikeList]
       : [];
     if (longs.length === 0) return;
-    const strike = { ...longs[0] };
+
+    // Use the watched active leg index to update the correct leg
+    const targetIndex = Math.min(activeLegIndex || 0, longs.length - 1);
+
+    const strike = { ...longs[targetIndex] };
     updater(strike);
-    longs[0] = strike;
+    longs[targetIndex] = strike;
     const nextScripts = [...scripts];
     nextScripts[0] = { ...firstScript, LongEquationoptionStrikeList: longs };
     setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
   };
-
   const onToggleAdvance = (label, checked) => {
-    if (label === "Premium Difference" && checked) {
-      // open modal for value input
-      setShowPremiumDiffModal(true);
-    }
     setAdvState((prev) => ({ ...prev, [label]: checked }));
     // enforce mutual exclusions when turning ON
     if (checked) {
@@ -185,39 +209,117 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           s.waitNTrade = {
             ...(s.waitNTrade || {}),
             isWaitnTrade: !!checked,
-            isPerPt: s.waitNTrade?.isPerPt || "wtpr_%_up",
-            typeId: s.waitNTrade?.typeId || "wtpr_%_up",
-            MovementValue: s.waitNTrade?.MovementValue ?? 0,
+            isPerPt: s.waitNTrade?.isPerPt || "wt_eq",
+            typeId: s.waitNTrade?.typeId || "wt_eq",
+            MovementValue: s.waitNTrade?.MovementValue ?? "0",
           };
         });
         break;
       case "Premium Difference":
-        updateFirstStrike((s) => {
-          s.IsPriceDiffrenceConstrant = !!checked;
-          if (!checked) s.PriceDiffrenceConstrantValue = 0;
-        });
+        if (checked) {
+          // Get existing values to populate modal
+          const scripts = strategyScripts || [];
+          const firstScript = scripts[0] || {};
+          const longs = firstScript.LongEquationoptionStrikeList || [];
+          const currentStrike = longs[activeLegIndex] || {};
+
+          // Initialize temp value with existing value
+          setPremiumDiffTempValue(
+            currentStrike.PriceDiffrenceConstrantValue || "0"
+          );
+
+          // Open modal for value input
+          setShowPremiumDiffModal(true);
+        } else {
+          updateFirstStrike((s) => {
+            s.IsPriceDiffrenceConstrant = false;
+            s.PriceDiffrenceConstrantValue = "0";
+          });
+        }
         break;
       case "Re Entry/Execute":
-        updateFirstStrike((s) => {
-          s.reEntry = {
-            ...(s.reEntry || {}),
-            isRentry: !!checked,
-            RentryType: s.reEntry?.RentryType || "REN",
-            TradeCycle: s.reEntry?.TradeCycle ?? 4,
-            RentryActionTypeId: s.reEntry?.RentryActionTypeId || "ON_CLOSE",
-          };
-        });
+        if (checked) {
+          // Get existing values to populate modal
+          const scripts = strategyScripts || [];
+          const firstScript = scripts[0] || {};
+          const longs = firstScript.LongEquationoptionStrikeList || [];
+          const currentStrike = longs[activeLegIndex] || {};
+
+          // Initialize temp data with existing values
+          setReEntryTempData({
+            executionType:
+              currentStrike.reEntry?.RentryType === "RENC"
+                ? "Combined"
+                : currentStrike.reEntry?.RentryType === "REX"
+                ? "Exit"
+                : "Leg Wise",
+            cycles: currentStrike.reEntry?.TradeCycle || "1",
+            actionType: currentStrike.reEntry?.RentryActionTypeId || "ON_CLOSE",
+          });
+
+          // Show modal to configure Re-Entry/Execute
+          setShowReEntryModal(true);
+        } else {
+          // Directly disable when unchecking
+          updateFirstStrike((s) => {
+            s.reEntry = {
+              ...(s.reEntry || {}),
+              isRentry: false,
+              RentryType: "REN",
+              TradeCycle: "0",
+              RentryActionTypeId: "ON_CLOSE",
+            };
+          });
+          const currentAf = getValues("AdvanceFeatures") || {};
+          setValue(
+            "AdvanceFeatures",
+            {
+              ...currentAf,
+              "Re Entry/Execute": false,
+            },
+            { shouldDirty: true }
+          );
+        }
         break;
       case "Trail SL":
-        updateFirstStrike((s) => {
-          s.isTrailSL = !!checked;
-          s.TrailingSL = {
-            ...(s.TrailingSL || {}),
-            TrailingType: s.TrailingSL?.TrailingType || "tslpr",
-            InstrumentMovementValue: s.TrailingSL?.InstrumentMovementValue ?? 0,
-            TrailingValue: s.TrailingSL?.TrailingValue ?? 0,
-          };
-        });
+        if (checked) {
+          // Get existing values to populate modal
+          const scripts = strategyScripts || [];
+          const firstScript = scripts[0] || {};
+          const longs = firstScript.LongEquationoptionStrikeList || [];
+          const currentStrike = longs[activeLegIndex] || {};
+
+          // Initialize temp data with existing values
+          setTrailSlTempData({
+            trailingType:
+              currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%",
+            priceMovement:
+              currentStrike.TrailingSL?.InstrumentMovementValue || "0",
+            trailingValue: currentStrike.TrailingSL?.TrailingValue || "0",
+          });
+
+          // Show modal to configure Trail SL
+          setShowTrailSlModal(true);
+        } else {
+          // Directly disable when unchecking
+          updateFirstStrike((s) => {
+            s.isTrailSL = false;
+            s.TrailingSL = {
+              TrailingType: "tslpr",
+              InstrumentMovementValue: "0",
+              TrailingValue: "0",
+            };
+          });
+          const currentAf = getValues("AdvanceFeatures") || {};
+          setValue(
+            "AdvanceFeatures",
+            {
+              ...currentAf,
+              "Trail SL": false,
+            },
+            { shouldDirty: true }
+          );
+        }
         break;
       default:
         break;
@@ -226,16 +328,32 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
 
   // Premium Difference Modal state & handler
   const [showPremiumDiffModal, setShowPremiumDiffModal] = useState(false);
-  const [premiumDiffTempValue, setPremiumDiffTempValue] = useState(0);
+  const [premiumDiffTempValue, setPremiumDiffTempValue] = useState("0");
+
+  // Re-Entry/Execute Modal state & handler
+  const [showReEntryModal, setShowReEntryModal] = useState(false);
+  const [reEntryTempData, setReEntryTempData] = useState({
+    executionType: "Combined",
+    cycles: "1",
+    actionType: "ON_CLOSE",
+  });
+
+  // Trail SL Modal state & handler
+  const [showTrailSlModal, setShowTrailSlModal] = useState(false);
+  const [trailSlTempData, setTrailSlTempData] = useState({
+    trailingType: "%",
+    priceMovement: "0",
+    trailingValue: "0",
+  });
 
   const savePremiumDifference = () => {
     updateFirstStrike((s) => {
-      s.IsPriceDiffrenceConstrant = premiumDiffTempValue > 0;
+      s.IsPriceDiffrenceConstrant = Number(premiumDiffTempValue) > 0;
       s.PriceDiffrenceConstrantValue =
-        premiumDiffTempValue > 0 ? premiumDiffTempValue : 0;
+        Number(premiumDiffTempValue) > 0 ? premiumDiffTempValue : "0";
     });
     setShowPremiumDiffModal(false);
-    if (premiumDiffTempValue === 0) {
+    if (Number(premiumDiffTempValue) === 0) {
       setAdvState((prev) => ({ ...prev, "Premium Difference": false }));
     }
     const currentAf = getValues("AdvanceFeatures") || {};
@@ -243,11 +361,68 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
       "AdvanceFeatures",
       {
         ...currentAf,
-        "Premium Difference": premiumDiffTempValue > 0,
+        "Premium Difference": Number(premiumDiffTempValue) > 0,
         PremiumDifferenceValue: premiumDiffTempValue,
       },
       { shouldDirty: true }
     );
+  };
+
+  const saveReEntryExecute = (data) => {
+    const rentryTypeMap = {
+      Combined: "RENC",
+      "Leg Wise": "REN",
+      Exit: "REX",
+    };
+
+    updateFirstStrike((s) => {
+      s.reEntry = {
+        ...(s.reEntry || {}),
+        isRentry: true,
+        RentryType: rentryTypeMap[data.executionType] || "REN",
+        TradeCycle: data.cycles,
+        RentryActionTypeId: data.actionType || "ON_CLOSE",
+      };
+    });
+    setAdvState((prev) => ({ ...prev, "Re Entry/Execute": true }));
+    const currentAf = getValues("AdvanceFeatures") || {};
+    setValue(
+      "AdvanceFeatures",
+      {
+        ...currentAf,
+        "Re Entry/Execute": true,
+        ReEntryExecutionType: data.executionType,
+        ReEntryCycles: data.cycles,
+        ReEntryActionType: data.actionType,
+      },
+      { shouldDirty: true }
+    );
+    setReEntryTempData(data);
+  };
+
+  const saveTrailStopLoss = (data) => {
+    updateFirstStrike((s) => {
+      s.isTrailSL = true;
+      s.TrailingSL = {
+        TrailingType: data.trailingType === "%" ? "tslpr" : "tslpt",
+        InstrumentMovementValue: data.priceMovement,
+        TrailingValue: data.trailingValue,
+      };
+    });
+    setAdvState((prev) => ({ ...prev, "Trail SL": true }));
+    const currentAf = getValues("AdvanceFeatures") || {};
+    setValue(
+      "AdvanceFeatures",
+      {
+        ...currentAf,
+        "Trail SL": true,
+        TrailSlType: data.trailingType,
+        TrailSlPriceMovement: data.priceMovement,
+        TrailSlTrailingValue: data.trailingValue,
+      },
+      { shouldDirty: true }
+    );
+    setTrailSlTempData(data);
   };
 
   return (
@@ -688,6 +863,30 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           </div>
         </div>
       )}
+
+      {/* Re-Entry/Execute Modal */}
+      <ReEntryExecuteModal
+        isOpen={showReEntryModal}
+        onClose={() => {
+          setShowReEntryModal(false);
+          // Uncheck the checkbox if user cancels
+          setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
+        }}
+        onSave={saveReEntryExecute}
+        initialData={reEntryTempData}
+      />
+
+      {/* Trail Stop Loss Modal */}
+      <TrailStopLossModal
+        isOpen={showTrailSlModal}
+        onClose={() => {
+          setShowTrailSlModal(false);
+          // Uncheck the checkbox if user cancels
+          setAdvState((prev) => ({ ...prev, "Trail SL": false }));
+        }}
+        onSave={saveTrailStopLoss}
+        initialData={trailSlTempData}
+      />
     </div>
   );
 };

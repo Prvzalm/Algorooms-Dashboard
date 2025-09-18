@@ -85,6 +85,17 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const [showPremiumDiffInlineInput, setShowPremiumDiffInlineInput] =
     useState(false);
 
+  // Re-Entry/Execute states
+  const [reEntryEnabled, setReEntryEnabled] = useState(false);
+  const [reEntryExecutionType, setReEntryExecutionType] = useState("Combined");
+  const [reEntryCycles, setReEntryCycles] = useState(1);
+
+  // Trail SL states
+  const [trailSlEnabled, setTrailSlEnabled] = useState(false);
+  const [trailSlType, setTrailSlType] = useState("%");
+  const [trailSlPriceMovement, setTrailSlPriceMovement] = useState(0);
+  const [trailSlTrailingValue, setTrailSlTrailingValue] = useState(0);
+
   // compute disabled state when no instrument selected
   const isDisabled = !selectedInstrument || !selectedInstrument.InstrumentToken;
 
@@ -147,11 +158,10 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         setWaitTradeMovement(Number(longAt.waitNTrade.MovementValue) || 0);
         // map backend typeId to label
         const wtMapRev = {
-          "wtpr_%_down": "% ↓",
-          "wtpr_%_up": "% ↑",
-          wtpr_pt_up: "pt ↑",
-          wtpr_pt_down: "pt ↓",
-          wtpr_equal: "Equal",
+          "wtpr_-": "% ↓",
+          wt_eq: "% ↑",
+          "wtpt_+": "pt ↑",
+          "wtpt_-": "pt ↓",
         };
         setWaitTradeType(wtMapRev[longAt.waitNTrade.typeId] || "% ↑");
       } else {
@@ -165,6 +175,39 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       } else {
         setPremiumDiffEnabled(false);
         setPremiumDiffValue(0);
+      }
+
+      // derive re-entry/execute
+      if (longAt.reEntry?.isRentry) {
+        setReEntryEnabled(true);
+        const rentryTypeReverseMap = {
+          RENC: "Combined",
+          REN: "Leg Wise",
+          REX: "Exit",
+        };
+        setReEntryExecutionType(
+          rentryTypeReverseMap[longAt.reEntry.RentryType] || "Combined"
+        );
+        setReEntryCycles(Number(longAt.reEntry.TradeCycle) || 1);
+      } else {
+        setReEntryEnabled(false);
+        setReEntryExecutionType("Combined");
+        setReEntryCycles(1);
+      }
+
+      // derive trail SL
+      if (longAt.isTrailSL && longAt.TrailingSL) {
+        setTrailSlEnabled(true);
+        setTrailSlType(longAt.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%");
+        setTrailSlPriceMovement(
+          Number(longAt.TrailingSL.InstrumentMovementValue) || 0
+        );
+        setTrailSlTrailingValue(Number(longAt.TrailingSL.TrailingValue) || 0);
+      } else {
+        setTrailSlEnabled(false);
+        setTrailSlType("%");
+        setTrailSlPriceMovement(0);
+        setTrailSlTrailingValue(0);
       }
       const typeMapRev = {
         ATM: "ATM_PT",
@@ -205,6 +248,19 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
       setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
       setQtyMultiplier(1);
+      // reset advanced features
+      setWaitTradeEnabled(false);
+      setWaitTradeMovement(0);
+      setWaitTradeType("% ↑");
+      setPremiumDiffEnabled(false);
+      setPremiumDiffValue(0);
+      setReEntryEnabled(false);
+      setReEntryExecutionType("Combined");
+      setReEntryCycles(1);
+      setTrailSlEnabled(false);
+      setTrailSlType("%");
+      setTrailSlPriceMovement(0);
+      setTrailSlTrailingValue(0);
     }
   }, [selectedInstrument, editing, activeLegIndex, strategyScripts]);
 
@@ -272,11 +328,11 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       // Wait & Trade type mapping
       const mapWaitTradeType = (label) => {
         const map = {
-          "% ↓": { isPerPt: "percent", typeId: "wtpr_%_down" },
-          "% ↑": { isPerPt: "percent", typeId: "wtpr_%_up" },
-          "pt ↑": { isPerPt: "point", typeId: "wtpr_pt_up" },
-          "pt ↓": { isPerPt: "point", typeId: "wtpr_pt_down" },
-          Equal: { isPerPt: "equal", typeId: "wtpr_equal" },
+          "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
+          "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
+          "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
+          "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
+          Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
         };
         return map[label] || map["% ↑"];
       };
@@ -288,6 +344,8 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         const prevWait = existingActiveLong?.waitNTrade;
         const prevPremEnabled = existingActiveLong?.IsPriceDiffrenceConstrant;
         const prevPremValue = existingActiveLong?.PriceDiffrenceConstrantValue;
+        const prevReEntry = existingActiveLong?.reEntry;
+        const prevTrailSL = existingActiveLong?.TrailingSL;
 
         // Wait & Trade settings
         const effectiveWaitEnabled =
@@ -300,7 +358,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
               isWaitnTrade: true,
               isPerPt: wtTypeMeta.isPerPt,
               typeId: wtTypeMeta.typeId,
-              MovementValue: waitTradeMovement,
+              MovementValue: String(waitTradeMovement),
             };
           } else if (prevWait?.isWaitnTrade) {
             effectiveWaitObj = { ...prevWait };
@@ -310,7 +368,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             isWaitnTrade: false,
             isPerPt: wtTypeMeta.isPerPt,
             typeId: wtTypeMeta.typeId,
-            MovementValue: 0,
+            MovementValue: "0",
           };
         }
 
@@ -321,12 +379,61 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           !isTime &&
           (premiumDiffEnabled || prevPremEnabled || globalPremEnabled);
         const effectivePremiumValue = premiumDiffEnabled
-          ? premiumDiffValue
+          ? String(premiumDiffValue)
           : globalPremValue !== undefined
-          ? globalPremValue
+          ? String(globalPremValue)
           : prevPremEnabled
-          ? prevPremValue
-          : 0;
+          ? String(prevPremValue)
+          : "0";
+
+        // Re-Entry/Execute settings
+        const globalReEntryEnabled = advanceFeatures?.["Re Entry/Execute"];
+        const effectiveReEntryEnabled =
+          !isTime &&
+          (reEntryEnabled || prevReEntry?.isRentry || globalReEntryEnabled);
+        const effectiveReEntryObj = effectiveReEntryEnabled
+          ? {
+              isRentry: true,
+              RentryType:
+                reEntryExecutionType === "Combined"
+                  ? "RENC"
+                  : reEntryExecutionType === "Exit"
+                  ? "REX"
+                  : "REN",
+              TradeCycle: String(reEntryCycles || prevReEntry?.TradeCycle || 1),
+              RentryActionTypeId: "ON_CLOSE",
+            }
+          : {
+              isRentry: false,
+              RentryType: "REN",
+              TradeCycle: "0",
+              RentryActionTypeId: "ON_CLOSE",
+            };
+
+        // Trail SL settings
+        const globalTrailSlEnabled = advanceFeatures?.["Trail SL"];
+        const effectiveTrailSlEnabled =
+          !isTime &&
+          (trailSlEnabled ||
+            existingActiveLong?.isTrailSL ||
+            globalTrailSlEnabled);
+        const effectiveTrailSlObj = effectiveTrailSlEnabled
+          ? {
+              TrailingType: trailSlType === "%" ? "tslpr" : "tslpt",
+              InstrumentMovementValue:
+                String(trailSlPriceMovement) ||
+                String(prevTrailSL?.InstrumentMovementValue) ||
+                "0",
+              TrailingValue:
+                String(trailSlTrailingValue) ||
+                String(prevTrailSL?.TrailingValue) ||
+                "0",
+            }
+          : {
+              TrailingType: "tslpr",
+              InstrumentMovementValue: "0",
+              TrailingValue: "0",
+            };
 
         // Return completed strike object
         return {
@@ -348,25 +455,16 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             RangeFrom: 0,
             RangeTo: 0,
           },
-          isTrailSL: isTime ? false : true,
+          isTrailSL: effectiveTrailSlEnabled,
           IsMoveSLCTC: isTime ? false : true,
           isExitAll: isTime ? false : true,
           isPrePunchSL: prePunchSL && !isTime,
-          reEntry: {
-            isRentry: isTime ? false : true,
-            RentryType: "REN",
-            TradeCycle: 0,
-            RentryActionTypeId: "ON_CLOSE",
-          },
+          reEntry: effectiveReEntryObj,
           waitNTrade: effectiveWaitObj,
-          TrailingSL: {
-            TrailingType: "tslpr",
-            InstrumentMovementValue: 0,
-            TrailingValue: 0,
-          },
+          TrailingSL: effectiveTrailSlObj,
           lotSize: lotSizeBase,
           IsPriceDiffrenceConstrant: effectivePremiumEnabled,
-          PriceDiffrenceConstrantValue: effectivePremiumValue,
+          PriceDiffrenceConstrantValue: String(effectivePremiumValue),
         };
       };
 
@@ -449,6 +547,13 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     waitTradeType,
     premiumDiffEnabled,
     premiumDiffValue,
+    reEntryEnabled,
+    reEntryExecutionType,
+    reEntryCycles,
+    trailSlEnabled,
+    trailSlType,
+    trailSlPriceMovement,
+    trailSlTrailingValue,
     advanceFeatures,
   ]);
 
@@ -473,6 +578,17 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       next["Premium Difference"] = true;
       next.PremiumDifferenceValue = premiumDiffValue;
     }
+    if (reEntryEnabled) {
+      next["Re Entry/Execute"] = true;
+      next.ReEntryExecutionType = reEntryExecutionType;
+      next.ReEntryCycles = reEntryCycles;
+    }
+    if (trailSlEnabled) {
+      next["Trail SL"] = true;
+      next.TrailSlType = trailSlType;
+      next.TrailSlPriceMovement = trailSlPriceMovement;
+      next.TrailSlTrailingValue = trailSlTrailingValue;
+    }
     setValue("AdvanceFeatures", next, { shouldDirty: true });
   }, [
     waitTradeEnabled,
@@ -480,6 +596,13 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     waitTradeType,
     premiumDiffEnabled,
     premiumDiffValue,
+    reEntryEnabled,
+    reEntryExecutionType,
+    reEntryCycles,
+    trailSlEnabled,
+    trailSlType,
+    trailSlPriceMovement,
+    trailSlTrailingValue,
     setValue,
     getValues,
   ]);
@@ -515,6 +638,14 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     advanceFeatures?.["Premium Difference"] ||
     premiumDiffEnabled ||
     existingActiveLong?.IsPriceDiffrenceConstrant;
+  const featureReEntryActive =
+    advanceFeatures?.["Re Entry/Execute"] ||
+    reEntryEnabled ||
+    existingActiveLong?.reEntry?.isRentry;
+  const featureTrailSlActive =
+    advanceFeatures?.["Trail SL"] ||
+    trailSlEnabled ||
+    existingActiveLong?.isTrailSL;
 
   // stable premium value selection (avoid 0->value flicker)
   const globalPremiumValue = advanceFeatures?.PremiumDifferenceValue;
@@ -856,7 +987,10 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           </div>
 
           {/* Advanced Features Section */}
-          {(featureWaitTradeActive || featurePremiumActive) && (
+          {(featureWaitTradeActive ||
+            featurePremiumActive ||
+            featureReEntryActive ||
+            featureTrailSlActive) && (
             <div className="mt-4 space-y-3">
               <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
                 --- Advance Features ---
@@ -924,6 +1058,90 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                       className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                     />
                   </div>
+                )}
+                {featureReEntryActive && (
+                  <>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Re-Entry Type
+                      </label>
+                      <select
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                        value={reEntryExecutionType}
+                        onChange={(e) =>
+                          setReEntryExecutionType(e.target.value)
+                        }
+                      >
+                        <option value="Combined">Combined</option>
+                        <option value="Leg Wise">Leg Wise</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Cycles
+                      </label>
+                      <input
+                        type="number"
+                        value={reEntryCycles}
+                        min={1}
+                        onChange={(e) =>
+                          setReEntryCycles(
+                            Math.max(1, Number(e.target.value) || 1)
+                          )
+                        }
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      />
+                    </div>
+                  </>
+                )}
+                {featureTrailSlActive && (
+                  <>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Trail SL Type
+                      </label>
+                      <select
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                        value={trailSlType}
+                        onChange={(e) => setTrailSlType(e.target.value)}
+                      >
+                        <option value="%">%</option>
+                        <option value="Pt">Pt</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Price Movement
+                      </label>
+                      <input
+                        type="number"
+                        value={trailSlPriceMovement}
+                        min={0}
+                        onChange={(e) =>
+                          setTrailSlPriceMovement(
+                            Math.max(0, Number(e.target.value) || 0)
+                          )
+                        }
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                        Trailing Value
+                      </label>
+                      <input
+                        type="number"
+                        value={trailSlTrailingValue}
+                        min={0}
+                        onChange={(e) =>
+                          setTrailSlTrailingValue(
+                            Math.max(0, Number(e.target.value) || 0)
+                          )
+                        }
+                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
