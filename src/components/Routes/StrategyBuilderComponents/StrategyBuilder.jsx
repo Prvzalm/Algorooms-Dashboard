@@ -187,6 +187,10 @@ const StrategyBuilder = () => {
     (s) => s.setCreatedStrategyId
   );
 
+  // State for instrument quantities
+  const [instrumentQty, setInstrumentQty] = useState(1);
+  const [equityInstrumentQtys, setEquityInstrumentQtys] = useState({});
+
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
     const baseDefaults = initialFormValuesRef.current;
@@ -693,7 +697,9 @@ const StrategyBuilder = () => {
   const hideLeg1 =
     selectedStrategyTypes[0] === "indicator" &&
     (selectedEquityInstruments.length > 0 ||
-      (selectedInstrument && selectedInstrument.SegmentType === "Equity"));
+      (selectedInstrument &&
+        (selectedInstrument.SegmentType === "Equity" ||
+          selectedInstrument.SegmentType === "Future")));
 
   if (editing && editLoading) {
     return <div className="p-6">Loading strategy...</div>;
@@ -723,7 +729,7 @@ const StrategyBuilder = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-xl space-y-4 w-full dark:bg-[#15171C] dark:border-[#1E2027]">
+              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
                 <h2 className="font-semibold dark:text-white">Strategy Type</h2>
                 <div className="space-y-2">
                   {[
@@ -746,7 +752,7 @@ const StrategyBuilder = () => {
                 </div>
               </div>
 
-              <div className="p-4 border rounded-xl space-y-4 w-full dark:bg-[#15171C] dark:border-[#1E2027]">
+              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
                 <h2 className="font-semibold dark:text-white">
                   Select Instruments
                 </h2>
@@ -762,42 +768,147 @@ const StrategyBuilder = () => {
                 </div>
 
                 {selectedInstrument && !selectedEquityInstruments.length && (
-                  <div className="mt-2 border rounded-lg p-3 text-xs flex flex-col gap-1 dark:bg-[#1E2027] dark:border-[#1E2027]">
-                    <div>
-                      <span className="font-semibold">Name: </span>
-                      {selectedInstrument.Name}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Lot Size: </span>
-                      {selectedInstrument.LotSize || 0}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Exchange: </span>
-                      {selectedInstrument.Exchange ||
-                        selectedInstrument.Segment ||
-                        "—"}
+                  <div className="mt-2 border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative">
+                    {(selectedInstrument.SegmentType === "Equity" ||
+                      selectedInstrument.SegmentType === "Future") && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInstrument("")}
+                        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
+                        title="Remove instrument"
+                      >
+                        <span className="text-sm font-bold">×</span>
+                      </button>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                          Instrument Name
+                        </div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {selectedInstrument.Name}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                          Lot Size
+                        </div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {selectedInstrument.LotSize || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                          Exchange
+                        </div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {selectedInstrument.Exchange ||
+                            selectedInstrument.Segment ||
+                            "—"}
+                        </div>
+                      </div>
+                      {(selectedInstrument.SegmentType === "Equity" ||
+                        selectedInstrument.SegmentType === "Future") && (
+                        <div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                            Quantity
+                          </div>
+                          <input
+                            type="number"
+                            min="1"
+                            value={instrumentQty}
+                            onChange={(e) =>
+                              setInstrumentQty(
+                                Math.max(1, parseInt(e.target.value) || 1)
+                              )
+                            }
+                            className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {selectedEquityInstruments.length > 0 && (
-                  <div className="mt-2 space-y-3">
+                  <div className="mt-2 space-y-3 max-h-[400px] overflow-y-auto pr-1">
                     {selectedEquityInstruments.map((ins) => (
                       <div
                         key={ins.InstrumentToken}
-                        className="border rounded-lg p-3 text-xs flex flex-col gap-1 dark:bg-[#1E2027] dark:border-[#1E2027]"
+                        className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative"
                       >
-                        <div>
-                          <span className="font-semibold">Name: </span>
-                          {ins.Name}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Lot Size: </span>
-                          {ins.LotSize || 0}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Exchange: </span>
-                          {ins.Exchange || ins.Segment || "—"}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEquityInstruments(
+                              selectedEquityInstruments.filter(
+                                (i) => i.InstrumentToken !== ins.InstrumentToken
+                              )
+                            );
+                            const newQtys = { ...equityInstrumentQtys };
+                            delete newQtys[ins.InstrumentToken];
+                            setEquityInstrumentQtys(newQtys);
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
+                          title="Remove instrument"
+                        >
+                          <span className="text-sm font-bold">×</span>
+                        </button>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Instrument Name
+                            </div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {ins.Name}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Lot Size
+                            </div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {ins.LotSize || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Exchange
+                            </div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {ins.Exchange || ins.Segment || "—"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Segment Type
+                            </div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {ins.SegmentType || "—"}
+                            </div>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Quantity
+                            </div>
+                            <input
+                              type="number"
+                              min="1"
+                              value={
+                                equityInstrumentQtys[ins.InstrumentToken] || 1
+                              }
+                              onChange={(e) =>
+                                setEquityInstrumentQtys({
+                                  ...equityInstrumentQtys,
+                                  [ins.InstrumentToken]: Math.max(
+                                    1,
+                                    parseInt(e.target.value) || 1
+                                  ),
+                                })
+                              }
+                              className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -853,7 +964,7 @@ const StrategyBuilder = () => {
           <button
             type="submit"
             disabled={isPending}
-            className="bg-[#0096FF] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs"
+            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs transition"
           >
             {isPending
               ? editing
@@ -870,7 +981,7 @@ const StrategyBuilder = () => {
           <button
             type="submit"
             disabled={isPending}
-            className="ml-auto bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block"
+            className="ml-auto bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block transition"
           >
             {isPending
               ? editing
@@ -906,7 +1017,7 @@ const StrategyBuilder = () => {
                   <button
                     onClick={() => handleCreateStrategy(true)}
                     disabled={isPending}
-                    className="flex-1 bg-[#0096FF] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                    className="flex-1 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition"
                   >
                     {isPending ? "Creating..." : "Yes, Backtest"}
                   </button>

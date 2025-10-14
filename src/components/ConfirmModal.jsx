@@ -47,7 +47,7 @@ const ConfirmModal = ({
             {cancelLabel}
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-60"
+            className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white disabled:opacity-60 transition"
             onClick={onConfirm}
             disabled={loading}
           >

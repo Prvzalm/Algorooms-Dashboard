@@ -288,7 +288,7 @@ const AddBrokerPage = () => {
           </a>
 
           <button
-            className="w-full py-3 rounded-lg bg-[#0096FF] text-white font-medium"
+            className="w-full py-3 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-medium transition"
             onClick={handleSubmit}
             disabled={adding}
           >

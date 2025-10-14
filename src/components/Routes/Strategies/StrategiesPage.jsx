@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import StrategyTemplates from "../Dashboard/StrategyTemplates";
-import MyPortfolioTab from "./MyPortfolioTab";
 import {
   useChangeDeployedStrategyTradeMode,
   useSquareOffStrategyMutation,
@@ -14,12 +13,7 @@ import octopusInstance from "../../../services/WebSockets/feeds/octopusInstance"
 import MyStrategiesList from "./MyStrategiesList";
 import DeployedStrategiesList from "./DeployedStrategiesList";
 
-const mainTabs = [
-  "My Strategies",
-  "Deployed Strategies",
-  "Strategy Templates",
-  "My Portfolio",
-];
+const mainTabs = ["My Strategies", "Deployed Strategies", "Strategy Templates"];
 
 // sub-tabs state remains here, tab buttons are rendered inside MyStrategiesList
 
@@ -417,7 +411,6 @@ const StrategiesPage = () => {
       {activeTab === "Strategy Templates" && (
         <StrategyTemplates pageSize={10} showSeeAll={false} />
       )}
-      {activeTab === "My Portfolio" && <MyPortfolioTab />}
     </div>
   );
 };

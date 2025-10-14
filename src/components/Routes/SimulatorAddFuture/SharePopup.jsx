@@ -34,7 +34,7 @@ const SharePopup = ({
         </div>
 
         <button
-          className="w-full bg-[#0096FF] hover:bg-blue-500 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-2"
+          className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-medium py-4 rounded-lg flex items-center justify-center gap-2 transition"
           onClick={() => {
             navigator.clipboard.writeText(url);
             onClose?.();

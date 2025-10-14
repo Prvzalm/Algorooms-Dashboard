@@ -440,7 +440,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
       {/* Left column: hide Risk Management here when price strategy */}
       {/* Show Risk Management for all strategies except 'price' */}
       {selectedStrategyTypes?.[0] !== "price" && (
-        <div className="p-4 border rounded-2xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+        <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
           {/* Risk Management (non-price left column) */}
           <div className="flex justify-between items-start">
             <div>
@@ -685,7 +685,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         <div className="space-y-6 md:flex md:flex-col md:justify-between">
           {/* For price strategy, show Risk Management here instead (above strategy name) */}
           {selectedStrategyTypes?.[0] === "price" && (
-            <div className="p-4 border rounded-2xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+            <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="font-semibold text-lg text-black dark:text-white">
@@ -836,7 +836,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           )}
           {/* Advance Features hidden for 'price' strategy, Strategy Name always shown */}
           {selectedStrategyTypes?.[0] !== "price" && (
-            <div className="p-4 border rounded-2xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+            <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="flex gap-2 items-center font-semibold text-lg text-black dark:text-white">
@@ -871,7 +871,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               </div>
             </div>
           )}
-          <div className="p-4 border rounded-2xl dark:bg-[#15171C] dark:border-[#1E2027]">
+          <div className="p-4 border rounded-2xl bg-white dark:bg-[#131419] dark:border-[#1E2027]">
             <h2 className="font-semibold text-lg text-black dark:text-white">
               Strategy Name
             </h2>
@@ -888,7 +888,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         </div>
       )}
       {selectedStrategyTypes?.[0] === "indicator" && (
-        <div className="p-4 border rounded-2xl dark:bg-[#15171C] dark:border-[#1E2027]">
+        <div className="p-4 border rounded-2xl bg-white dark:bg-[#131419] dark:border-[#1E2027]">
           <h2 className="font-semibold text-lg text-black dark:text-white">
             Strategy Name
           </h2>
@@ -947,7 +947,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               <button
                 type="button"
                 onClick={savePremiumDifference}
-                className="px-4 py-2 rounded-lg bg-[#0096FF] text-white text-sm"
+                className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
               >
                 Save
               </button>

@@ -387,7 +387,7 @@ const BacktestStrategyComponent = ({
       : "--";
 
   return (
-    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
+    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white bg-white dark:bg-[#131419]">
       {strategyId ? (
         <div className="flex items-start gap-3 mb-6">
           <button
@@ -578,8 +578,10 @@ const BacktestStrategyComponent = ({
             )}
           </div>
           <button
-            className={`ml-3 text-sm px-4 py-2 rounded-md text-white ${
-              isFetchingMulti ? "bg-gray-400" : "bg-[#0096FF]"
+            className={`ml-3 text-sm px-4 py-2 rounded-md text-white transition ${
+              isFetchingMulti
+                ? "bg-gray-400"
+                : "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
             }`}
             onClick={() => setRunToken((n) => n + 1)}
             disabled={
@@ -601,7 +603,13 @@ const BacktestStrategyComponent = ({
         </div>
       </div>
       {multiError && (
-        <div className="text-red-500 mb-4 text-sm">{multiError.message}</div>
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+            {multiError?.response?.data?.Message ||
+              multiError?.message ||
+              "Failed to fetch backtest result"}
+          </p>
+        </div>
       )}
       {isFetchingMulti && (
         <div className="mb-4 text-sm">Loading backtest data...</div>

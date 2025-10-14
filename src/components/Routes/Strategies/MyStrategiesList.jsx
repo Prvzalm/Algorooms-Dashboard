@@ -136,7 +136,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
         <div className="flex h-[50vh] flex-col items-center justify-center">
           <img src={emptyStrategy} alt="Empty" className="mb-6" />
           <button
-            className="px-6 py-2 bg-[#0096FF] text-white rounded-lg text-sm font-medium"
+            className="px-6 py-2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white rounded-lg text-sm font-medium transition"
             onClick={() => setShowStrategyPopup(true)}
           >
             + Create Strategy
@@ -259,7 +259,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                   Backtest
                 </button>
                 <button
-                  className="flex-1 py-3 rounded-md bg-[#0096FF] hover:bg-blue-600 text-white text-sm font-medium"
+                  className="flex-1 py-3 rounded-md bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-medium transition"
                   onClick={() => setDeployTarget(strategy)}
                 >
                   Deploy

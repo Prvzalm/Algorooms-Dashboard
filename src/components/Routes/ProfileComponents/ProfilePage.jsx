@@ -308,7 +308,7 @@ const ProfilePage = () => {
               />
             </div>
             <button
-              className="mt-4 py-2 px-4 w-1/2 bg-[#0096FF] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
+              className="mt-4 py-2 px-4 w-1/2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
               onClick={handleChangePassword}
               disabled={changePasswordUser.isLoading}
             >

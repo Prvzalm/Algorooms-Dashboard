@@ -299,13 +299,8 @@ const Dashboard = () => {
 
       <StrategyTemplates />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-1">
-          <Tutorials tutorials={yourTutorialData} />
-        </div>
-        <div className="col-span-2">
-          <RaAlgos algos={yourAlgoData} />
-        </div>
+      <div className="grid grid-cols-1 gap-4">
+        <RaAlgos algos={yourAlgoData} />
       </div>
     </>
   );

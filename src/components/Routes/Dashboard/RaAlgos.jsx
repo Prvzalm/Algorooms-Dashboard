@@ -4,7 +4,7 @@ import RaAlgosPage from "../RaAlgos/RaAlgosPage";
 const RaAlgos = ({ algos }) => {
   const navigate = useNavigate();
   return (
-    <div className="bg-white dark:bg-darkbg rounded-xl text-black dark:text-white">
+    <div className="rounded-xl text-black dark:text-white">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-lg">Ra Algos</h3>
         <button

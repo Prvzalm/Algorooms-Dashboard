@@ -76,7 +76,7 @@ const CreateStrategyPopup = ({ onClose }) => {
         <div className="pt-2">
           <button
             onClick={handleCreate}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white py-3 rounded-lg font-medium"
+            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white py-3 rounded-lg font-medium transition"
           >
             Create Strategy
           </button>

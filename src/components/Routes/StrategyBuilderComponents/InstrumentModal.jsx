@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { searchIcon } from "../../../assets";
 import { useSearchInstrument } from "../../../hooks/strategyHooks";
 
-const segmentTypes = ["Option", "Equity", "Future", "Indices", "CDS", "MCX"];
+const segmentTypes = [
+  "Option",
+  "Equity",
+  "Future",
+  // "Indices", "CDS", "MCX"
+];
 
 const InstrumentModal = ({
   visible,
@@ -32,7 +37,8 @@ const InstrumentModal = ({
   };
 
   const multiMode =
-    selectedStrategyTypes?.[0] === "indicator" && segmentType === "Equity";
+    selectedStrategyTypes?.[0] === "indicator" &&
+    (segmentType === "Equity" || segmentType === "Future");
 
   const toggleSelect = (item) => {
     if (multiMode) {
@@ -84,7 +90,7 @@ const InstrumentModal = ({
         ref={modalRef}
         className="bg-white rounded-2xl p-4 md:p-6 w-[95%] max-w-md dark:bg-[#15171C] relative max-h-[90vh] overflow-y-auto"
       >
-        <div className="flex items-center gap-2 border rounded-lg px-3 py-2 mb-4 bg-[#F5F8FA] dark:bg-[#1E2027]">
+        <div className="flex items-center gap-2 border rounded-lg px-3 py-2 mb-6 bg-[#F5F8FA] dark:bg-[#1E2027]">
           <img src={searchIcon} alt="" />
           <input
             type="text"
@@ -98,7 +104,7 @@ const InstrumentModal = ({
           />
         </div>
 
-        <div className="space-x-3 text-sm mb-2 flex flex-wrap">
+        <div className="space-x-3 text-sm mb-6 flex flex-wrap">
           {segmentTypes.map((type) => (
             <label
               key={type}
@@ -120,9 +126,14 @@ const InstrumentModal = ({
           ))}
         </div>
 
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-          *Only Option category allowed for Time-Based Strategy type
-        </p>
+        {segmentType === "Future" && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs text-yellow-800 dark:text-yellow-200">
+              * Qty has to be filled after seeing it from your broker account
+              for NFO
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3 mb-6 max-h-64 overflow-y-auto">
           {isLoading ? (
@@ -165,7 +176,7 @@ const InstrumentModal = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-full bg-[#0096FF] text-white py-3 rounded-lg font-semibold sticky bottom-0"
+          className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white py-3 rounded-lg font-semibold sticky bottom-0 transition"
         >
           Save
         </button>

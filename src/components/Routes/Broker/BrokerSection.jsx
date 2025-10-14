@@ -114,7 +114,7 @@ const BrokerSection = () => {
           </div>
           <button
             onClick={() => navigate("/add-broker")}
-            className="px-4 py-3 bg-[#0096FF] text-white rounded-lg text-sm font-medium w-full sm:w-auto"
+            className="px-4 py-3 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white rounded-lg text-sm font-medium w-full sm:w-auto transition"
           >
             + Add Broker
           </button>

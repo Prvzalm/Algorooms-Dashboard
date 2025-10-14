@@ -79,7 +79,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
   if (isError) return <div>Failed to load strategies.</div>;
 
   return (
-    <div className="bg-white dark:bg-darkbg rounded-xl text-black dark:text-white">
+    <div className="text-black dark:text-white">
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex justify-between items-center">
           <h3 className="font-semibold text-lg">Strategy Templates</h3>
@@ -250,7 +250,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
           ? Array.from({ length: pageSize }).map((_, idx) => (
               <div
                 key={`skeleton-${idx}`}
-                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between animate-pulse"
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#131419] p-4 rounded-3xl text-sm flex flex-col justify-between animate-pulse"
               >
                 <div>
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
@@ -274,7 +274,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
           : items.map((item, idx) => (
               <div
                 key={idx}
-                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between"
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#131419] p-4 rounded-3xl text-sm flex flex-col justify-between"
               >
                 <div>
                   <p className="font-semibold mb-2">{item.StrategyName}</p>
@@ -314,7 +314,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                 </div>
 
                 <button
-                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-lg text-sm transition"
+                  className="mt-4 w-1/2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-2 rounded-lg text-sm transition"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy

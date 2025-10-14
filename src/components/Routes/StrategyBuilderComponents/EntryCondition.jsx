@@ -528,7 +528,7 @@ const EntryCondition = () => {
         <button
           type="button"
           onClick={addCondition}
-          className="bg-[#0096FF] text-white text-sm px-4 py-3 rounded-lg hover:bg-blue-600"
+          className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm px-4 py-3 rounded-lg transition"
         >
           + Add Condition
         </button>
@@ -738,7 +738,7 @@ const EntryCondition = () => {
           <button
             type="button"
             onClick={addExitCondition}
-            className="bg-[#0096FF] disabled:opacity-40 text-white text-sm px-4 py-3 rounded-lg hover:bg-blue-600"
+            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] disabled:opacity-40 text-white text-sm px-4 py-3 rounded-lg transition"
           >
             + Add Exit Condition
           </button>

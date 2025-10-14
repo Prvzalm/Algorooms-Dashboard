@@ -143,7 +143,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <aside
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`bg-white dark:bg-[#15171C] transition-all duration-300
+          className={`bg-[#F8F9FB] dark:bg-[#131419] transition-all duration-300
             ${sidebarExpanded ? "w-64" : "w-16"}
             fixed h-full z-40 border-r border-[#26272F33] dark:border-[#1E2027]`}
         >
@@ -155,7 +155,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <FiX size={24} />
             </button>
           )}
-          <div className="w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
+          <div className="bg-white dark:bg-[#0F1014] w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
             <button
               type="button"
               onClick={() => navigate("/")}
@@ -177,7 +177,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     return !prev;
                   })
                 }
-                className="ml-auto bg-white dark:bg-[#15171C] border rounded-full shadow p-1"
+                className="ml-auto bg-white dark:bg-[#0F1014] border rounded-full shadow p-1"
               >
                 {isCollapsed ? (
                   <FiChevronRight size={16} />
@@ -335,7 +335,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
-                <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 space-y-4">
+                <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-[#F8F9FB] dark:bg-[#131419] p-4 space-y-4">
                   <div className="flex items-center space-x-4">
                     <Avatar
                       src={profile?.AvtarURL}

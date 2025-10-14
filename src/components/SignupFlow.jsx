@@ -135,7 +135,7 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
           />
           <button
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
+            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg transition"
             onClick={handleRequestOtp}
           >
             Send OTP to Email
@@ -161,7 +161,7 @@ export default function SignupFlow({ email, setEmail, setMode }) {
           </div>
           <button
             onClick={handleVerifyOtp}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg mt-4"
+            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg mt-4 transition"
           >
             Verify OTP
           </button>
@@ -193,7 +193,7 @@ export default function SignupFlow({ email, setEmail, setMode }) {
           />
           <button
             onClick={handleRegister}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
+            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg transition"
           >
             Register
           </button>

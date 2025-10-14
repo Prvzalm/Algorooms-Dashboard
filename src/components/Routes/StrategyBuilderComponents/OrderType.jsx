@@ -251,7 +251,7 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
   };
 
   return (
-    <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C]">
+    <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419]">
       <div className="text-lg font-semibold text-black dark:text-white">
         Order Type
       </div>
@@ -274,7 +274,10 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
             <span>{type}</span>
           </label>
         ))}
-        <div className="ml-auto">
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
           <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
             Start Time
           </label>
@@ -285,9 +288,6 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
             className="border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#2C2F36]"
           />
         </div>
-      </div>
-
-      <div className="flex items-center space-x-4 text-sm">
         <div>
           <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
             Square Off
@@ -299,8 +299,11 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
             className="border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#2C2F36]"
           />
         </div>
+      </div>
+
+      <div className="flex items-center text-sm">
         <div className="overflow-x-auto w-full">
-          <div className="flex space-x-1 ml-4 min-w-max">
+          <div className="flex space-x-1 min-w-max">
             {days.map((day) => (
               <button
                 type="button"
@@ -361,7 +364,7 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
               </div>
               <button
                 type="button"
-                className="bg-[#0096FF] hover:bg-blue-600 text-white md:px-8 px-6 py-3 rounded-lg text-sm font-medium transition"
+                className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white md:px-8 px-6 py-3 rounded-lg text-sm font-medium transition"
                 onClick={handleAddLeg}
               >
                 + Add

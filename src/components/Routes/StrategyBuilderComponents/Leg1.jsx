@@ -664,7 +664,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           Select Instrument
         </div>
       )}
-      <div className="p-4 border rounded-2xl space-y-4 dark:border-[#1E2027] dark:bg-[#15171C] text-black dark:text-white">
+      <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419] text-black dark:text-white">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">{`Leg ${
@@ -676,7 +676,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           </div>
         </div>
 
-        <div className="border rounded-xl p-4 space-y-4 border-gray-200 dark:border-[#1E2027] dark:bg-[#1E2027]">
+        <div className="border rounded-xl p-4 space-y-4 bg-white border-gray-200 dark:border-[#1E2027] dark:bg-[#1E2027]">
           {selectedStrategyTypes?.[0] === "indicator" && (
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>

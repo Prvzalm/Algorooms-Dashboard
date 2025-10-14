@@ -26,7 +26,7 @@ const PlanChangeConfirmationModal = ({ isOpen, onClose, onContinue }) => {
         </p>
         <button
           onClick={onContinue}
-          className="w-full py-4 bg-[#0096FF] text-white text-sm font-semibold rounded-xl"
+          className="w-full py-4 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold rounded-xl transition"
         >
           Continue
         </button>

@@ -315,7 +315,7 @@ const DeployStrategyModal = ({ open, onClose, strategy }) => {
           </button>
           <button
             onClick={submit}
-            className="px-4 py-2 rounded-lg bg-[#0096FF] text-white hover:bg-blue-600 disabled:opacity-60"
+            className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white disabled:opacity-60 transition"
             disabled={deploying || loading || brokersLoading || !termsAccepted}
           >
             {deploying ? "Deploying…" : "Deploy"}

@@ -309,7 +309,7 @@ const Reports = () => {
             <button
               onClick={() => refetch()}
               disabled={isLoading}
-              className="h-8 px-5 rounded-md bg-[#0096FF] text-white text-[12px] font-semibold disabled:opacity-60"
+              className="h-8 px-5 rounded-md bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-[12px] font-semibold disabled:opacity-60 transition"
             >
               {isLoading ? "Loading..." : "Get Reports"}
             </button>

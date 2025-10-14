@@ -138,7 +138,7 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg bg-[#0096FF] text-white text-sm"
+            className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
           >
             Save
           </button>

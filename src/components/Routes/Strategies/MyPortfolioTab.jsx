@@ -531,8 +531,10 @@ const MyPortfolioTab = () => {
             )}
           </div>
           <button
-            className={`text-sm px-4 py-2 rounded-md text-white ${
-              isFetchingMulti ? "bg-gray-400" : "bg-[#0096FF]"
+            className={`text-sm px-4 py-2 rounded-md text-white transition ${
+              isFetchingMulti
+                ? "bg-gray-400"
+                : "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
             }`}
             disabled={
               isFetchingMulti ||

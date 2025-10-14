@@ -6,6 +6,9 @@ export default {
     extend: {
       colors: {
         darkbg: "#0F1014",
+        lightbg: "#F6F6F8",
+        sidebarLight: "#F8F9FB",
+        sidebarDark: "#131419",
       },
     },
   },
