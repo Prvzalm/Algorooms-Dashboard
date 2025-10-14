@@ -2,8 +2,7 @@ import HeaderCard from "./HeaderCard";
 import StrategyDeployed from "./StrategyDeployed";
 import StrategyTemplates from "./StrategyTemplates";
 import BrokerCard from "./BrokerCard";
-import Tutorials from "./Tutorials";
-import RaAlgos from "./RaAlgos";
+import JoinAndSupport from "./JoinAndSupport";
 import { man, tutorialIcon, upStox, upStoxJas } from "../../../assets";
 import { useEffect, useRef, useState } from "react";
 import NoticeModal from "../../NoticeModal";
@@ -11,8 +10,11 @@ import {
   useBrokerwiseStrategies,
   useUserBrokerData,
 } from "../../../hooks/dashboardHooks";
+import RaAlgosPage from "../RaAlgos/RaAlgosPage";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [showNotice, setShowNotice] = useState(() => {
     return !localStorage.getItem("noticeAccepted");
   });
@@ -90,33 +92,6 @@ const Dashboard = () => {
     (strategy) => strategy.BrokerClientId === selectedBroker?.code
   );
 
-  const yourTutorialData = [
-    {
-      title: "Nifty Option",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "20k",
-      shares: "5k",
-    },
-    {
-      title: "BankNifty Strategy",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "12k",
-      shares: "3.2k",
-    },
-    {
-      title: "Algo Trading 101",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "18k",
-      shares: "4.7k",
-    },
-  ];
-
   const yourAlgoData = [
     {
       name: "Abinas Mishra",
@@ -185,12 +160,12 @@ const Dashboard = () => {
     <>
       {showNotice && <NoticeModal onClose={handleCloseNotice} />}
       <div className="flex justify-between relative text-black dark:text-white">
-        <div className="flex md:text-lg md:font-semibold font-bold items-center w-2/3">
+        <div className="flex text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white items-center w-2/3">
           My Dashboard
         </div>
 
         <div className="md:flex hidden md:flex-row md:text-lg md:font-semibold items-center justify-evenly w-full md:w-1/3 space-y-2 md:space-y-0">
-          <p className="text-sm md:text-base font-bold md:font-semibold text-center">
+          <p className="text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white text-center">
             Strategy Deployed
           </p>
 
@@ -244,7 +219,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mt-6 items-start">
+      <div className="grid md:grid-cols-3 gap-4 mt-4 items-start">
         <div
           className={
             isBrokerLoading
@@ -300,8 +275,23 @@ const Dashboard = () => {
       <StrategyTemplates />
 
       <div className="grid grid-cols-1 gap-4">
-        <RaAlgos algos={yourAlgoData} />
+        <div className="rounded-xl text-black dark:text-white">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-xl md:text-2xl text-[#343C6A] dark:text-white">
+              Ra Algos
+            </h3>
+            <button
+              onClick={() => navigate("/raalgo")}
+              className="text-[#343C6A] dark:text-blue-400 text-lg hover:underline"
+            >
+              See All
+            </button>
+          </div>
+
+          <RaAlgosPage algos={yourAlgoData} dashboard={true} />
+        </div>
       </div>
+      <JoinAndSupport />
     </>
   );
 };

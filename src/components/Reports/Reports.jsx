@@ -225,7 +225,7 @@ const Reports = () => {
   return (
     <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-4 shadow-sm">
       {/* Tabs */}
-      <div className="flex gap-10 text-[13px] font-medium pl-2 border-b border-slate-200 dark:border-[#2D2F36]">
+      <div className="flex gap-10 text-base font-medium pl-2 border-b border-slate-200 dark:border-[#2D2F36]">
         {["Report", "Trade Engine Logs"].map((tab) => (
           <button
             key={tab}
@@ -243,14 +243,14 @@ const Reports = () => {
 
       {/* Filters Row - Only show for Report tab */}
       {activeTab === "Report" && (
-        <div className="flex flex-wrap items-center gap-3 text-[12px] font-medium bg-slate-50 dark:bg-[#15171C] rounded-lg px-3 py-3 border border-transparent dark:border-[#2D2F36]">
+        <div className="flex flex-wrap items-center gap-3 text-sm font-medium bg-slate-50 dark:bg-[#15171C] rounded-lg px-3 py-3 border border-transparent dark:border-[#2D2F36]">
           <div className="flex items-center gap-2">
             <span className="text-slate-500 dark:text-slate-400">From</span>
             <input
               type="date"
               value={formatDateForInput(dateRange.fromDate)}
               onChange={(e) => handleDateChange("fromDate", e.target.value)}
-              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-[12px] focus:outline-none dark:text-slate-200"
+              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm focus:outline-none dark:text-slate-200"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -259,7 +259,7 @@ const Reports = () => {
               type="date"
               value={formatDateForInput(dateRange.toDate)}
               onChange={(e) => handleDateChange("toDate", e.target.value)}
-              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-[12px] focus:outline-none dark:text-slate-200"
+              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm focus:outline-none dark:text-slate-200"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -269,7 +269,7 @@ const Reports = () => {
             <select
               value={selectedBroker}
               onChange={(e) => setSelectedBroker(e.target.value)}
-              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-[12px] focus:outline-none min-w-[120px] dark:text-slate-200"
+              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm focus:outline-none min-w-[120px] dark:text-slate-200"
             >
               <option value="all">All</option>
               {reportsData?.DistinctBrokerClientId?.map((brokerId) => (
@@ -285,7 +285,7 @@ const Reports = () => {
                 onClick={() => {
                   setStrategyMode("live");
                 }}
-                className={`px-4 py-1 text-[12px] font-medium ${
+                className={`px-4 py-1 text-sm font-medium ${
                   strategyMode === "live"
                     ? "bg-[#0096FF]/10 text-[#0096FF]"
                     : "text-slate-500 dark:text-slate-400"
@@ -297,7 +297,7 @@ const Reports = () => {
                 onClick={() => {
                   setStrategyMode("forward");
                 }}
-                className={`px-4 py-1 text-[12px] font-medium ${
+                className={`px-4 py-1 text-sm font-medium ${
                   strategyMode === "forward"
                     ? "bg-[#0096FF]/10 text-[#0096FF]"
                     : "text-slate-500 dark:text-slate-400"
@@ -309,7 +309,7 @@ const Reports = () => {
             <button
               onClick={() => refetch()}
               disabled={isLoading}
-              className="h-8 px-5 rounded-md bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-[12px] font-semibold disabled:opacity-60 transition"
+              className="h-8 px-5 rounded-md bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold disabled:opacity-60 transition"
             >
               {isLoading ? "Loading..." : "Get Reports"}
             </button>
@@ -324,12 +324,12 @@ const Reports = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-[#15171C]">
               <div>
-                <h4 className="text-[12px] font-medium text-slate-600 dark:text-slate-300 mb-3">
+                <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
                   Strategy Breakdown
                 </h4>
                 <DonutChart size={140} stroke={20} segments={donutSegments} />
               </div>
-              <ul className="space-y-2 text-[11px] font-medium max-h-[160px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar w-44">
+              <ul className="space-y-2 text-sm font-medium max-h-[160px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar w-44">
                 {filteredStrategies.map((s, i) => (
                   <li key={s.StrategyId} className="flex items-center gap-2">
                     <span
@@ -345,7 +345,7 @@ const Reports = () => {
                       {s.StrategyName}
                     </div>
                     <span
-                      className={`text-[10px] font-semibold ${
+                      className={`text-xs font-semibold ${
                         (s.pnlStrategyWise || 0) >= 0
                           ? "text-emerald-600"
                           : "text-rose-600"
@@ -356,7 +356,7 @@ const Reports = () => {
                   </li>
                 ))}
                 {!filteredStrategies.length && (
-                  <li className="text-slate-400 dark:text-slate-500 text-[10px]">
+                  <li className="text-slate-400 dark:text-slate-500 text-xs">
                     No data
                   </li>
                 )}
@@ -370,15 +370,15 @@ const Reports = () => {
           {/* Strategies List */}
           <div className="space-y-4">
             {error && (
-              <div className="text-rose-600 text-sm">{error.message}</div>
+              <div className="text-rose-600 text-base">{error.message}</div>
             )}
             {isLoading && (
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="text-sm text-slate-500 dark:text-slate-400">
                 Loading strategies...
               </div>
             )}
             {!isLoading && !filteredStrategies.length && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 py-8 text-center">
+              <div className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">
                 No strategies found.
               </div>
             )}
@@ -397,10 +397,10 @@ const Reports = () => {
       {activeTab === "Trade Engine Logs" && (
         <div className="space-y-4">
           {logsError && (
-            <div className="text-rose-600 text-sm">{logsError.message}</div>
+            <div className="text-rose-600 text-base">{logsError.message}</div>
           )}
           {isLogsLoading && (
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               Loading trade engine logs...
             </div>
           )}
@@ -408,12 +408,12 @@ const Reports = () => {
           {!isLogsLoading && tradeEngineLogs && tradeEngineLogs.length > 0 && (
             <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl overflow-hidden bg-white dark:bg-[#15171C]">
               <div className="p-5 pb-3">
-                <h4 className="font-medium text-[13px] text-slate-800 dark:text-slate-100">
+                <h4 className="font-medium text-base text-slate-800 dark:text-slate-100">
                   Trade Engine Logs
                 </h4>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-[11px]">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-[#1E2027]">
                       <th className="text-left px-5 py-2 font-medium">
@@ -453,7 +453,7 @@ const Reports = () => {
                         </td>
                         <td className="px-5 py-2">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               log.Message.includes("started")
                                 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
                                 : log.Message.includes("stopped")
@@ -474,7 +474,7 @@ const Reports = () => {
 
           {!isLogsLoading &&
             (!tradeEngineLogs || tradeEngineLogs.length === 0) && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 py-8 text-center">
+              <div className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">
                 No trade engine logs found.
               </div>
             )}

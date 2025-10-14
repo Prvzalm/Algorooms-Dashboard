@@ -79,7 +79,7 @@ const AddBrokerPage = () => {
       </div>
       <div className="flex flex-col lg:flex-row gap-6 border border-[#E4EAF0] dark:border-[#2D2F36] rounded-2xl p-4 md:p-6 bg-white dark:bg-[#1F1F24]">
         <div className="w-full lg:w-2/3">
-          <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
+          <h2 className="text-xl md:text-2xl font-semibold text-[#2E3A59] dark:text-white">
             Add Your Broker
           </h2>
           <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">

@@ -105,7 +105,7 @@ const BrokerSection = () => {
       <div className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#2E3A59] dark:text-white">
               Broker
             </h2>
             <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0]">

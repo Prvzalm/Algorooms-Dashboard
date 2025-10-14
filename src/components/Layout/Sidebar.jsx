@@ -189,7 +189,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           </div>
 
           <ul
-            className={`mt-4 text-sm space-y-2 text-gray-700 dark:text-gray-300 ${
+            className={`mt-4 text-sm space-y-1 text-gray-700 dark:text-gray-300 ${
               sidebarExpanded ? "px-6" : "px-2"
             }`}
           >
@@ -204,10 +204,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   {item.children ? (
                     <>
                       <button
-                        className={`flex items-center w-full ml-2 space-x-3 py-2 focus:outline-none relative group ${
+                        className={`flex items-center w-full ml-2 space-x-3 py-3 px-3 rounded-lg transition-all focus:outline-none relative group ${
                           isParentActive
-                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
-                            : "text-gray-700 dark:text-gray-400"
+                            ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] text-white font-semibold shadow-md"
+                            : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`}
                         onClick={() =>
                           setOpenMenus((prev) => ({
@@ -220,7 +220,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                           <img
                             src={isParentActive ? item.selectedIcon : item.icon}
                             alt={item.name}
-                            className="w-5 h-5"
+                            className={`w-5 h-5 ${
+                              isParentActive ? "brightness-0 invert" : ""
+                            }`}
                           />
                           {!sidebarExpanded && (
                             <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
@@ -268,10 +270,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                       to={item.path}
                       onClick={() => setIsOpen(false)}
                       className={({ isActive }) =>
-                        `flex items-center space-x-3 ml-2 py-2 transition-colors group ${
+                        `flex items-center space-x-3 ml-2 py-3 px-3 rounded-lg transition-all group ${
                           isActive
-                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
-                            : "hover:text-blue-500 dark:hover:text-blue-300 text-gray-700 dark:text-gray-400"
+                            ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] text-white font-semibold shadow-md"
+                            : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`
                       }
                     >
@@ -283,7 +285,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                               : item.icon
                           }
                           alt={item.name}
-                          className="w-5 h-5"
+                          className={`w-5 h-5 ${
+                            location.pathname === item.path
+                              ? "brightness-0 invert"
+                              : ""
+                          }`}
                         />
                         {!sidebarExpanded && (
                           <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">

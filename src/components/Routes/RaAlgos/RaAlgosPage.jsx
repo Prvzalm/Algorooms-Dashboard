@@ -15,7 +15,7 @@ const RaAlgosPage = ({ dashboard = false }) => {
   const navigate = useNavigate();
 
   // Strategies mock – produce 6 items for dashboard, else 3, all as objects
-  const strategies = Array.from({ length: dashboard ? 3 : 6 }).map(() => ({
+  const strategies = Array.from({ length: dashboard ? 5 : 6 }).map(() => ({
     name: "Sensex Weekly Expiry",
     saves: 11,
     description:
@@ -82,7 +82,47 @@ const RaAlgosPage = ({ dashboard = false }) => {
 
       {/* Strategy Cards Grid (reuse common component) */}
       <div className="mt-8">
-        <RaAlgosData variant="page" author={author} strategies={strategies} />
+        {dashboard ? (
+          <div className="overflow-x-auto pb-2">
+            <div className="flex gap-4 min-w-max">
+              {strategies.map((st, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col justify-between w-[280px] sm:w-[320px] rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] p-4 shadow-sm hover:shadow transition-shadow flex-shrink-0"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-[#2E3A59] dark:text-white leading-snug max-w-[180px] truncate">
+                        {st?.name}
+                      </h3>
+                      <button className="text-[#718EBF] dark:text-gray-400 text-sm whitespace-nowrap">
+                        {st?.saves} Saves
+                      </button>
+                    </div>
+                    <p className="text-sm leading-relaxed text-[#718EBF] dark:text-gray-400 line-clamp-3 mb-4">
+                      {st?.description}
+                    </p>
+                  </div>
+                  <div className="mt-auto flex items-center justify-between pt-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-[#718EBF] dark:text-gray-400 mb-1">
+                        Margin
+                      </p>
+                      <p className="font-semibold text-[#00A261]">
+                        {st?.margin}
+                      </p>
+                    </div>
+                    <button className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-xs font-medium px-6 py-2 rounded-md transition">
+                      Deploy
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <RaAlgosData variant="page" author={author} strategies={strategies} />
+        )}
       </div>
     </div>
   );

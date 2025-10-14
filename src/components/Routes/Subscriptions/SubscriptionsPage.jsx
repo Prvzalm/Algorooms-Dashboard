@@ -77,7 +77,9 @@ const SubscriptionsPage = () => {
   return (
     <div>
       <div className="md:p-6 text-[#2E3A59] dark:text-white space-y-6">
-        <div className="text-xl font-semibold">My Subscription</div>
+        <div className="text-xl md:text-2xl text-[#2E3A59] font-semibold">
+          My Subscription
+        </div>
 
         <div className="flex gap-6 border-b border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
           {mainTabs.map((tab) => (

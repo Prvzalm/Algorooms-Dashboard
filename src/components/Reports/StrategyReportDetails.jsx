@@ -66,12 +66,12 @@ const StrategyReportDetails = ({
   return (
     <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-5 shadow-sm">
       {/* Top Bar */}
-      <div className="flex gap-10 text-[13px] font-medium border-b border-slate-200 dark:border-[#2D2F36]">
+      <div className="flex gap-10 text-base font-medium border-b border-slate-200 dark:border-[#2D2F36]">
         <button
           onClick={onBack}
           className="pr-4 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1"
         >
-          <span className="text-[16px]">&larr;</span> Back
+          <span className="text-lg">&larr;</span> Back
         </button>
         <button className="relative py-3 text-slate-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]">
           Report
@@ -80,7 +80,7 @@ const StrategyReportDetails = ({
           Trade Engine Logs
         </button>
         {/* Controls hidden per request; keeping date display only */}
-        <div className="ml-auto flex items-center gap-4 text-[11px] pr-2">
+        <div className="ml-auto flex items-center gap-4 text-sm pr-2">
           <div className="text-slate-500">
             From {new Date(dateRange.fromDate).toLocaleDateString("en-GB")}
           </div>
@@ -94,12 +94,12 @@ const StrategyReportDetails = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-[#15171C]">
           <div>
-            <h4 className="text-[12px] font-medium text-slate-600 dark:text-slate-300 mb-3">
+            <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
               Strategy Breakdown
             </h4>
             <DonutChart size={140} stroke={20} segments={donutSegments} />
           </div>
-          <ul className="space-y-2 text-[11px] font-medium max-h-[160px] overflow-y-auto pr-2 w-44">
+          <ul className="space-y-2 text-sm font-medium max-h-[160px] overflow-y-auto pr-2 w-44">
             {strategy?.DateWiseReportList &&
             Array.isArray(strategy.DateWiseReportList) &&
             strategy.DateWiseReportList.length > 0 ? (
@@ -131,7 +131,7 @@ const StrategyReportDetails = ({
                     })}
                   </span>
                   <span
-                    className={`text-[10px] font-semibold ${
+                    className={`text-xs font-semibold ${
                       (d.pnlDayWise || 0) >= 0
                         ? "text-emerald-600"
                         : "text-rose-600"
@@ -142,7 +142,7 @@ const StrategyReportDetails = ({
                 </li>
               ))
             ) : (
-              <li className="text-slate-400 dark:text-slate-500 text-[10px]">
+              <li className="text-slate-400 dark:text-slate-500 text-xs">
                 No data
               </li>
             )}
@@ -158,10 +158,10 @@ const StrategyReportDetails = ({
         <div className="p-5 flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
             <div className="flex items-center gap-6 mb-4">
-              <h3 className="font-medium text-[15px] text-slate-800 dark:text-slate-100">
+              <h3 className="font-medium text-lg text-slate-800 dark:text-slate-100">
                 {strategy.StrategyName || "Unknown Strategy"}
               </h3>
-              <div className="flex gap-6 text-[11px] font-medium">
+              <div className="flex gap-6 text-sm font-medium">
                 <div className="flex items-center gap-1">
                   <span className="text-slate-500 dark:text-slate-400">
                     Total Traders
@@ -193,7 +193,7 @@ const StrategyReportDetails = ({
             <div className="h-[190px] w-full">
               <EquityCurve points={equityPoints} />
             </div>
-            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-2 pr-4">
+            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-2 pr-4">
               {equityPoints.slice(0, 5).map((p) => (
                 <span key={p.x}>
                   {new Date(p.x).toLocaleDateString("en-GB", {
@@ -204,7 +204,7 @@ const StrategyReportDetails = ({
               ))}
             </div>
           </div>
-          <div className="w-full max-w-[260px] grid grid-cols-2 gap-x-6 gap-y-3 text-[11px]">
+          <div className="w-full max-w-[260px] grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div className="space-y-1">
               <div className="text-slate-500 dark:text-slate-400">
                 Winning streak
@@ -257,12 +257,12 @@ const StrategyReportDetails = ({
         {/* Transactions */}
         <div className="border-t border-slate-200 dark:border-[#2D2F36]">
           <div className="p-5 pb-3">
-            <h4 className="font-medium text-[13px] text-slate-800 dark:text-slate-100">
+            <h4 className="font-medium text-base text-slate-800 dark:text-slate-100">
               Transaction Details
             </h4>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-[#1E2027]">
                   <th className="text-left px-5 py-2 font-medium">Date</th>

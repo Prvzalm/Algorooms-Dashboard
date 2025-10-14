@@ -82,7 +82,9 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
     <div className="text-black dark:text-white">
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex justify-between items-center">
-          <h3 className="font-semibold text-lg">Strategy Templates</h3>
+          <h3 className="font-semibold text-xl md:text-2xl text-[#343C6A] dark:text-white">
+            Strategy Templates
+          </h3>
           <div
             className="flex items-center gap-3 flex-wrap justify-end relative"
             ref={filterRef}
@@ -236,7 +238,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                     state: { activeTab: "Strategy Templates" },
                   })
                 }
-                className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                className="text-[#343C6A] dark:text-blue-400 text-lg hover:underline"
               >
                 See All
               </button>

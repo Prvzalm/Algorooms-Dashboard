@@ -52,7 +52,9 @@ const StrategyDeployed = ({
   return (
     <>
       <div className="flex md:hidden flex-row items-center justify-between w-full space-y-2">
-        <p className="text-sm font-bold text-center">Strategy Deployed</p>
+        <p className="text-xl text-[#343C6A] font-semibold text-center">
+          Strategy Deployed
+        </p>
 
         {uniqueBrokers.length !== 0 ? (
           <div
