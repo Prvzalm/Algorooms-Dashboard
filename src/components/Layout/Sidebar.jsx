@@ -83,7 +83,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       isParent: true,
       children: [
         { name: "Strategy Builder", path: "/trading/strategy-builder" },
-        { name: "Tradingview Signals Trading", path: "/trading/signals" },
+        // { name: "Tradingview Signals Trading", path: "/trading/signals" },
       ],
     },
     {

@@ -169,13 +169,13 @@ const DeployedStrategiesList = ({
                     return (
                       <div key={compositeKey} className="space-y-2">
                         {/* Strategy Card */}
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium">
+                        <div className="flex flex-col lg:flex-row lg:items-center gap-4 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
+                          <div className="flex items-center justify-between gap-3 min-w-[200px] lg:min-w-[280px]">
+                            <span className="text-sm font-medium truncate flex-1 min-w-0">
                               {s.name}
                             </span>
                             <span
-                              className={`text-xs px-2 py-1 rounded-md ${
+                              className={`text-xs px-2 py-1 rounded-md whitespace-nowrap flex-shrink-0 w-[60px] text-center ${
                                 s.isLiveMode
                                   ? "bg-emerald-100 text-emerald-600"
                                   : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
@@ -184,21 +184,21 @@ const DeployedStrategiesList = ({
                               {s.isLiveMode ? "Live" : "Paper"}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-6 text-xs text-[#718EBF] dark:text-gray-400">
-                            <div>
+                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 lg:min-w-[200px]">
+                            <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Profit</p>
                               <p className="font-semibold text-[#2E3A59] dark:text-white">
                                 {s.maxProfit ?? "-"}
                               </p>
                             </div>
-                            <div>
+                            <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Loss</p>
                               <p className="font-semibold text-[#2E3A59] dark:text-white">
                                 {s.maxLoss ?? "-"}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-6 flex-wrap">
+                          <div className="flex items-center gap-4 flex-wrap lg:ml-auto">
                             {/* Mode Toggle */}
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">

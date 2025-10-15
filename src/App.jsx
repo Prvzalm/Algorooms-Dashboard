@@ -100,7 +100,7 @@ function App() {
             path="/trading/strategy-builder/:strategyId"
             element={<StrategyBuilder />}
           />
-          <Route path="/trading/signals" element={<TradingviewSignalsPage />} />
+          {/* <Route path="/trading/signals" element={<TradingviewSignalsPage />} /> */}
           <Route path="/subscription" element={<SubscriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/wallet" element={<WalletPage />} />

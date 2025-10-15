@@ -10,17 +10,27 @@ import CreateStrategyPopup from "./CreateStrategyPopup";
 import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import ConfirmModal from "../../ConfirmModal";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { SiTradingview } from "react-icons/si";
 import StrategyCardSkeleton from "./StrategyCardSkeleton";
 import DeployStrategyModal from "./DeployStrategyModal";
+import TradingViewWalkthroughModal from "../../TradingViewWalkthroughModal";
+import { useAuth } from "../../../context/AuthContext";
+import { useBulkTradingViewSettings } from "../../../hooks/tradingViewHooks";
 
 const subTabs = ["Strategies", "Tradingview Signals Trading"];
 
 const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // pagination state for "Strategies" sub tab
   const pageSize = 10;
   const [strategyPage, setStrategyPage] = useState(1);
+  const [tradingViewModal, setTradingViewModal] = useState({
+    open: false,
+    strategyId: null,
+  });
+
   useEffect(() => {
     setStrategyPage(1);
   }, [activeSubTab]);
@@ -32,9 +42,49 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   } = useUserStrategies({
     page: strategyPage,
     pageSize,
-    strategyType: activeSubTab === "Strategies" ? "created" : "subscribed",
+    strategyType: "created", // Always fetch created strategies
     queryText: "",
     orderBy: "Date",
+  });
+
+  // Get all strategy IDs
+  const strategyIds = userStrategies.map((s) => s.StrategyId);
+
+  // Fetch TradingView settings for all strategies using TanStack Query
+  const {
+    data: tvSettingsData,
+    isLoading: loadingTvSettings,
+    refetch: refetchTvSettings,
+  } = useBulkTradingViewSettings(strategyIds);
+
+  const tvEnabledStrategies = tvSettingsData?.enabledStrategies || new Set();
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 Debug Info:");
+    console.log("Active Tab:", activeSubTab);
+    console.log("Total Strategies:", userStrategies.length);
+    console.log("Strategy IDs:", strategyIds);
+    console.log("TV Settings Data:", tvSettingsData);
+    console.log("TV Enabled Strategies:", Array.from(tvEnabledStrategies));
+    console.log("Loading TV Settings:", loadingTvSettings);
+  }, [
+    activeSubTab,
+    userStrategies,
+    tvSettingsData,
+    tvEnabledStrategies,
+    loadingTvSettings,
+  ]);
+
+  // Filter strategies based on active sub tab
+  const filteredStrategies = userStrategies.filter((strategy) => {
+    if (activeSubTab === "Strategies") {
+      // Show strategies where TradingView is NOT enabled
+      return !tvEnabledStrategies.has(strategy.StrategyId);
+    } else {
+      // Show strategies where TradingView IS enabled
+      return tvEnabledStrategies.has(strategy.StrategyId);
+    }
   });
 
   const [showStrategyPopup, setShowStrategyPopup] = useState(false);
@@ -74,7 +124,8 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deployTarget, setDeployTarget] = useState(null);
 
-  if (strategiesLoading) return <StrategyCardSkeleton count={6} />;
+  if (strategiesLoading || loadingTvSettings)
+    return <StrategyCardSkeleton count={6} />;
   if (strategiesError) return <div>Failed to load strategies.</div>;
 
   return (
@@ -95,10 +146,10 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
         ))}
       </div>
 
-      {activeSubTab === "Strategies" && userStrategies.length > 0 && (
+      {filteredStrategies.length > 0 && (
         <div className="flex justify-between items-center mb-4">
           <span className="text-xs text-[#718EBF] dark:text-gray-400">
-            Showing {userStrategies.length} strategies (Page {strategyPage})
+            Showing {filteredStrategies.length} strategies (Page {strategyPage})
           </span>
           <div className="flex items-center bg-[#F5F8FA] dark:bg-[#2D2F36] rounded-full overflow-hidden text-sm">
             <button
@@ -132,23 +183,33 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
         </div>
       )}
 
-      {userStrategies.length === 0 ? (
+      {filteredStrategies.length === 0 ? (
         <div className="flex h-[50vh] flex-col items-center justify-center">
           <img src={emptyStrategy} alt="Empty" className="mb-6" />
-          <button
-            className="px-6 py-2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white rounded-lg text-sm font-medium transition"
-            onClick={() => setShowStrategyPopup(true)}
-          >
-            + Create Strategy
-          </button>
+          {activeSubTab === "Strategies" ? (
+            <>
+              <button
+                className="px-6 py-2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white rounded-lg text-sm font-medium transition"
+                onClick={() => setShowStrategyPopup(true)}
+              >
+                + Create Strategy
+              </button>
 
-          {showStrategyPopup && (
-            <CreateStrategyPopup onClose={() => setShowStrategyPopup(false)} />
+              {showStrategyPopup && (
+                <CreateStrategyPopup
+                  onClose={() => setShowStrategyPopup(false)}
+                />
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-[#718EBF] dark:text-gray-400">
+              No TradingView signals configured yet
+            </p>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {userStrategies.map((strategy) => (
+          {filteredStrategies.map((strategy) => (
             <div
               key={strategy.StrategyId}
               className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5 relative"
@@ -264,6 +325,20 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 >
                   Deploy
                 </button>
+                {strategy.StrategyExecutionType === "Indicator Based" && (
+                  <button
+                    className="py-3 px-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition"
+                    onClick={() =>
+                      setTradingViewModal({
+                        open: true,
+                        strategyId: strategy.StrategyId,
+                      })
+                    }
+                    title="Configure TradingView Signals"
+                  >
+                    <SiTradingview className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -311,6 +386,16 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
         open={!!deployTarget}
         strategy={deployTarget}
         onClose={() => setDeployTarget(null)}
+      />
+      <TradingViewWalkthroughModal
+        isOpen={tradingViewModal.open}
+        onClose={() => {
+          setTradingViewModal({ open: false, strategyId: null });
+          // Refetch settings after modal closes to update the filtered lists
+          refetchTvSettings();
+        }}
+        strategyId={tradingViewModal.strategyId}
+        userId={user?.UserId}
       />
     </>
   );
