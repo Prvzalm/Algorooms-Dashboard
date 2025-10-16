@@ -12,22 +12,34 @@ import {
 } from "../../../hooks/dashboardHooks";
 import RaAlgosPage from "../RaAlgos/RaAlgosPage";
 import { useNavigate } from "react-router-dom";
+import {
+  useBrokerPnl,
+  useBrokerStrategies,
+  useTopGainerLoser,
+} from "../../../stores/pnlStore";
+import { useLivePnlData } from "../../../hooks/useLivePnlData";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [showNotice, setShowNotice] = useState(() => {
     return !localStorage.getItem("noticeAccepted");
   });
+
+  // TanStack Query for API data
   const {
     data: brokerData,
     isLoading: isBrokerLoading,
     isError: isBrokerError,
   } = useUserBrokerData();
+
   const {
     data: brokerStrategiesData,
     isLoading: isStrategyLoading,
     isError: isStrategyError,
   } = useBrokerwiseStrategies();
+
+  // Use custom hook for centralized PNL management
+  useLivePnlData(brokerStrategiesData, isStrategyLoading, isStrategyError);
 
   const strategies = brokerStrategiesData || [];
 
@@ -91,6 +103,13 @@ const Dashboard = () => {
   const selectedBrokerStrategies = strategies.filter(
     (strategy) => strategy.BrokerClientId === selectedBroker?.code
   );
+
+  // Use optimized selectors for selected broker data
+  const selectedBrokerPnl = useBrokerPnl(selectedBroker?.code);
+  const allStrategiesForSelectedBroker = useBrokerStrategies(
+    selectedBroker?.code
+  );
+  const { topGainer, topLoser } = useTopGainerLoser(selectedBroker?.code);
 
   const yourAlgoData = [
     {
@@ -237,9 +256,9 @@ const Dashboard = () => {
             </div>
           ) : (
             <HeaderCard
-              totalPnl="5,756"
-              topGainer="Nifty Options S1"
-              topLoser="Nifty Options S1"
+              totalPnl={selectedBrokerPnl.toFixed(2)}
+              topGainer={topGainer?.name || "N/A"}
+              topLoser={topLoser?.name || "N/A"}
               accountImg={upStoxJas}
               brokers={brokers}
             />
@@ -265,6 +284,7 @@ const Dashboard = () => {
         ) : (
           <StrategyDeployed
             strategies={selectedBrokerStrategies}
+            liveStrategies={allStrategiesForSelectedBroker}
             selectedBroker={selectedBroker}
             uniqueBrokers={uniqueBrokers}
             handleSelect={handleSelect}

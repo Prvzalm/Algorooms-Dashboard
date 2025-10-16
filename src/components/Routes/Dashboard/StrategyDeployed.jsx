@@ -12,6 +12,7 @@ const icons = [strategy1, strategy2, strategy3];
 
 const StrategyDeployed = ({
   strategies,
+  liveStrategies = [],
   uniqueBrokers,
   selectedBroker,
   handleSelect,
@@ -32,20 +33,27 @@ const StrategyDeployed = ({
 
   const deployedStrategies = strategies?.flatMap((broker) =>
     broker.DeploymentDetail.flatMap((strategy) =>
-      strategy.DeploymentDetail.map((deployment) => ({
-        strategyName: strategy.StrategyName,
-        strategyId: strategy.strategyId,
-        brokerName: broker.BrokerName,
-        brokerCode: broker.BrokerClientId,
-        brokerLogo: broker.brokerLogoUrl,
-        totalPnl: deployment.TotalPnl,
-        isLive: deployment.isLiveMode,
-        running: deployment.Running_Status,
-        maxProfit: deployment.MaxProfit,
-        maxLoss: deployment.MaxLoss,
-        deploymentType: deployment.DeploymentType,
-        timestamp: deployment.deploymentTimeStamp,
-      }))
+      strategy.DeploymentDetail.map((deployment) => {
+        // Find the live PNL for this strategy from WebSocket data
+        const liveStrategy = liveStrategies.find(
+          (ls) => ls.id === strategy.strategyId
+        );
+
+        return {
+          strategyName: strategy.StrategyName,
+          strategyId: strategy.strategyId,
+          brokerName: broker.BrokerName,
+          brokerCode: broker.BrokerClientId,
+          brokerLogo: broker.brokerLogoUrl,
+          totalPnl: liveStrategy?.strategyPNL ?? deployment.TotalPnl,
+          isLive: deployment.isLiveMode,
+          running: deployment.Running_Status,
+          maxProfit: deployment.MaxProfit,
+          maxLoss: deployment.MaxLoss,
+          deploymentType: deployment.DeploymentType,
+          timestamp: deployment.deploymentTimeStamp,
+        };
+      })
     )
   );
 
@@ -157,7 +165,7 @@ const StrategyDeployed = ({
                         isNegative ? "text-red-500" : "text-green-500"
                       }`}
                     >
-                      ₹{Math.abs(s.totalPnl)}
+                      ₹{Math.abs(s.totalPnl).toFixed(2)}
                     </p>
                   </div>
                 </div>
