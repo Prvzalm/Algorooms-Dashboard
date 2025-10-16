@@ -352,6 +352,12 @@ const DeployedStrategiesList = ({
                                       <th className="px-3 py-2 text-left">
                                         Time Stamp
                                       </th>
+                                      <th className="px-3 py-2 text-left">
+                                        Entry Time
+                                      </th>
+                                      <th className="px-3 py-2 text-left">
+                                        Exit Time
+                                      </th>
                                       <th className="px-3 py-2 text-right">
                                         PNL
                                       </th>
@@ -381,12 +387,6 @@ const DeployedStrategiesList = ({
                                               .toUpperCase()
                                           : ""
                                       }`.trim();
-                                      const entryTs = p.EntryTimeStamp
-                                        ? `IN : ${p.EntryTimeStamp}`
-                                        : "";
-                                      const exitTs = p.ExitTimeStamp
-                                        ? ` EXIT : ${p.ExitTimeStamp}`
-                                        : "";
                                       return (
                                         <tr
                                           key={
@@ -428,9 +428,18 @@ const DeployedStrategiesList = ({
                                           <td className="px-3 py-2 text-right tabular-nums">
                                             {Number(p.LTP ?? 0).toFixed(2)}
                                           </td>
-                                          <td className="px-3 py-2 whitespace-nowrap text-[#718EBF] dark:text-gray-400">
-                                            {entryTs}
-                                            {exitTs}
+                                          <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                            {p.TimeStamp
+                                              ? new Date(
+                                                  p.TimeStamp
+                                                ).toLocaleDateString("en-GB")
+                                              : "-"}
+                                          </td>
+                                          <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                            {p.EntryTimeStamp || "-"}
+                                          </td>
+                                          <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                            {p.ExitTimeStamp || "-"}
                                           </td>
                                           <td className="px-3 py-2 text-right tabular-nums">
                                             {Number(p.PNL ?? 0).toFixed(2)}

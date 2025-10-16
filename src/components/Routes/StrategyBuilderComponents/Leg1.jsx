@@ -14,6 +14,12 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const [prePunchSL, setPrePunchSL] = useState(false);
   const [signalCandleCondition, setSignalCandleCondition] = useState(false);
 
+  // Signal Candle Condition fields
+  const [tradeOnTriggerCandle, setTradeOnTriggerCandle] = useState(false);
+  const [buyWhen, setBuyWhen] = useState("Low Break");
+  const [shortWhen, setShortWhen] = useState("Low Break");
+  const [ofContinuousCandle, setOfContinuousCandle] = useState(false);
+
   // available options (unchanged)
   const expiryOptions = ["WEEKLY", "MONTHLY"];
   const slOptions = ["SL%", "SL pt"];
@@ -1174,18 +1180,89 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         </div>
 
         {selectedStrategyTypes?.[0] === "indicator" && (
-          <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={signalCandleCondition}
-              onChange={() => setSignalCandleCondition(!signalCandleCondition)}
-              disabled={isDisabled}
-            />
-            <span>
-              Add Signal Candle Condition{" "}
-              <span className="text-[11px] text-gray-400">(Optional)</span>
-            </span>
-          </label>
+          <>
+            <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={signalCandleCondition}
+                onChange={() =>
+                  setSignalCandleCondition(!signalCandleCondition)
+                }
+                disabled={isDisabled}
+              />
+              <span>
+                Add Signal Candle Condition{" "}
+                <span className="text-[11px] text-gray-400">(Optional)</span>
+              </span>
+            </label>
+
+            {signalCandleCondition && (
+              <div className="mt-4 p-4 border border-gray-200 dark:border-[#2C2F36] rounded-lg bg-gray-50 dark:bg-[#1A1D23] space-y-4">
+                {/* Trade on Trigger Candle */}
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={tradeOnTriggerCandle}
+                      onChange={() =>
+                        setTradeOnTriggerCandle(!tradeOnTriggerCandle)
+                      }
+                      disabled={isDisabled}
+                    />
+                    <span>Trade on Trigger Candle</span>
+                  </label>
+                </div>
+
+                {/* Buy When and Short When */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      Buy When
+                    </label>
+                    <select
+                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      value={buyWhen}
+                      onChange={(e) => setBuyWhen(e.target.value)}
+                      disabled={isDisabled}
+                    >
+                      <option value="Low Break">Low Break</option>
+                      <option value="High Break">High Break</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      Short When
+                    </label>
+                    <select
+                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      value={shortWhen}
+                      onChange={(e) => setShortWhen(e.target.value)}
+                      disabled={isDisabled}
+                    >
+                      <option value="Low Break">Low Break</option>
+                      <option value="High Break">High Break</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Of Continuous Candle */}
+                <div className="flex items-center">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={ofContinuousCandle}
+                      onChange={() =>
+                        setOfContinuousCandle(!ofContinuousCandle)
+                      }
+                      disabled={isDisabled}
+                    />
+                    <span>Of Continious Candle</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -24,6 +24,102 @@ const StrategyReportDetails = ({
     );
   }
 
+  // Calculate strategy summary metrics from DateWiseReportList
+  const calculateStrategySummaryMetrics = (strategy) => {
+    const reportList = strategy?.DateWiseReportList ?? [];
+
+    if (!Array.isArray(reportList) || reportList.length === 0) {
+      return {
+        maxWinStreak: 0,
+        maxLoseStreak: 0,
+        maxProfit: 0,
+        maxLoss: 0,
+        avgGain: 0,
+        avgLoss: 0,
+        maxDrawdown: 0,
+      };
+    }
+
+    let maxWinStreak = 0,
+      maxLoseStreak = 0;
+
+    let maxProfit = -Infinity;
+    let maxLoss = Infinity;
+
+    let totalGain = 0,
+      totalLoss = 0;
+    let winCount = 0,
+      loseCount = 0;
+
+    let currentStreak = 0;
+    let previousSign = null;
+
+    let peak = -Infinity;
+    let maxDrawdown = 0;
+
+    reportList.forEach((entry) => {
+      const pnl = entry.pnlDayWise;
+
+      // Max profit/loss
+      maxProfit = Math.max(maxProfit, pnl);
+      maxLoss = Math.min(maxLoss, pnl);
+
+      // Avg gain/loss calc
+      if (pnl >= 0) {
+        winCount++;
+        totalGain += pnl;
+      } else {
+        loseCount++;
+        totalLoss += pnl;
+      }
+
+      // Streak logic
+      const currentSign = pnl >= 0 ? "win" : "lose";
+      if (previousSign === currentSign) {
+        currentStreak++;
+      } else {
+        if (previousSign === "win") {
+          maxWinStreak = Math.max(maxWinStreak, currentStreak);
+        } else if (previousSign === "lose") {
+          maxLoseStreak = Math.max(maxLoseStreak, currentStreak);
+        }
+        currentStreak = 1;
+      }
+      previousSign = currentSign;
+
+      // Drawdown logic
+      const cumPnl = entry.pnlDayWiseGraph ?? 0;
+      peak = Math.max(peak, cumPnl);
+      const drawdown = peak - cumPnl;
+      maxDrawdown = Math.max(maxDrawdown, drawdown);
+    });
+
+    // Final streak check
+    if (previousSign === "win") {
+      maxWinStreak = Math.max(maxWinStreak, currentStreak);
+    } else if (previousSign === "lose") {
+      maxLoseStreak = Math.max(maxLoseStreak, currentStreak);
+    }
+
+    const avgGain = winCount > 0 ? totalGain / winCount : 0;
+    const avgLoss = loseCount > 0 ? totalLoss / loseCount : 0;
+
+    return {
+      maxWinStreak,
+      maxLoseStreak,
+      maxProfit: maxProfit === -Infinity ? 0 : maxProfit,
+      maxLoss: maxLoss === Infinity ? 0 : maxLoss,
+      avgGain,
+      avgLoss,
+      maxDrawdown,
+    };
+  };
+
+  const summaryMetrics = useMemo(
+    () => calculateStrategySummaryMetrics(strategy),
+    [strategy]
+  );
+
   const donutSegments =
     strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
       ? strategy.DateWiseReportList.map((d, i) => ({
@@ -210,7 +306,7 @@ const StrategyReportDetails = ({
                 Winning streak
               </div>
               <div className="font-medium text-slate-700 dark:text-slate-200">
-                {strategy.NoOfWins || 0}
+                {summaryMetrics.maxWinStreak}
               </div>
             </div>
             <div className="space-y-1">
@@ -218,7 +314,7 @@ const StrategyReportDetails = ({
                 Losing streak
               </div>
               <div className="font-medium text-slate-700 dark:text-slate-200">
-                {strategy.NoOfLosses || 0}
+                {summaryMetrics.maxLoseStreak}
               </div>
             </div>
             <div className="space-y-1">
@@ -226,7 +322,13 @@ const StrategyReportDetails = ({
                 Max gains
               </div>
               <div className="font-medium text-emerald-600">
-                {formatCurrency(strategy.AvgGain || 0)}
+                {formatCurrency(summaryMetrics.maxProfit)}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">Max Loss</div>
+              <div className="font-medium text-rose-600">
+                {formatCurrency(summaryMetrics.maxLoss)}
               </div>
             </div>
             <div className="space-y-1">
@@ -234,7 +336,7 @@ const StrategyReportDetails = ({
                 Avg gain/winning trade
               </div>
               <div className="font-medium text-emerald-600">
-                {formatCurrency(strategy.AvgGain || 0)}
+                {formatCurrency(summaryMetrics.avgGain)}
               </div>
             </div>
             <div className="space-y-1">
@@ -242,14 +344,16 @@ const StrategyReportDetails = ({
                 Avg loss/losing trade
               </div>
               <div className="font-medium text-rose-600">
-                {formatCurrency(strategy.AvgLoss || 0)}
+                {formatCurrency(summaryMetrics.avgLoss)}
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-slate-500 dark:text-slate-400">
                 Max Drawdown
               </div>
-              <div className="font-medium text-rose-600">-556</div>
+              <div className="font-medium text-rose-600">
+                {formatCurrency(summaryMetrics.maxDrawdown)}
+              </div>
             </div>
           </div>
         </div>

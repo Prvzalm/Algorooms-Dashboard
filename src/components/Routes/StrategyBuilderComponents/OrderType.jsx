@@ -17,6 +17,11 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
   const [productType, setProductType] = useState("MIS");
   const [legs, setLegs] = useState(["L1"]);
 
+  // CNC Settings state
+  const [showCNCSettings, setShowCNCSettings] = useState(true);
+  const [cncEntryDays, setCncEntryDays] = useState(4);
+  const [cncExitDays, setCncExitDays] = useState(0);
+
   // helper: default strike row used when adding/removing legs
   const createDefaultStrike = () => ({
     TransactionType: "SELL",
@@ -275,6 +280,92 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           </label>
         ))}
       </div>
+
+      {(productType === "CNC" || productType === "BTST") && (
+        <div className="text-xs text-orange-500 bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200 dark:border-orange-800">
+          CNC & BTST features are not available in live market, but you can use
+          them for backtest
+        </div>
+      )}
+
+      {productType === "CNC" && (
+        <div className="border border-gray-200 dark:border-[#2C2F36] rounded-lg p-4 space-y-4">
+          <button
+            type="button"
+            onClick={() => setShowCNCSettings(!showCNCSettings)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              CNC Settings
+            </span>
+            <span
+              className={`transform transition-transform ${
+                showCNCSettings ? "rotate-180" : ""
+              }`}
+            >
+              ▼
+            </span>
+          </button>
+
+          {showCNCSettings && (
+            <div className="space-y-6">
+              {/* Entry Days Slider */}
+              <div>
+                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  Entry: {cncEntryDays} trading days before expiry
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  value={cncEntryDays}
+                  onChange={(e) => setCncEntryDays(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                  style={{
+                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
+                      (cncEntryDays / 4) * 100
+                    }%, #e5e7eb ${(cncEntryDays / 4) * 100}%, #e5e7eb 100%)`,
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span>0</span>
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3</span>
+                  <span>4</span>
+                </div>
+              </div>
+
+              {/* Exit Days Slider */}
+              <div>
+                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  Exit: {cncExitDays} trading days before expiry
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  value={cncExitDays}
+                  onChange={(e) => setCncExitDays(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                  style={{
+                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
+                      (cncExitDays / 4) * 100
+                    }%, #e5e7eb ${(cncExitDays / 4) * 100}%, #e5e7eb 100%)`,
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span>0</span>
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3</span>
+                  <span>4</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
