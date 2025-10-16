@@ -5,11 +5,11 @@ import {
   useDuplicateStrategy,
   useDeleteStrategy,
 } from "../../../hooks/strategyHooks";
-import { emptyStrategy } from "../../../assets";
+import { emptyStrategy, shrinkLogo } from "../../../assets";
 import CreateStrategyPopup from "./CreateStrategyPopup";
 import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import ConfirmModal from "../../ConfirmModal";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiArrowRight } from "react-icons/fi";
 import { SiTradingview } from "react-icons/si";
 import StrategyCardSkeleton from "./StrategyCardSkeleton";
 import DeployStrategyModal from "./DeployStrategyModal";
@@ -58,23 +58,6 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   } = useBulkTradingViewSettings(strategyIds);
 
   const tvEnabledStrategies = tvSettingsData?.enabledStrategies || new Set();
-
-  // Debug logging
-  useEffect(() => {
-    console.log("🔍 Debug Info:");
-    console.log("Active Tab:", activeSubTab);
-    console.log("Total Strategies:", userStrategies.length);
-    console.log("Strategy IDs:", strategyIds);
-    console.log("TV Settings Data:", tvSettingsData);
-    console.log("TV Enabled Strategies:", Array.from(tvEnabledStrategies));
-    console.log("Loading TV Settings:", loadingTvSettings);
-  }, [
-    activeSubTab,
-    userStrategies,
-    tvSettingsData,
-    tvEnabledStrategies,
-    loadingTvSettings,
-  ]);
 
   // Filter strategies based on active sub tab
   const filteredStrategies = userStrategies.filter((strategy) => {
@@ -327,7 +310,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 </button>
                 {strategy.StrategyExecutionType === "Indicator Based" && (
                   <button
-                    className="py-3 px-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition"
+                    className="py-3 px-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition flex items-center gap-2"
                     onClick={() =>
                       setTradingViewModal({
                         open: true,
@@ -337,6 +320,16 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                     title="Configure TradingView Signals"
                   >
                     <SiTradingview className="w-5 h-5" />
+                    {activeSubTab === "Tradingview Signals Trading" && (
+                      <>
+                        <FiArrowRight className="w-4 h-4 text-[#718EBF] dark:text-gray-400" />
+                        <img
+                          src={shrinkLogo}
+                          alt="AlgoRooms"
+                          className="w-4 h-4"
+                        />
+                      </>
+                    )}
                   </button>
                 )}
               </div>
