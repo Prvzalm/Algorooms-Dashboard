@@ -107,7 +107,7 @@ function App() {
           <Route path="/subscriptions" element={<SubscriptionsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/strategies" element={<StrategiesPage />} />
-          <Route path="/raalgo" element={<RaAlgosPage />} />
+          {/* <Route path="/raalgo" element={<RaAlgosPage />} /> */}
           <Route
             path="/backtesting/strategybacktest"
             element={<BacktestStrategyComponent />}

@@ -145,47 +145,30 @@ const StrategyBuilder = () => {
       editInstrumentSearch.shouldFetch
     );
   const navigate = useNavigate();
-  // Centralized UI state via Zustand
-  const selectedStrategyTypes = useStrategyBuilderStore(
-    (s) => s.selectedStrategyTypes
-  );
-  const setSelectedStrategyTypes = useStrategyBuilderStore(
-    (s) => s.setSelectedStrategyTypes
-  );
-  const selectedInstrument = useStrategyBuilderStore(
-    (s) => s.selectedInstrument
-  );
-  const setSelectedInstrument = useStrategyBuilderStore(
-    (s) => s.setSelectedInstrument
-  );
-  const selectedEquityInstruments = useStrategyBuilderStore(
-    (s) => s.selectedEquityInstruments
-  );
-  const setSelectedEquityInstruments = useStrategyBuilderStore(
-    (s) => s.setSelectedEquityInstruments
-  );
-  const showInstrumentModal = useStrategyBuilderStore(
-    (s) => s.showInstrumentModal
-  );
-  const openInstrumentModal = useStrategyBuilderStore(
-    (s) => s.openInstrumentModal
-  );
-  const closeInstrumentModal = useStrategyBuilderStore(
-    (s) => s.closeInstrumentModal
-  );
-  const showBacktestModal = useStrategyBuilderStore((s) => s.showBacktestModal);
-  const openBacktestModal = useStrategyBuilderStore((s) => s.openBacktestModal);
-  const closeBacktestModal = useStrategyBuilderStore(
-    (s) => s.closeBacktestModal
-  );
-  const showBacktestComponent = useStrategyBuilderStore(
-    (s) => s.showBacktestComponent
-  );
-  const showBacktest = useStrategyBuilderStore((s) => s.showBacktest);
-  const createdStrategyId = useStrategyBuilderStore((s) => s.createdStrategyId);
-  const setCreatedStrategyId = useStrategyBuilderStore(
-    (s) => s.setCreatedStrategyId
-  );
+
+  // ✅ OPTIMIZED: Single selector with shallow equality check
+  const {
+    selectedStrategyTypes,
+    setSelectedStrategyTypes,
+    selectedInstrument,
+    setSelectedInstrument,
+    selectedEquityInstruments,
+    setSelectedEquityInstruments,
+    showInstrumentModal,
+    openInstrumentModal,
+    closeInstrumentModal,
+    showBacktestModal,
+    openBacktestModal,
+    closeBacktestModal,
+    showBacktestComponent,
+    showBacktest,
+    createdStrategyId,
+    setCreatedStrategyId,
+    resetPayload,
+    setPayload,
+    strategyPayload,
+    updatePayload,
+  } = useStrategyBuilderStore();
 
   // State for instrument quantities
   const [instrumentQty, setInstrumentQty] = useState(1);
@@ -193,16 +176,147 @@ const StrategyBuilder = () => {
 
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
+
+    // ✅ Reset complete payload via Zustand when strategy type changes
+    resetPayload(id);
+
+    // ✅ Sync with form
     const baseDefaults = initialFormValuesRef.current;
     reset({
       ...baseDefaults,
       StrategyType: id,
       StrategySegmentType: id === "time" ? "Option" : "",
     });
+
+    // Clear instrument selections
     setSelectedInstrument("");
     setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([id]);
+
+    // Reset quantities
+    setInstrumentQty(1);
+    setEquityInstrumentQtys({});
   };
+
+  // ✅ OPTIMIZED: Single effect to sync Zustand payload with form
+  useEffect(() => {
+    // Sync strategy type
+    if (selectedStrategyTypes[0]) {
+      setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
+
+      // Auto-set segment type for time-based
+      if (selectedStrategyTypes[0] === "time") {
+        const currentSeg = methods.getValues("StrategySegmentType");
+        if (currentSeg !== "Option") {
+          setValue("StrategySegmentType", "Option", { shouldDirty: true });
+          updatePayload({ StrategySegmentType: "Option" });
+        }
+      }
+    }
+  }, [selectedStrategyTypes, setValue, methods, updatePayload]);
+
+  // ✅ OPTIMIZED: Sync instrument selection with payload
+  useEffect(() => {
+    if (!selectedInstrument || !selectedInstrument.SegmentType) return;
+
+    // Update both form and Zustand
+    setValue("StrategySegmentType", selectedInstrument.SegmentType, {
+      shouldDirty: true,
+    });
+
+    const scriptData = {
+      InstrumentToken: selectedInstrument.InstrumentToken || "",
+      InstrumentName: selectedInstrument.Name || "",
+      Qty: 0,
+      LongEquationoptionStrikeList: [],
+      ShortEquationoptionStrikeList: [],
+      StrikeTickValue: 0,
+    };
+
+    const scripts = getValues("StrategyScriptList") || [];
+    const first = scripts[0];
+
+    if (scripts.length === 0 || !first?.InstrumentName) {
+      setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
+      updatePayload({
+        StrategySegmentType: selectedInstrument.SegmentType,
+        StrategyScriptList: [scriptData],
+      });
+    }
+  }, [selectedInstrument, setValue, getValues, updatePayload]);
+
+  // ✅ OPTIMIZED: Handle equity instruments for indicator-based strategies
+  useEffect(() => {
+    if (selectedStrategyTypes[0] !== "indicator") return;
+    if (!selectedEquityInstruments.length) return;
+
+    const buildDefaultStrike = (strikeType) => ({
+      TransactionType: "SELL",
+      StrikeType: strikeType,
+      StrikeValueType: 0,
+      StrikeValue: 0,
+      SLActionTypeId: "ONPRICE",
+      TargetActionTypeId: "ONPRICE",
+      isTrailSL: true,
+      IsRecursive: true,
+      IsMoveSLCTC: true,
+      isExitAll: true,
+      TargetType: "tgpr",
+      SLType: "slpr",
+      Target: "0",
+      StopLoss: "0",
+      Qty: "0",
+      isPrePunchSL: true,
+      IsPriceDiffrenceConstrant: true,
+      PriceDiffrenceConstrantValue: "0",
+      ExpiryType: "WEEKLY",
+      reEntry: {
+        isRentry: true,
+        RentryType: "REN",
+        TradeCycle: "0",
+        RentryActionTypeId: "ON_CLOSE",
+      },
+      waitNTrade: {
+        isWaitnTrade: true,
+        isPerPt: "wt_eq",
+        typeId: "wt_eq",
+        MovementValue: "0",
+      },
+      TrailingSL: {
+        TrailingType: "tslpr",
+        InstrumentMovementValue: "0",
+        TrailingValue: "0",
+      },
+      strikeTypeobj: {
+        type: "ATM",
+        StrikeValue: 0,
+        RangeFrom: 0,
+        RangeTo: 0,
+      },
+    });
+
+    const scripts = selectedEquityInstruments.map((ins) => ({
+      InstrumentToken: ins.InstrumentToken || "",
+      InstrumentName: ins.Name || "",
+      Qty: 1,
+      LongEquationoptionStrikeList: [buildDefaultStrike("PE")],
+      ShortEquationoptionStrikeList: [buildDefaultStrike("CE")],
+      StrikeTickValue: 0,
+    }));
+
+    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
+    setValue("StrategyScriptList", scripts, { shouldDirty: true });
+
+    updatePayload({
+      StrategySegmentType: "Equity",
+      StrategyScriptList: scripts,
+    });
+  }, [
+    selectedEquityInstruments,
+    selectedStrategyTypes,
+    setValue,
+    updatePayload,
+  ]);
 
   // Prefill when in edit mode and API data loaded
   useEffect(() => {
@@ -332,49 +446,57 @@ const StrategyBuilder = () => {
     editInstrumentData,
   ]);
 
+  // ✅ OPTIMIZED: Single effect to sync Zustand payload with form
   useEffect(() => {
-    setValue("StrategyType", selectedStrategyTypes[0] || "", {
+    // Sync strategy type
+    if (selectedStrategyTypes[0]) {
+      setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
+
+      // Auto-set segment type for time-based
+      if (selectedStrategyTypes[0] === "time") {
+        const currentSeg = methods.getValues("StrategySegmentType");
+        if (currentSeg !== "Option") {
+          setValue("StrategySegmentType", "Option", { shouldDirty: true });
+          updatePayload({ StrategySegmentType: "Option" });
+        }
+      }
+    }
+  }, [selectedStrategyTypes, setValue, methods, updatePayload]);
+
+  // ✅ OPTIMIZED: Sync instrument selection with payload
+  useEffect(() => {
+    if (!selectedInstrument || !selectedInstrument.SegmentType) return;
+
+    // Update both form and Zustand
+    setValue("StrategySegmentType", selectedInstrument.SegmentType, {
       shouldDirty: true,
     });
-    if (selectedStrategyTypes[0] === "time") {
-      const currentSeg = methods.getValues("StrategySegmentType");
-      if (currentSeg !== "Option") {
-        setValue("StrategySegmentType", "Option", { shouldDirty: true });
-      }
-    }
-  }, [selectedStrategyTypes, setValue, methods]);
 
-  useEffect(() => {
-    if (selectedInstrument && selectedInstrument.SegmentType) {
-      setValue("StrategySegmentType", selectedInstrument.SegmentType, {
-        shouldDirty: true,
+    const scriptData = {
+      InstrumentToken: selectedInstrument.InstrumentToken || "",
+      InstrumentName: selectedInstrument.Name || "",
+      Qty: 0,
+      LongEquationoptionStrikeList: [],
+      ShortEquationoptionStrikeList: [],
+      StrikeTickValue: 0,
+    };
+
+    const scripts = getValues("StrategyScriptList") || [];
+    const first = scripts[0];
+
+    if (scripts.length === 0 || !first?.InstrumentName) {
+      setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
+      updatePayload({
+        StrategySegmentType: selectedInstrument.SegmentType,
+        StrategyScriptList: [scriptData],
       });
-      const scripts = getValues("StrategyScriptList") || [];
-      const first = scripts[0];
-      if (scripts.length === 0 || !first?.InstrumentName) {
-        setValue(
-          "StrategyScriptList",
-          [
-            {
-              InstrumentToken: selectedInstrument.InstrumentToken || "",
-              InstrumentName: selectedInstrument.Name || "",
-              Qty: 0,
-              LongEquationoptionStrikeList: [],
-              ShortEquationoptionStrikeList: [],
-              StrikeTickValue: 0,
-            },
-          ],
-          { shouldDirty: true }
-        );
-      }
     }
-  }, [selectedInstrument, setValue, getValues]);
+  }, [selectedInstrument, setValue, getValues, updatePayload]);
 
+  // ✅ OPTIMIZED: Handle equity instruments for indicator-based strategies
   useEffect(() => {
     if (selectedStrategyTypes[0] !== "indicator") return;
     if (!selectedEquityInstruments.length) return;
-
-    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
 
     const buildDefaultStrike = (strikeType) => ({
       TransactionType: "SELL",
@@ -430,9 +552,21 @@ const StrategyBuilder = () => {
       StrikeTickValue: 0,
     }));
 
+    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
     setValue("StrategyScriptList", scripts, { shouldDirty: true });
-  }, [selectedEquityInstruments, selectedStrategyTypes, setValue]);
 
+    updatePayload({
+      StrategySegmentType: "Equity",
+      StrategyScriptList: scripts,
+    });
+  }, [
+    selectedEquityInstruments,
+    selectedStrategyTypes,
+    setValue,
+    updatePayload,
+  ]);
+
+  // ✅ Handle switching from equity multi-select back to single instrument
   useEffect(() => {
     if (
       selectedEquityInstruments.length > 0 &&
@@ -441,24 +575,25 @@ const StrategyBuilder = () => {
       selectedInstrument.SegmentType !== "Equity"
     ) {
       const inst = selectedInstrument;
+      const scriptData = {
+        InstrumentToken: inst.InstrumentToken || "",
+        InstrumentName: inst.Name || "",
+        Qty: 0,
+        LongEquationoptionStrikeList: [],
+        ShortEquationoptionStrikeList: [],
+        StrikeTickValue: 0,
+      };
+
       reset();
       setSelectedEquityInstruments([]);
       setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
       setValue("StrategySegmentType", inst.SegmentType, { shouldDirty: true });
-      setValue(
-        "StrategyScriptList",
-        [
-          {
-            InstrumentToken: inst.InstrumentToken || "",
-            InstrumentName: inst.Name || "",
-            Qty: 0,
-            LongEquationoptionStrikeList: [],
-            ShortEquationoptionStrikeList: [],
-            StrikeTickValue: 0,
-          },
-        ],
-        { shouldDirty: true }
-      );
+      setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
+
+      updatePayload({
+        StrategySegmentType: inst.SegmentType,
+        StrategyScriptList: [scriptData],
+      });
     }
   }, [
     selectedInstrument,
@@ -466,9 +601,13 @@ const StrategyBuilder = () => {
     reset,
     setValue,
     selectedStrategyTypes,
+    updatePayload,
   ]);
 
   const onSubmit = (values) => {
+    // Merge form values with Zustand payload for complete state
+    const mergedValues = { ...strategyPayload, ...values };
+
     const validateAndNormalize = (raw) => {
       const errors = [];
       const clone = { ...raw };
@@ -560,13 +699,16 @@ const StrategyBuilder = () => {
       return { errors, normalized: clone };
     };
 
-    const { errors, normalized } = validateAndNormalize(values);
+    const { errors, normalized } = validateAndNormalize(mergedValues);
     if (errors.length) {
       console.warn(
         "Strategy validation issues (non-blocking, server will validate):",
         errors
       );
     }
+
+    // Update Zustand store with normalized values
+    setPayload(normalized);
 
     // Store normalized values to be used when creating strategy
     window.strategyFormData = normalized;
@@ -729,7 +871,7 @@ const StrategyBuilder = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027] self-start h-[166px]">
                 <h2 className="font-semibold dark:text-white">Strategy Type</h2>
                 <div className="space-y-2">
                   {[
@@ -746,7 +888,9 @@ const StrategyBuilder = () => {
                         checked={selectedStrategyTypes.includes(type.id)}
                         onChange={() => handleStrategyChange(type.id)}
                       />
-                      <span className="break-words">{type.label}</span>
+                      <span className="break-words dark:text-gray-300">
+                        {type.label}
+                      </span>
                     </label>
                   ))}
                 </div>

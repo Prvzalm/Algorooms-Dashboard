@@ -16,18 +16,22 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
       onClick={handleOutsideClick}
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30"
     >
-      <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-lg space-y-4">
-        <div className="text-lg font-semibold flex items-center gap-2">
+      <div className="bg-white dark:bg-[#15171C] w-full max-w-md p-6 rounded-2xl shadow-lg space-y-4">
+        <div className="text-lg font-semibold flex items-center gap-2 text-[#2E3A59] dark:text-white">
           <img src={paymentDetailsIcon} alt="" /> Payment Details
         </div>
 
         <div className="text-sm space-y-4">
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Subscription Plan Name</span>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">
+              Subscription Plan Name
+            </span>
             <span className="font-medium">{data?.PlanName || "N/A"}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Subscription Type</span>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">
+              Subscription Type
+            </span>
             <span>
               {data?.PlanType
                 ? data.PlanType.charAt(0).toUpperCase() +
@@ -35,32 +39,38 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
                 : "N/A"}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Base Price</span>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">
+              Base Price
+            </span>
             <span>₹{data?.BasePrice?.toFixed(2) || "0.00"}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Wallet Balance</span>
-            <span className="text-green-600">
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">
+              Wallet Balance
+            </span>
+            <span className="text-green-600 dark:text-green-400">
               -₹{data?.WalletAmount?.toFixed(2) || "0.00"}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Discount</span>
-            <span className="text-green-600">-₹{data?.discount || "0.00"}</span>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">Discount</span>
+            <span className="text-green-600 dark:text-green-400">
+              -₹{data?.discount || "0.00"}
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">Coupon</span>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">Coupon</span>
             <span>-₹{data?.coupon || "0.00"}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#707070]">IGST 18%</span>
-            <span className="text-red-500">
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">IGST 18%</span>
+            <span className="text-red-500 dark:text-red-400">
               +₹{data?.GstTaxationCharge?.toFixed(2) || "0.00"}
             </span>
           </div>
-          <hr />
-          <div className="flex justify-between font-medium text-base">
+          <hr className="border-gray-200 dark:border-gray-700" />
+          <div className="flex justify-between font-medium text-base text-[#2E3A59] dark:text-white">
             <span>Net Payable</span>
             <span>
               ₹
@@ -73,7 +83,7 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
               ).toFixed(2)}
             </span>
           </div>
-          <hr />
+          <hr className="border-gray-200 dark:border-gray-700" />
         </div>
 
         <div className="flex items-start gap-2">
@@ -81,11 +91,11 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
             type="checkbox"
             checked={agree}
             onChange={() => setAgree(!agree)}
-            className="mt-1"
+            className="mt-1 accent-blue-600"
           />
-          <label className="text-sm">
+          <label className="text-sm text-[#2E3A59] dark:text-white">
             I accept all payment terms and{" "}
-            <span className="text-blue-600 underline cursor-pointer">
+            <span className="text-blue-600 dark:text-blue-400 underline cursor-pointer">
               refund policy
             </span>
           </label>
@@ -97,7 +107,7 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
           className={`w-full py-4 rounded-xl text-white text-sm font-semibold transition ${
             agree
               ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
-              : "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
           }`}
         >
           Process Payment

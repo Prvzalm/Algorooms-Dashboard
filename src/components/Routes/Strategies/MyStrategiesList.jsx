@@ -195,7 +195,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
           {filteredStrategies.map((strategy) => (
             <div
               key={strategy.StrategyId}
-              className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5 relative"
+              className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] p-5 relative flex flex-col h-full"
             >
               <div className="flex justify-between items-start mb-2 relative">
                 <div>
@@ -282,18 +282,34 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <button
-                  disabled
-                  className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-3 rounded-md"
-                >
-                  {strategy.ScriptDetails?.[0]?.ScriptName || "-"}
-                </button>
+              <div className="mt-4 max-h-[200px] overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                {strategy.ScriptDetails && strategy.ScriptDetails.length > 0 ? (
+                  strategy.ScriptDetails.map((script, index) => (
+                    <div
+                      key={index}
+                      className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-2.5 px-3 rounded-md flex items-center justify-between flex-shrink-0"
+                    >
+                      <span
+                        className="flex-1 truncate pr-2"
+                        title={script.ScriptName || "-"}
+                      >
+                        {script.ScriptName || "-"}
+                      </span>
+                      <span className="text-[10px] opacity-70 whitespace-nowrap flex-shrink-0">
+                        Qty: {script.ScriptQuantity || 0}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-[#718EBF] dark:text-gray-300 text-xs font-medium py-3 px-4 rounded-md text-center">
+                    No scripts available
+                  </div>
+                )}
               </div>
 
-              <div className="mt-4 flex space-x-2">
+              <div className="mt-auto pt-4 flex flex-col sm:flex-row gap-2">
                 <button
-                  className="flex-1 py-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium"
+                  className="flex-1 py-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white text-sm font-medium hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition"
                   onClick={() =>
                     navigate(
                       `/backtesting/strategybacktest/${strategy.StrategyId}`
@@ -310,7 +326,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 </button>
                 {strategy.StrategyExecutionType === "Indicator Based" && (
                   <button
-                    className="py-3 px-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition flex items-center gap-2"
+                    className="sm:w-auto w-full py-3 px-3 rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2D2F36] transition flex items-center justify-center gap-2"
                     onClick={() =>
                       setTradingViewModal({
                         open: true,

@@ -77,7 +77,7 @@ const SubscriptionsPage = () => {
   return (
     <div>
       <div className="md:p-6 text-[#2E3A59] dark:text-white space-y-6">
-        <div className="text-xl md:text-2xl text-[#2E3A59] font-semibold">
+        <div className="text-xl md:text-2xl text-[#2E3A59] dark:text-white font-semibold">
           My Subscription
         </div>
 
@@ -106,8 +106,8 @@ const SubscriptionsPage = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`pb-2 px-4 py-3 rounded-lg ${
                     activeTab === tab
-                      ? "text-[#0096FF] bg-blue-100 border border-[#0096FF]"
-                      : "text-gray-500 bg-blue-50 border dark:text-gray-400"
+                      ? "text-[#0096FF] bg-blue-100 dark:bg-blue-900/30 border border-[#0096FF]"
+                      : "text-gray-500 bg-blue-50 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   {tab}
@@ -124,10 +124,12 @@ const SubscriptionsPage = () => {
                     key={index}
                     className="border border-[#E6EDF4] dark:border-[#1E2027] bg-white dark:bg-[#15171C] rounded-2xl p-6 space-y-4"
                   >
-                    <div className="text-lg font-semibold">
+                    <div className="text-lg font-semibold text-[#2E3A59] dark:text-white">
                       {plan.planName} Plan
                     </div>
-                    <div className="text-3xl font-bold">₹{plan.Price}</div>
+                    <div className="text-3xl font-bold text-[#2E3A59] dark:text-white">
+                      ₹{plan.Price}
+                    </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {plan.description}
                     </div>
@@ -140,15 +142,15 @@ const SubscriptionsPage = () => {
                       className={`w-full py-4 rounded-xl text-sm font-semibold ${
                         plan.planName.toLowerCase() === "unlimited"
                           ? "bg-[#0096FF] text-white"
-                          : "border border-[#D5DAE1] dark:border-gray-700"
+                          : "border border-[#D5DAE1] dark:border-gray-700 text-[#2E3A59] dark:text-white"
                       }`}
                     >
                       Get Started
                     </button>
 
                     <div>
-                      <div className="text-sm font-semibold mb-2">
-                        What’s included:
+                      <div className="text-sm font-semibold mb-2 text-[#2E3A59] dark:text-white">
+                        What's included:
                       </div>
                       <ul className="space-y-1 text-sm text-[#2E3A59] dark:text-white">
                         <li>

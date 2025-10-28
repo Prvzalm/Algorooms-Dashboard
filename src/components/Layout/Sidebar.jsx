@@ -92,12 +92,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       name: "Strategies",
       path: "/strategies",
     },
-    {
-      icon: raAlgosIcon,
-      selectedIcon: selectedRaAlgosIcon,
-      name: "Ra Algos",
-      path: "/raalgo",
-    },
+    // {
+    //   icon: raAlgosIcon,
+    //   selectedIcon: selectedRaAlgosIcon,
+    //   name: "Ra Algos",
+    //   path: "/raalgo",
+    // },
     {
       icon: backTestingIcon,
       selectedIcon: selectedBackTestingIcon,

@@ -1,14 +1,7 @@
 import { useState } from "react";
-import { noNotification, notificationGeneral, upStox } from "../../../assets";
-import { useTradeEngineLogs } from "../../../hooks/notificationHooks";
-import { useMasterBrokerData } from "../../../hooks/brokerHooks";
+import { noNotification, notificationGeneral } from "../../../assets";
 
-const tabs = [
-  "General",
-  "Trade Engine Logs",
-  "Broadcast Received",
-  "Broadcast Sent",
-];
+const tabs = ["General", "Broadcast Received", "Broadcast Sent"];
 
 const mockNotifications = {
   General: [
@@ -23,22 +16,6 @@ const mockNotifications = {
       detail: "NIFTY25500 at ₹450 Buy",
       time: "10:28AM",
       status: "Successful",
-    },
-  ],
-  "Trade Engine Logs": [
-    {
-      broker: { name: "Upstox", code: "3CCF6C", logo: upStox },
-      engineName: "AR85105_30095",
-      startTime: "25 Jun 2025 | 10:15AM",
-      endTime: "NA",
-      message: "Trade Engine started successfully.",
-    },
-    {
-      broker: { name: "Upstox", code: "3CCF6C", logo: upStox },
-      engineName: "AR85105_30095",
-      startTime: "25 Jun 2025 | 10:15AM",
-      endTime: "NA",
-      message: "Trade Engine started successfully.",
     },
   ],
   "Broadcast Received": [
@@ -62,12 +39,6 @@ const mockNotifications = {
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState("General");
   const notifications = mockNotifications[activeTab];
-  const {
-    data: tradeLogs = [],
-    isLoading: tradeLoading,
-    isError: tradeErrors,
-  } = useTradeEngineLogs();
-  const { data: brokers = [], isLoading, isError } = useMasterBrokerData();
 
   const renderNotification = (note, index) => {
     if (activeTab === "General") {
@@ -95,63 +66,6 @@ const NotificationsPage = () => {
           </div>
         </div>
       );
-    }
-
-    if (activeTab === "Trade Engine Logs") {
-      if (tradeLoading) return <div>Loading logs...</div>;
-      if (tradeErrors) return <div>Failed to fetch trade engine logs.</div>;
-      return tradeLogs.map((note, index) => (
-        <div
-          key={index}
-          className="bg-white dark:bg-[#1F1F24] border border-gray-100 dark:border-[#2D2F36] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between"
-        >
-          <div className="flex items-center space-x-3 mb-3 md:mb-0">
-            <img
-              src={
-                note.BrokerClientId === "3CCF6C"
-                  ? upStox
-                  : "/default-broker-logo.png"
-              }
-              alt={note.BrokerClientId}
-              className="w-8 h-8 object-contain"
-            />
-            <div>
-              <div className="text-xs text-[#718EBF]">Broker</div>
-              <div className="font-medium text-[#2E3A59] dark:text-white">
-                {note.BrokerClientId}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 w-full text-sm text-[#2E3A59] dark:text-gray-300">
-            <div>
-              <div className="text-xs text-[#718EBF]">Trade Engine Name</div>
-              <div className="font-medium">{note.TradeEngineName}</div>
-            </div>
-
-            {note.TradeEngineStartTime && (
-              <div>
-                <div className="text-xs text-[#718EBF]">Start Date & Time</div>
-                <div className="font-medium">{note.TradeEngineStartTime}</div>
-              </div>
-            )}
-
-            {note.TradeEngineStopTime && (
-              <div>
-                <div className="text-xs text-[#718EBF]">End Date & Time</div>
-                <div className="font-medium">{note.TradeEngineStopTime}</div>
-              </div>
-            )}
-
-            {note.Message && (
-              <div>
-                <div className="text-xs text-[#718EBF]">Message</div>
-                <div className="font-medium">{note.Message}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      ));
     }
 
     if (activeTab === "Broadcast Received") {
@@ -231,9 +145,7 @@ const NotificationsPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {activeTab === "Trade Engine Logs" ? (
-              renderNotification(null, 0)
-            ) : mockNotifications[activeTab]?.length > 0 ? (
+            {mockNotifications[activeTab]?.length > 0 ? (
               mockNotifications[activeTab].map((note, index) =>
                 renderNotification(note, index)
               )

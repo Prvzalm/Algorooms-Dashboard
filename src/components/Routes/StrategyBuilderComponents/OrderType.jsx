@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import TradeSettings from "./TradeSettings";
+import {
+  useStrategyBuilderStore,
+  createDefaultStrike,
+} from "../../../stores/strategyBuilderStore";
 
 const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
-  const { setValue, getValues } = useFormContext();
+  const { setValue, getValues, watch } = useFormContext();
+  const { updatePayload } = useStrategyBuilderStore();
+
+  // ✅ Watch StrategyScriptList to sync legs automatically
+  const strategyScripts = watch("StrategyScriptList");
+  const activeLegIndex = watch("ActiveLegIndex") ?? 0;
+
   const [selectedDays, setSelectedDays] = useState([
     "MON",
     "TUE",
@@ -22,46 +32,7 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
   const [cncEntryDays, setCncEntryDays] = useState(4);
   const [cncExitDays, setCncExitDays] = useState(0);
 
-  // helper: default strike row used when adding/removing legs
-  const createDefaultStrike = () => ({
-    TransactionType: "SELL",
-    StrikeType: "CE",
-    StrikeValueType: 0,
-    StrikeValue: 0,
-    SLActionTypeId: "ONPRICE",
-    TargetActionTypeId: "ONPRICE",
-    TargetType: "tgpr",
-    SLType: "slpr",
-    Target: "0",
-    StopLoss: "30",
-    Qty: "0",
-    ExpiryType: "WEEKLY",
-    strikeTypeobj: { type: "ATM", StrikeValue: 0, RangeFrom: 0, RangeTo: 0 },
-    isTrailSL: false,
-    IsMoveSLCTC: false,
-    isExitAll: false,
-    IsPriceDiffrenceConstrant: false,
-    PriceDiffrenceConstrantValue: "0",
-    isPrePunchSL: false,
-    reEntry: {
-      isRentry: false,
-      RentryType: "REN",
-      TradeCycle: "0",
-      RentryActionTypeId: "ON_CLOSE",
-    },
-    waitNTrade: {
-      isWaitnTrade: false,
-      isPerPt: "wt_eq",
-      typeId: "wt_eq",
-      MovementValue: "0",
-    },
-    TrailingSL: {
-      TrailingType: "tslpr",
-      InstrumentMovementValue: "0",
-      TrailingValue: "0",
-    },
-    lotSize: 0,
-  });
+  // ✅ Removed duplicate createDefaultStrike - using from Zustand store
 
   // Prefill from form values (edit mode)
   useEffect(() => {
@@ -122,6 +93,30 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
     setSelectedLeg(`L${(getValues("ActiveLegIndex") ?? 0) + 1}`);
   }, []);
 
+  // ✅ Sync legs state whenever StrategyScriptList changes (delete/copy from Leg1)
+  useEffect(() => {
+    if (!strategyScripts || !strategyScripts[0]) return;
+
+    const longList = strategyScripts[0].LongEquationoptionStrikeList || [];
+    const count = Math.max(1, longList.length);
+    const newLegs = Array.from({ length: count }, (_, i) => `L${i + 1}`);
+
+    // Only update if legs count changed
+    if (newLegs.length !== legs.length) {
+      setLegs(newLegs);
+
+      // Ensure selected leg is valid
+      const currentIndex = activeLegIndex;
+      if (currentIndex >= newLegs.length) {
+        const adjustedIndex = Math.max(0, newLegs.length - 1);
+        setSelectedLeg(`L${adjustedIndex + 1}`);
+        setValue("ActiveLegIndex", adjustedIndex, { shouldDirty: true });
+      } else {
+        setSelectedLeg(`L${currentIndex + 1}`);
+      }
+    }
+  }, [strategyScripts, activeLegIndex]);
+
   // sync selectedLeg with form ActiveLegIndex
   useEffect(() => {
     const index = Math.max(0, legs.indexOf(selectedLeg));
@@ -130,21 +125,16 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
 
   const handleAddLeg = () => {
     try {
-      // Get current values once
       const idx = legs.length;
       const nextLegName = `L${idx + 1}`;
 
-      // Create a function to update the form to prevent React state update loops
       const updateFormState = () => {
-        // Update legs state
         setLegs((prevLegs) => [...prevLegs, nextLegName]);
         setSelectedLeg(nextLegName);
 
-        // Get latest script data
         const scripts = getValues("StrategyScriptList") || [];
         const base = { ...(scripts[0] || {}) };
 
-        // Ensure arrays exist
         const longArr = Array.isArray(base.LongEquationoptionStrikeList)
           ? [...base.LongEquationoptionStrikeList]
           : [];
@@ -153,10 +143,9 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           ? [...base.ShortEquationoptionStrikeList]
           : [];
 
-        // Create new strike
+        // ✅ Use Zustand helper
         const newStrike = createDefaultStrike();
 
-        // Add strikes
         const isIndicator = selectedStrategyTypes?.[0] === "indicator";
         longArr.push(newStrike);
 
@@ -164,17 +153,19 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           shortArr.push({ ...newStrike });
         }
 
-        // Update form with new data
         base.LongEquationoptionStrikeList = longArr;
         if (isIndicator) {
           base.ShortEquationoptionStrikeList = shortArr;
         }
 
-        setValue("StrategyScriptList", [base], { shouldDirty: true });
+        const updated = [base];
+        setValue("StrategyScriptList", updated, { shouldDirty: true });
         setValue("ActiveLegIndex", idx, { shouldDirty: true });
+
+        // ✅ Sync with Zustand
+        updatePayload({ StrategyScriptList: updated });
       };
 
-      // Use setTimeout to avoid cascading updates in the same render cycle
       setTimeout(updateFormState, 0);
     } catch (err) {
       console.error("Add leg error", err);
@@ -183,14 +174,12 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
 
   const handleRemoveLeg = (removeIndex) => {
     try {
-      if (legs.length <= 1) return; // must keep at least one leg
+      if (legs.length <= 1) return; // Keep at least one leg
 
-      // Create a function to update state in a single batch
       const updateFormState = () => {
         const scripts = getValues("StrategyScriptList") || [];
         const base = { ...(scripts[0] || {}) };
 
-        // Get arrays and ensure they are properly initialized
         const longArr = Array.isArray(base.LongEquationoptionStrikeList)
           ? [...base.LongEquationoptionStrikeList]
           : [];
@@ -199,7 +188,7 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           ? [...base.ShortEquationoptionStrikeList]
           : [];
 
-        // Remove items at index
+        // Remove at index
         if (removeIndex >= 0 && removeIndex < longArr.length) {
           longArr.splice(removeIndex, 1);
         }
@@ -212,7 +201,7 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           shortArr.splice(removeIndex, 1);
         }
 
-        // Handle edge case of removing all legs
+        // Edge case: ensure at least one leg remains
         const isIndicator = selectedStrategyTypes?.[0] === "indicator";
         if (longArr.length === 0) {
           longArr.push(createDefaultStrike());
@@ -221,34 +210,35 @@ const OrderType = ({ selectedStrategyTypes, hideLeg1 }) => {
           }
         }
 
-        // Update form data
         base.LongEquationoptionStrikeList = longArr;
         if (isIndicator) {
           base.ShortEquationoptionStrikeList = shortArr;
         }
 
-        // Calculate new leg names and selected index
+        // Calculate new legs and active index
         const newCount = longArr.length;
         const newLegs = Array.from({ length: newCount }, (_, i) => `L${i + 1}`);
 
         const currentIndex = Math.max(0, legs.indexOf(selectedLeg));
         let newSelectedIndex = currentIndex;
 
-        // Adjust selected index if needed
         if (removeIndex === currentIndex) {
           newSelectedIndex = Math.min(removeIndex, newCount - 1);
         } else if (removeIndex < currentIndex) {
           newSelectedIndex = Math.max(0, currentIndex - 1);
         }
 
-        // Apply all updates
-        setValue("StrategyScriptList", [base], { shouldDirty: true });
+        const updated = [base];
+        setValue("StrategyScriptList", updated, { shouldDirty: true });
         setValue("ActiveLegIndex", newSelectedIndex, { shouldDirty: true });
+
+        // ✅ Sync with Zustand
+        updatePayload({ StrategyScriptList: updated });
+
         setLegs(newLegs);
         setSelectedLeg(`L${newSelectedIndex + 1}`);
       };
 
-      // Use setTimeout to avoid update loops
       setTimeout(updateFormState, 0);
     } catch (err) {
       console.error("Remove leg error", err);

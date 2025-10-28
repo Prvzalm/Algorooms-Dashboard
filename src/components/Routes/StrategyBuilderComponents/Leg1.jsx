@@ -2,9 +2,11 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
+import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
 
 const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const { setValue, getValues, watch } = useFormContext();
+  const { updatePayload } = useStrategyBuilderStore();
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
@@ -657,6 +659,76 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       ? globalPremiumValue
       : premiumDiffValue;
 
+  // ✅ Delete leg handler
+  const handleDeleteLeg = () => {
+    const scripts = getValues("StrategyScriptList") || [];
+    if (!scripts[0]) return;
+
+    const longStrikes = scripts[0].LongEquationoptionStrikeList || [];
+    const shortStrikes = scripts[0].ShortEquationoptionStrikeList || [];
+
+    if (longStrikes.length <= 1) return; // Keep at least 1 leg
+
+    // Remove current active leg
+    longStrikes.splice(activeLegIndex, 1);
+    if (shortStrikes.length > activeLegIndex) {
+      shortStrikes.splice(activeLegIndex, 1);
+    }
+
+    const updated = [
+      {
+        ...scripts[0],
+        LongEquationoptionStrikeList: longStrikes,
+        ShortEquationoptionStrikeList: shortStrikes,
+      },
+    ];
+
+    setValue("StrategyScriptList", updated, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: updated });
+
+    // Adjust active leg index
+    const newIndex = Math.max(
+      0,
+      Math.min(activeLegIndex, longStrikes.length - 1)
+    );
+    setValue("ActiveLegIndex", newIndex, { shouldDirty: true });
+  };
+
+  // ✅ Copy leg handler
+  const handleCopyLeg = () => {
+    const scripts = getValues("StrategyScriptList") || [];
+    if (!scripts[0]) return;
+
+    const longStrikes = scripts[0].LongEquationoptionStrikeList || [];
+    const shortStrikes = scripts[0].ShortEquationoptionStrikeList || [];
+
+    // Clone current active leg
+    const clonedLong = JSON.parse(JSON.stringify(longStrikes[activeLegIndex]));
+    const clonedShort = shortStrikes[activeLegIndex]
+      ? JSON.parse(JSON.stringify(shortStrikes[activeLegIndex]))
+      : null;
+
+    // Insert clones after current leg
+    longStrikes.splice(activeLegIndex + 1, 0, clonedLong);
+    if (clonedShort) {
+      shortStrikes.splice(activeLegIndex + 1, 0, clonedShort);
+    }
+
+    const updated = [
+      {
+        ...scripts[0],
+        LongEquationoptionStrikeList: longStrikes,
+        ShortEquationoptionStrikeList: shortStrikes,
+      },
+    ];
+
+    setValue("StrategyScriptList", updated, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: updated });
+
+    // Switch to newly copied leg
+    setValue("ActiveLegIndex", activeLegIndex + 1, { shouldDirty: true });
+  };
+
   return (
     // changed: added relative group container
     <div className="relative group">
@@ -1173,8 +1245,18 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
             )}
 
             <div className="flex space-x-4 text-xl text-gray-400 dark:text-gray-500">
-              <FiTrash2 className="text-red-500 cursor-pointer" />
-              <img src={leg1CopyIcon} />
+              <FiTrash2
+                className="text-red-500 cursor-pointer hover:text-red-600 transition"
+                onClick={handleDeleteLeg}
+                title="Delete leg"
+              />
+              <img
+                src={leg1CopyIcon}
+                className="cursor-pointer hover:opacity-75 transition"
+                onClick={handleCopyLeg}
+                alt="Copy leg"
+                title="Copy leg"
+              />
             </div>
           </div>
         </div>

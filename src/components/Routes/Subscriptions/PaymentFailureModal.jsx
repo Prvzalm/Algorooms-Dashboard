@@ -16,26 +16,36 @@ const PaymentFailureModal = ({ isOpen, onClose, data, onRetry }) => {
           <img src={failurePaymentIcon} alt="" />
         </div>
 
-        <div className="mb-1">Payment Failed!</div>
+        <div className="mb-1 text-[#2E3A59] dark:text-white">
+          Payment Failed!
+        </div>
         <div className="text-2xl font-bold text-[#2E3A59] dark:text-white mb-4">
           ₹{data.amount}
         </div>
 
         <div className="text-sm text-left space-y-2 text-[#2E3A59] dark:text-white mb-6">
           <div className="flex justify-between">
-            <span className="text-[#707070]">Ref Number</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Ref Number
+            </span>
             <span>--------</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#707070]">Payment Time</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Payment Time
+            </span>
             <span>{data.time}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#707070]">Payment Method</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Payment Method
+            </span>
             <span>{data.method}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#707070]">Sender Name</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Sender Name
+            </span>
             <span className="font-medium">{data.sender}</span>
           </div>
         </div>

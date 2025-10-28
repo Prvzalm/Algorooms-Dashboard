@@ -80,8 +80,8 @@ const DeployedStrategiesList = ({
               key={brokerItem.broker.code}
               className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C]"
             >
-              <div className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center gap-3">
+              <div className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-3 lg:min-w-[200px]">
                   <img
                     src={brokerItem.broker.logo}
                     alt="Broker Logo"
@@ -97,17 +97,17 @@ const DeployedStrategiesList = ({
                   </div>
                 </div>
 
-                <div className="flex gap-4 md:gap-8 items-center flex-wrap">
-                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400">
+                <div className="flex gap-4 lg:gap-6 items-center flex-wrap">
+                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
                     Running {String(brokerItem.runningCount).padStart(2, "0")}
                   </div>
-                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400">
+                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
                     Deployed {String(brokerItem.deployedCount).padStart(2, "0")}
                   </div>
                   <button
                     onClick={() => handleToggleTradeEngine(brokerItem)}
                     disabled={rowPending}
-                    className={`px-4 py-1.5 text-xs font-medium rounded-md border transition flex items-center gap-2 ${
+                    className={`px-4 py-1.5 text-xs font-medium rounded-md border transition flex items-center gap-2 whitespace-nowrap ${
                       tradeEngineStatus === "Running"
                         ? "bg-green-50 border-green-500 text-green-600 dark:bg-green-900/20 dark:border-green-600"
                         : "bg-[#F5F8FA] dark:bg-[#2A2A2E] border-[#E4EAF0] dark:border-[#2D2F36] text-[#2E3A59] dark:text-gray-200"
@@ -126,15 +126,19 @@ const DeployedStrategiesList = ({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 lg:gap-6 lg:ml-auto">
                   <div className="flex items-center gap-2">
-                    <img src={notificationGeneral} alt="notification" />
+                    <img
+                      src={notificationGeneral}
+                      alt="notification"
+                      className="w-5 h-5"
+                    />
                     <div className="flex flex-col justify-center items-end">
-                      <span className="text-[#212121] opacity-50 dark:text-gray-400 text-xs">
+                      <span className="text-[#212121] opacity-50 dark:text-gray-400 text-xs whitespace-nowrap">
                         PnL
                       </span>
                       <span
-                        className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap w-[11ch] ${
+                        className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap min-w-[100px] ${
                           brokerItem.totalPnl >= 0
                             ? "text-green-600"
                             : "text-red-500"
@@ -147,13 +151,13 @@ const DeployedStrategiesList = ({
                   </div>
                   <button
                     onClick={() => toggleExpand(brokerItem.broker.code)}
-                    className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition ${
+                    className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
                       expanded ? "rotate-180" : ""
                     }`}
                   >
                     <FiChevronDown className="text-gray-500 dark:text-gray-400" />
                   </button>
-                  <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35]">
+                  <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] flex-shrink-0">
                     <FiMoreVertical className="text-xl text-gray-500 dark:text-gray-400" />
                   </button>
                 </div>
@@ -169,22 +173,25 @@ const DeployedStrategiesList = ({
                     return (
                       <div key={compositeKey} className="space-y-2">
                         {/* Strategy Card */}
-                        <div className="flex flex-col lg:flex-row lg:items-center gap-4 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
-                          <div className="flex items-center justify-between gap-3 min-w-[200px] lg:min-w-[280px]">
-                            <span className="text-sm font-medium truncate flex-1 min-w-0">
+                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
+                          {/* Strategy Name & Badge */}
+                          <div className="flex items-center justify-between gap-3 xl:min-w-[280px]">
+                            <span className="text-sm font-medium truncate flex-1 min-w-0 text-[#2E3A59] dark:text-white">
                               {s.name}
                             </span>
                             <span
                               className={`text-xs px-2 py-1 rounded-md whitespace-nowrap flex-shrink-0 w-[60px] text-center ${
                                 s.isLiveMode
-                                  ? "bg-emerald-100 text-emerald-600"
+                                  ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                                   : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
                               }`}
                             >
                               {s.isLiveMode ? "Live" : "Paper"}
                             </span>
                           </div>
-                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 lg:min-w-[200px]">
+
+                          {/* Max Profit/Loss */}
+                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px]">
                             <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Profit</p>
                               <p className="font-semibold text-[#2E3A59] dark:text-white">
@@ -198,9 +205,11 @@ const DeployedStrategiesList = ({
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 flex-wrap lg:ml-auto">
+
+                          {/* Controls Section */}
+                          <div className="flex items-center gap-3 flex-wrap xl:flex-nowrap xl:ml-auto">
                             {/* Mode Toggle */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
                                 Mode
                               </span>
@@ -230,8 +239,9 @@ const DeployedStrategiesList = ({
                                 {s.isLiveMode ? "Live" : "Forward"}
                               </span>
                             </div>
+
                             {/* Run Status Toggle */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
                                 Status
                               </span>
@@ -261,9 +271,10 @@ const DeployedStrategiesList = ({
                                 {s.running ? "Running" : "Paused"}
                               </span>
                             </div>
+
                             {/* Square Off Button */}
                             <button
-                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center gap-2"
+                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                               disabled={
                                 strategyModePending ||
                                 squareOffPendingIds.has(compositeKey)
@@ -279,29 +290,34 @@ const DeployedStrategiesList = ({
                                 ? "Squaring"
                                 : "Square Off"}
                             </button>
-                            <div className="text-right ml-auto">
-                              <p className="text-xs text-[#718EBF] dark:text-gray-400">
-                                PnL
-                              </p>
-                              <p
-                                className={`text-sm font-semibold ${
-                                  s.strategyPNL >= 0
-                                    ? "text-green-600"
-                                    : "text-red-500"
-                                }`}
-                              >
-                                <span
-                                  className="tabular-nums inline-block text-right whitespace-nowrap w-[11ch]"
-                                  title={`₹${s.strategyPNL.toFixed(2)}`}
+
+                            {/* PnL Display */}
+                            <div className="flex items-center gap-2 xl:min-w-[120px]">
+                              <div className="text-right">
+                                <p className="text-xs text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
+                                  PnL
+                                </p>
+                                <p
+                                  className={`text-sm font-semibold ${
+                                    s.strategyPNL >= 0
+                                      ? "text-green-600"
+                                      : "text-red-500"
+                                  }`}
                                 >
-                                  ₹{s.strategyPNL.toFixed(2)}
-                                </span>
-                              </p>
+                                  <span
+                                    className="tabular-nums inline-block text-right whitespace-nowrap min-w-[100px]"
+                                    title={`₹${s.strategyPNL.toFixed(2)}`}
+                                  >
+                                    ₹{s.strategyPNL.toFixed(2)}
+                                  </span>
+                                </p>
+                              </div>
                             </div>
+
                             {/* Expand/Collapse Positions */}
                             <button
                               onClick={() => toggleStrategyExpand(compositeKey)}
-                              className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition ${
+                              className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
                                 strategyExpanded ? "rotate-180" : ""
                               }`}
                               aria-label={

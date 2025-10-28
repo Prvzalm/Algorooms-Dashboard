@@ -42,11 +42,11 @@ const CreateStrategyPopup = ({ onClose }) => {
               title: "Strategy Builder",
               desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
             },
-            {
-              key: "signals",
-              title: "Tradingview Signals Trading",
-              desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
-            },
+            // {
+            //   key: "signals",
+            //   title: "Tradingview Signals Trading",
+            //   desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
+            // },
           ].map((item) => (
             <div
               key={item.key}
