@@ -88,6 +88,40 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     selectedStrikeCriteria === "ATM_PT" ||
     selectedStrikeCriteria === "ATM_PERCENT";
 
+  const formatStrikeOffset = (value, criteria) => {
+    const numeric = Number(value) || 0;
+    const abs = Math.abs(numeric);
+    return criteria === "ATM_PERCENT" ? abs.toFixed(1) : String(abs);
+  };
+
+  const applyStrikeSelection = (criteria, rawValue) => {
+    setSelectedStrikeCriteria((prev) => (prev === criteria ? prev : criteria));
+
+    if (criteria === "ATM_PT" || criteria === "ATM_PERCENT") {
+      const formatted = formatStrikeOffset(rawValue, criteria);
+      const numeric = Number(rawValue) || 0;
+      const nextValue =
+        numeric === 0
+          ? "ATM"
+          : numeric < 0
+          ? `ITM_${formatted}`
+          : `OTM_${formatted}`;
+
+      setStrikeTypeSelectValue((prev) =>
+        prev === nextValue ? prev : nextValue
+      );
+      setStrikeTypeNumber((prev) => (prev === 0 ? prev : 0));
+    } else {
+      const numeric = Number(rawValue) || 0;
+      setStrikeTypeNumber((prev) => (prev === numeric ? prev : numeric));
+      setStrikeTypeSelectValue((prev) => (prev === "ATM" ? prev : "ATM"));
+    }
+  };
+
+  const handleStrikeCriteriaChange = (criteria) => {
+    applyStrikeSelection(criteria, 0);
+  };
+
   // Qty multiplier
   const [qtyMultiplier, setQtyMultiplier] = useState(1);
   // NEW: stop loss qty state (maps to StopLoss)
@@ -237,15 +271,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       if (t) {
         const mapped =
           typeMapRev[t] || (String(t).startsWith("CP") ? "CP" : "ATM_PT");
-        setSelectedStrikeCriteria(mapped);
-        if (t === "ATM" || t === "ATMPER") {
-          if (svNum === 0) setStrikeTypeSelectValue("ATM");
-          else if (svNum < 0)
-            setStrikeTypeSelectValue(`ITM_${Math.abs(svNum)}`);
-          else setStrikeTypeSelectValue(`OTM_${Math.abs(svNum)}`);
-        } else {
-          setStrikeTypeNumber(svNum);
-        }
+        applyStrikeSelection(mapped, svNum);
       }
       // set qty multiplier per leg from saved Qty
       const lot = selectedInstrument?.LotSize || 0;
@@ -570,10 +596,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     advanceFeatures,
   ]);
 
-  // reset strike related controlled values when strategy type toggles
+  // ✅ Reset strike related controlled values when strategy type toggles
   useEffect(() => {
-    setStrikeTypeSelectValue("ATM");
-    setStrikeTypeNumber(0);
+    applyStrikeSelection(selectedStrikeCriteria, 0);
   }, [selectedStrategyTypes]);
 
   // ✅ Initialize legs from form or create first leg (moved from OrderType)
@@ -1133,7 +1158,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
               <select
                 className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                 value={selectedStrikeCriteria}
-                onChange={(e) => setSelectedStrikeCriteria(e.target.value)}
+                onChange={(e) => handleStrikeCriteriaChange(e.target.value)}
                 disabled={isDisabled}
               >
                 {strikeCriteriaOptions.map((o) => (

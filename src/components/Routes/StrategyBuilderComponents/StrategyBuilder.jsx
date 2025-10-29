@@ -16,101 +16,16 @@ import EntryCondition from "./EntryCondition";
 import InstrumentModal from "./InstrumentModal";
 import BacktestStrategyComponent from "../BackTest/BacktestStrategyComponent";
 import "./MobileButtons.css"; // Import mobile button styles
-import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
+import {
+  useStrategyBuilderStore,
+  getDefaultPayload,
+} from "../../../stores/strategyBuilderStore";
 import { buildStrategyPayload } from "../../../utils/strategyPayload";
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
   const editing = !!strategyId;
-  const initialFormValuesRef = useRef({
-    StrategyName: "",
-    StrategyType: "time",
-    StrategySegmentType: "",
-    ActiveLegIndex: 0,
-    ProductType: 0,
-    TradeStartTime: "09:16",
-    AutoSquareOffTime: "15:15",
-    ActiveDays: ["MON", "TUE", "WED", "THU", "FRI"],
-    ExitWhenTotalProfit: 0,
-    ExitWhenTotalLoss: 0,
-    TrailProfitType: 0,
-    LockProfitAt: 0,
-    LockProfit: 0,
-    TrailProfitBy: 0,
-    Trail_SL: 0,
-    SquareOffAllOptionLegOnSl: false,
-    StrategyScriptList: [],
-    LongEntryEquation: [
-      {
-        comparerId: 0,
-        comparerName: "string",
-        OperatorId: 0,
-        OperatorName: "string",
-        indicator: {
-          indicatorId: 0,
-          IndicatorParamList: [
-            { ParamId: "string", IndicatorParamValue: "string" },
-          ],
-        },
-        comparerIndicator: {
-          indicatorId: 0,
-          IndicatorParamList: [
-            { ParamId: "string", IndicatorParamValue: "string" },
-          ],
-        },
-      },
-    ],
-    ShortEntryEquation: [
-      {
-        comparerId: 0,
-        comparerName: "string",
-        OperatorId: 0,
-        OperatorName: "string",
-        indicator: {
-          indicatorId: 0,
-          IndicatorParamList: [
-            { ParamId: "string", IndicatorParamValue: "string" },
-          ],
-        },
-        comparerIndicator: {
-          indicatorId: 0,
-          IndicatorParamList: [
-            { ParamId: "string", IndicatorParamValue: "string" },
-          ],
-        },
-      },
-    ],
-    Long_ExitEquation: [],
-    Short_ExitEquation: [],
-    IsChartOnOptionStrike: false,
-    isBtSt: false,
-    StrategyId: 0,
-    Interval: 1,
-    SL: 0,
-    Target: 0,
-    Privacy: "Private",
-    Copy_Allowed: false,
-    StrategyExecuterId: 0,
-    OrderType: 0,
-    TransactionType: 0,
-    TpSLType: 0,
-    MinimumCapital: 0,
-    ProfitTranches: 0,
-    strategyTag: "any",
-    RiskDescription: null,
-    subscriptionprice: 0,
-    subscriptiondays: 0,
-    MaxTrade: 0,
-    MaxDD: 0,
-    Roi: 0,
-    isTradeOnTriggerCandle: false,
-    BuyWhen: null,
-    ShortWhen: null,
-    IsContiniousTriggerCandle: false,
-    ChartType: 1,
-    EntryDaysBeforExpiry: 0,
-    ExitDaysBeforExpiry: 4,
-  });
+  const initialFormValuesRef = useRef(getDefaultPayload());
 
   const methods = useForm({
     defaultValues: initialFormValuesRef.current,
@@ -376,7 +291,7 @@ const StrategyBuilder = () => {
         BuyWhen: d.BuyWhen || null,
         ShortWhen: d.ShortWhen || null,
         IsContiniousTriggerCandle: d.IsContiniousTriggerCandle || false,
-        ChartType: d.ChartType || 1,
+        ChartType: d.ChartType ?? 0,
         EntryDaysBeforExpiry: d.EntryDaysBeforExpiry || 0,
         ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
       };

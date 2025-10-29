@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 // Helper: Create default strike object
-const createDefaultStrike = () => ({
+export const createDefaultStrike = () => ({
     TransactionType: "SELL",
     StrikeType: "CE",
     StrikeValueType: 0,
@@ -29,8 +29,8 @@ const createDefaultStrike = () => ({
     },
     waitNTrade: {
         isWaitnTrade: false,
-        isPerPt: "wt_eq",
-        typeId: "wt_eq",
+        isPerPt: "wtpr_+",
+        typeId: "wtpr_+",
         MovementValue: 0,
     },
     TrailingSL: {
@@ -73,7 +73,7 @@ const createDefaultEquation = () => ({
 });
 
 // Default complete strategy payload
-const getDefaultPayload = () => ({
+export const getDefaultPayload = () => ({
     StrategyName: "",
     StrategyId: 0,
     Interval: 1,
@@ -113,15 +113,13 @@ const getDefaultPayload = () => ({
     ShortWhen: null,
     IsContiniousTriggerCandle: false,
     StrategyType: "time",
-    ProdType: "MIS",
-    ChartType: 1,
+    ChartType: 0,
     StrategySegmentType: "Option",
     StrategyExecutionType: "tb",
     isBtSt: false,
     EntryDaysBeforExpiry: 0,
     ExitDaysBeforExpiry: 4,
     ActiveDays: ["MON", "TUE", "WED", "THU", "FRI"],
-    StrategyTagList: [],
     LongEntryEquation: [createDefaultEquation()],
     ShortEntryEquation: [createDefaultEquation()],
     Long_ExitEquation: [],
@@ -137,15 +135,6 @@ const getDefaultPayload = () => ({
         },
     ],
     IsChartOnOptionStrike: false,
-    ExternalSignalSettings: {
-        Enabled: false,
-        SignalSource: "",
-        SignalWebhookURL: "",
-        AcceptLongEntrySignal: true,
-        AcceptLongExitSignal: true,
-        AcceptShortEntrySignal: true,
-        AcceptShortExitSignal: true,
-    },
 });
 
 // Centralized store for Strategy Builder shared state
@@ -276,6 +265,3 @@ export const useStrategyBuilderStore = create((set, get) => ({
         });
     },
 }));
-
-// Export helper functions for use in components
-export { createDefaultStrike, createDefaultEquation };

@@ -46,21 +46,21 @@ export function buildStrategyPayload({
         lotSize: item?.lotSize || lotSizeVal,
         IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
         IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
-        PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue ?? "0",
+        PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue ?? 0,
         isPrePunchSL: item?.isPrePunchSL ?? false,
         reEntry:
             item?.reEntry ?? {
                 isRentry: false,
                 RentryType: "REN",
-                TradeCycle: "0",
+                TradeCycle: 0,
                 RentryActionTypeId: "ON_CLOSE",
             },
         waitNTrade:
             item?.waitNTrade ?? {
                 isWaitnTrade: false,
-                isPerPt: "wt_eq",
-                typeId: "wt_eq",
-                MovementValue: "0",
+                isPerPt: "wtpr_+",
+                typeId: "wtpr_+",
+                MovementValue: 0,
             },
         strikeTypeobj:
             item?.strikeTypeobj ?? {
@@ -74,8 +74,8 @@ export function buildStrategyPayload({
         TrailingSL:
             item?.TrailingSL ?? {
                 TrailingType: "tslpr",
-                InstrumentMovementValue: "0",
-                TrailingValue: "0",
+                InstrumentMovementValue: 0,
+                TrailingValue: 0,
             },
     });
 
@@ -122,6 +122,8 @@ export function buildStrategyPayload({
         Long_ExitEquation: toNullIfEmpty(values.Long_ExitEquation),
         Short_ExitEquation: toNullIfEmpty(values.Short_ExitEquation),
         StrategyId: showBacktestComponent && createdStrategyId ? createdStrategyId : 0,
+        ExitWhenTotalLoss: String(values.ExitWhenTotalLoss || 0),
+        ExitWhenTotalProfit: String(values.ExitWhenTotalProfit || 0),
     };
 
     if (selectedStrategyTypes[0] === "indicator") {
