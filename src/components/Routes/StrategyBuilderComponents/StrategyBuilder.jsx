@@ -901,10 +901,20 @@ const StrategyBuilder = () => {
                   Select Instruments
                 </h2>
                 <div
-                  className="border-dashed border border-gray-300 min-h-[6rem] rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027]"
+                  className={`border-dashed border border-gray-300 rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027] transition-all ${
+                    selectedInstrument || selectedEquityInstruments.length
+                      ? "min-h-[2.5rem] py-2"
+                      : "min-h-[6rem]"
+                  }`}
                   onClick={openInstrumentModal}
                 >
-                  <span className="text-gray-400 dark:text-gray-500 text-xl">
+                  <span
+                    className={`text-gray-400 dark:text-gray-500 ${
+                      selectedInstrument || selectedEquityInstruments.length
+                        ? "text-sm"
+                        : "text-xl"
+                    }`}
+                  >
                     {selectedInstrument || selectedEquityInstruments.length
                       ? "Change"
                       : "+ Add"}

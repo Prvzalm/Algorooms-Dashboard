@@ -168,6 +168,8 @@ const BrokerCard = ({ brokers = [] }) => {
             <input
               type="checkbox"
               className="sr-only peer"
+              checked={!!selectedBroker?.isLoggedIn}
+              readOnly
               onChange={() => {
                 if (!selectedBroker?.loginUrl) return;
                 localStorage.setItem(
@@ -182,7 +184,19 @@ const BrokerCard = ({ brokers = [] }) => {
                 window.location.href = selectedBroker.loginUrl;
               }}
             />
-            <div className="w-11 h-6 bg-gray-200 dark:bg-[#2D2F36] peer-focus:outline-none peer rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            <div
+              className={`w-11 h-6 relative rounded-full transition-colors ${
+                selectedBroker?.isLoggedIn
+                  ? "bg-[#0096FF]"
+                  : "bg-gray-200 dark:bg-[#2D2F36]"
+              }`}
+            >
+              <span
+                className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                  selectedBroker?.isLoggedIn ? "translate-x-full" : ""
+                }`}
+              />
+            </div>
           </label>
         </div>
         <div className="flex flex-col items-center text-sm space-y-1">
@@ -198,16 +212,20 @@ const BrokerCard = ({ brokers = [] }) => {
               disabled={isPending}
             />
             <div
-              className={`w-11 h-6 ${
+              className={`w-11 h-6 relative rounded-full transition-colors ${
                 selectedBroker?.tradeEngineStatus === "Running"
                   ? "bg-green-600"
                   : "bg-gray-200 dark:bg-[#2D2F36]"
-              } relative rounded-full transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${
-                selectedBroker?.tradeEngineStatus === "Running"
-                  ? "after:translate-x-full"
-                  : ""
               } ${isPending ? "opacity-60" : ""}`}
-            ></div>
+            >
+              <span
+                className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                  selectedBroker?.tradeEngineStatus === "Running"
+                    ? "translate-x-full"
+                    : ""
+                }`}
+              />
+            </div>
           </label>
         </div>
       </div>
