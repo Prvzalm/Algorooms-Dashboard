@@ -9,7 +9,8 @@ import {
 
 const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const { setValue, getValues, watch } = useFormContext();
-  const { updatePayload } = useStrategyBuilderStore();
+  const { updatePayload, setLegAdvanceFeature, getLegAdvanceFeatures } =
+    useStrategyBuilderStore();
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
@@ -88,6 +89,110 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     selectedStrikeCriteria === "ATM_PT" ||
     selectedStrikeCriteria === "ATM_PERCENT";
 
+  const strikeCriteriaToType = (crit) => {
+    if (crit === "ATM_PERCENT") return "ATMPER";
+    if (crit === "ATM_PT") return "ATM";
+    if (crit === "CP") return "CPNEAR";
+    if (crit === "CP_GTE") return "CPGREATERTHAN";
+    if (crit === "CP_LTE") return "CPLESSTHAN";
+    return crit;
+  };
+
+  const parseStrikeToken = (raw) => {
+    if (typeof raw === "number") return raw;
+    if (!raw || raw === "ATM") return 0;
+    const parts = String(raw).split("_");
+    if (parts.length < 2) return 0;
+    const side = parts[0];
+    const num = parseFloat(parts[1]);
+    if (Number.isNaN(num)) return 0;
+    return side === "ITM" ? -num : num;
+  };
+
+  const formatStrikeSummary = (strikeObj) => {
+    if (!strikeObj) return "ATM";
+    const value = Number(strikeObj.StrikeValue) || 0;
+    const abs = Math.abs(value);
+    switch (strikeObj.type) {
+      case "ATM":
+        return value === 0 ? "ATM" : `ATM ${value > 0 ? `+${abs}` : `-${abs}`}`;
+      case "ATMPER":
+        return value === 0
+          ? "ATM"
+          : `ATM ${value > 0 ? `+${abs}%` : `-${abs}%`}`;
+      case "CPNEAR":
+        return abs === 0 ? "CP" : `CP ±${abs}`;
+      case "CPGREATERTHAN":
+        return `CP ≥ ${abs}`;
+      case "CPLESSTHAN":
+        return `CP ≤ ${abs}`;
+      default:
+        return strikeObj.type || "ATM";
+    }
+  };
+
+  const getLegSummary = (idx) => {
+    const script = strategyScripts?.[0];
+    const longLeg = script?.LongEquationoptionStrikeList?.[idx];
+    const shortLeg = script?.ShortEquationoptionStrikeList?.[idx];
+
+    // Use whichever has data (Long takes priority if both exist)
+    const legData = longLeg || shortLeg;
+    const isActive = idx === activeLegIndex;
+
+    const transaction =
+      legData?.TransactionType || (isActive ? position : "SELL");
+    const optionSymbol =
+      legData?.StrikeType ||
+      (isActive
+        ? selectedStrategyTypes?.[0] === "indicator"
+          ? longCondition
+          : optionType === "Call"
+          ? "CE"
+          : "PE"
+        : "");
+    const qtyValue =
+      legData?.Qty ||
+      (isActive
+        ? String(
+            Math.max(1, qtyMultiplier) * (selectedInstrument?.LotSize || 0)
+          )
+        : "");
+    const strikeObj =
+      legData?.strikeTypeobj ||
+      (isActive
+        ? {
+            type: strikeCriteriaToType(selectedStrikeCriteria),
+            StrikeValue: isATMMode
+              ? parseStrikeToken(strikeTypeSelectValue)
+              : strikeTypeNumber,
+            RangeFrom: 0,
+            RangeTo: 0,
+          }
+        : null);
+    const targetText = longLeg?.Target ?? (isActive ? String(targetValue) : "");
+    const stopLossText =
+      longLeg?.StopLoss ?? (isActive ? String(stopLossQty) : "");
+    const instrumentName =
+      longLeg?.InstrumentName ||
+      script?.InstrumentName ||
+      selectedInstrument?.Name ||
+      "";
+
+    const summaryBits = [
+      instrumentName || null,
+      qtyValue ? `Qty ${qtyValue}` : null,
+      `Strike ${formatStrikeSummary(strikeObj)}`,
+      targetText ? `TP ${targetText}` : null,
+      stopLossText ? `SL ${stopLossText}` : null,
+    ].filter(Boolean);
+
+    return {
+      title: `${transaction || "SELL"} ${optionSymbol || ""}`.trim(),
+      subtitle: summaryBits.join(" • "),
+    };
+  };
+
   const formatStrikeOffset = (value, criteria) => {
     const numeric = Number(value) || 0;
     const abs = Math.abs(numeric);
@@ -126,25 +231,69 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const [qtyMultiplier, setQtyMultiplier] = useState(1);
   // NEW: stop loss qty state (maps to StopLoss)
   const [stopLossQty, setStopLossQty] = useState(30);
-  // Additional feature states derived from first strike (wait & trade / premium difference)
-  const [waitTradeEnabled, setWaitTradeEnabled] = useState(false);
-  const [waitTradeMovement, setWaitTradeMovement] = useState(0);
-  const [waitTradeType, setWaitTradeType] = useState("% ↑");
-  const [premiumDiffEnabled, setPremiumDiffEnabled] = useState(false);
-  const [premiumDiffValue, setPremiumDiffValue] = useState(0);
+
+  // ✅ Per-leg advance features using Zustand store
+  const getPerLegFeature = (featureName, defaultValue) => {
+    const legFeatures = getLegAdvanceFeatures(activeLegIndex);
+    return legFeatures[featureName] !== undefined
+      ? legFeatures[featureName]
+      : defaultValue;
+  };
+
+  const setPerLegFeature = (featureName, value) => {
+    setLegAdvanceFeature(activeLegIndex, featureName, value);
+  };
+
+  // Wait & Trade states (per-leg)
+  const waitTradeEnabled = getPerLegFeature("waitTradeEnabled", false);
+  const waitTradeMovement = getPerLegFeature("waitTradeMovement", 0);
+  const waitTradeType = getPerLegFeature("waitTradeType", "% ↑");
+
+  const setWaitTradeEnabled = (val) =>
+    setPerLegFeature("waitTradeEnabled", val);
+  const setWaitTradeMovement = (val) =>
+    setPerLegFeature("waitTradeMovement", val);
+  const setWaitTradeType = (val) => setPerLegFeature("waitTradeType", val);
+
+  // Premium Difference states (per-leg)
+  const premiumDiffEnabled = getPerLegFeature("premiumDiffEnabled", false);
+  const premiumDiffValue = getPerLegFeature("premiumDiffValue", 0);
+
+  const setPremiumDiffEnabled = (val) =>
+    setPerLegFeature("premiumDiffEnabled", val);
+  const setPremiumDiffValue = (val) =>
+    setPerLegFeature("premiumDiffValue", val);
   const [showPremiumDiffInlineInput, setShowPremiumDiffInlineInput] =
     useState(false);
 
-  // Re-Entry/Execute states
-  const [reEntryEnabled, setReEntryEnabled] = useState(false);
-  const [reEntryExecutionType, setReEntryExecutionType] = useState("Combined");
-  const [reEntryCycles, setReEntryCycles] = useState(1);
+  // Re-Entry/Execute states (per-leg)
+  const reEntryEnabled = getPerLegFeature("reEntryEnabled", false);
+  const reEntryExecutionType = getPerLegFeature(
+    "reEntryExecutionType",
+    "ReExecute"
+  );
+  const reEntryCycles = getPerLegFeature("reEntryCycles", 1);
+  const reEntryActionType = getPerLegFeature("reEntryActionType", "IMMDT");
 
-  // Trail SL states
-  const [trailSlEnabled, setTrailSlEnabled] = useState(false);
-  const [trailSlType, setTrailSlType] = useState("%");
-  const [trailSlPriceMovement, setTrailSlPriceMovement] = useState(0);
-  const [trailSlTrailingValue, setTrailSlTrailingValue] = useState(0);
+  const setReEntryEnabled = (val) => setPerLegFeature("reEntryEnabled", val);
+  const setReEntryExecutionType = (val) =>
+    setPerLegFeature("reEntryExecutionType", val);
+  const setReEntryCycles = (val) => setPerLegFeature("reEntryCycles", val);
+  const setReEntryActionType = (val) =>
+    setPerLegFeature("reEntryActionType", val);
+
+  // Trail SL states (per-leg)
+  const trailSlEnabled = getPerLegFeature("trailSlEnabled", false);
+  const trailSlType = getPerLegFeature("trailSlType", "%");
+  const trailSlPriceMovement = getPerLegFeature("trailSlPriceMovement", 0);
+  const trailSlTrailingValue = getPerLegFeature("trailSlTrailingValue", 0);
+
+  const setTrailSlEnabled = (val) => setPerLegFeature("trailSlEnabled", val);
+  const setTrailSlType = (val) => setPerLegFeature("trailSlType", val);
+  const setTrailSlPriceMovement = (val) =>
+    setPerLegFeature("trailSlPriceMovement", val);
+  const setTrailSlTrailingValue = (val) =>
+    setPerLegFeature("trailSlTrailingValue", val);
 
   // compute disabled state when no instrument selected
   const isDisabled = !selectedInstrument || !selectedInstrument.InstrumentToken;
@@ -184,28 +333,35 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     // Prefill from existing strike at current leg (edit or when switching legs)
     const scripts = getValues("StrategyScriptList") || [];
     const first = scripts[0];
+
+    // Check both Long and Short lists for indicator-based strategies
     const longAt = first?.LongEquationoptionStrikeList?.[activeLegIndex];
-    if (longAt) {
-      setPosition(longAt.TransactionType || "BUY");
+    const shortAt = first?.ShortEquationoptionStrikeList?.[activeLegIndex];
+
+    // Use whichever has data (Long takes priority if both exist)
+    const strikeData = longAt || shortAt;
+
+    if (strikeData) {
+      setPosition(strikeData.TransactionType || "BUY");
       if (selectedStrategyTypes?.[0] === "time") {
-        setOptionType(longAt.StrikeType === "PE" ? "Put" : "Call");
+        setOptionType(strikeData.StrikeType === "PE" ? "Put" : "Call");
       }
-      setExpiryType(longAt.ExpiryType || "WEEKLY");
-      setSlTypeSel(longAt.SLType === "slpt" ? "SL pt" : "SL%");
-      setTpTypeSel(longAt.TargetType === "tgpt" ? "TP pt" : "TP%");
-      setStopLossQty(Number(longAt.StopLoss) || 30);
-      setTargetValue(Number(longAt.Target) || 0);
-      setPrePunchSL(!!longAt.isPrePunchSL);
+      setExpiryType(strikeData.ExpiryType || "WEEKLY");
+      setSlTypeSel(strikeData.SLType === "slpt" ? "SL pt" : "SL%");
+      setTpTypeSel(strikeData.TargetType === "tgpt" ? "TP pt" : "TP%");
+      setStopLossQty(Number(strikeData.StopLoss) ?? 30);
+      setTargetValue(Number(strikeData.Target) ?? 0);
+      setPrePunchSL(!!strikeData.isPrePunchSL);
       setSlAction(
-        longAt.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+        strikeData.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
       );
       setTpAction(
-        longAt.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
+        strikeData.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
       );
       // derive wait & trade
-      if (longAt.waitNTrade?.isWaitnTrade) {
+      if (strikeData.waitNTrade?.isWaitnTrade) {
         setWaitTradeEnabled(true);
-        setWaitTradeMovement(Number(longAt.waitNTrade.MovementValue) || 0);
+        setWaitTradeMovement(Number(strikeData.waitNTrade.MovementValue) || 0);
         // map backend typeId to label
         const wtMapRev = {
           "wtpr_-": "% ↓",
@@ -213,46 +369,56 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           "wtpt_+": "pt ↑",
           "wtpt_-": "pt ↓",
         };
-        setWaitTradeType(wtMapRev[longAt.waitNTrade.typeId] || "% ↑");
+        setWaitTradeType(wtMapRev[strikeData.waitNTrade.typeId] || "% ↑");
       } else {
         setWaitTradeEnabled(false);
-        setWaitTradeMovement(0);
+        // ✅ DON'T reset movement value - preserve per-leg value
+        // User may have configured it but not enabled the feature yet
       }
       // derive premium difference
-      if (longAt.IsPriceDiffrenceConstrant) {
+      if (strikeData.IsPriceDiffrenceConstrant) {
         setPremiumDiffEnabled(true);
-        setPremiumDiffValue(Number(longAt.PriceDiffrenceConstrantValue) || 0);
+        setPremiumDiffValue(
+          Number(strikeData.PriceDiffrenceConstrantValue) || 0
+        );
       } else {
         setPremiumDiffEnabled(false);
-        setPremiumDiffValue(0);
+        // ✅ DON'T reset premium value - preserve per-leg value
       }
 
       // derive re-entry/execute
-      if (longAt.reEntry?.isRentry) {
+      if (strikeData.reEntry?.isRentry) {
         setReEntryEnabled(true);
+        // Map backend RentryType to UI executionType
         const rentryTypeReverseMap = {
-          RENC: "Combined",
-          REN: "Leg Wise",
-          REX: "Exit",
+          REX: "ReExecute",
+          REN: "ReEntry On Close",
+          RENC: "ReEntry On Cost",
         };
         setReEntryExecutionType(
-          rentryTypeReverseMap[longAt.reEntry.RentryType] || "Combined"
+          rentryTypeReverseMap[strikeData.reEntry.RentryType] || "ReExecute"
         );
-        setReEntryCycles(Number(longAt.reEntry.TradeCycle) || 1);
+        setReEntryCycles(Number(strikeData.reEntry.TradeCycle) || 1);
+        setReEntryActionType(strikeData.reEntry.RentryActionTypeId || "IMMDT");
       } else {
         setReEntryEnabled(false);
-        setReEntryExecutionType("Combined");
+        setReEntryExecutionType("ReExecute");
         setReEntryCycles(1);
+        // ✅ DON'T reset action type - preserve per-leg value
       }
 
       // derive trail SL
-      if (longAt.isTrailSL && longAt.TrailingSL) {
+      if (strikeData.isTrailSL && strikeData.TrailingSL) {
         setTrailSlEnabled(true);
-        setTrailSlType(longAt.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%");
-        setTrailSlPriceMovement(
-          Number(longAt.TrailingSL.InstrumentMovementValue) || 0
+        setTrailSlType(
+          strikeData.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%"
         );
-        setTrailSlTrailingValue(Number(longAt.TrailingSL.TrailingValue) || 0);
+        setTrailSlPriceMovement(
+          Number(strikeData.TrailingSL.InstrumentMovementValue) || 0
+        );
+        setTrailSlTrailingValue(
+          Number(strikeData.TrailingSL.TrailingValue) || 0
+        );
       } else {
         setTrailSlEnabled(false);
         setTrailSlType("%");
@@ -266,8 +432,8 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         CPGREATERTHAN: "CP_GTE",
         CPLESSTHAN: "CP_LTE",
       };
-      const t = longAt.strikeTypeobj?.type;
-      const svNum = Number(longAt?.strikeTypeobj?.StrikeValue) || 0;
+      const t = strikeData.strikeTypeobj?.type;
+      const svNum = Number(strikeData?.strikeTypeobj?.StrikeValue) || 0;
       if (t) {
         const mapped =
           typeMapRev[t] || (String(t).startsWith("CP") ? "CP" : "ATM_PT");
@@ -275,7 +441,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       }
       // set qty multiplier per leg from saved Qty
       const lot = selectedInstrument?.LotSize || 0;
-      const legQty = Number(longAt.Qty) || 0;
+      const legQty = Number(strikeData.Qty) || 0;
       if (lot > 0 && legQty > 0) {
         const mult = Math.max(1, Math.round(legQty / lot));
         setQtyMultiplier(mult);
@@ -297,7 +463,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
       setPremiumDiffEnabled(false);
       setPremiumDiffValue(0);
       setReEntryEnabled(false);
-      setReEntryExecutionType("Combined");
+      setReEntryExecutionType("ReExecute");
       setReEntryCycles(1);
       setTrailSlEnabled(false);
       setTrailSlType("%");
@@ -430,23 +596,34 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         const globalReEntryEnabled = advanceFeatures?.["Re Entry/Execute"];
         const effectiveReEntryEnabled =
           reEntryEnabled || prevReEntry?.isRentry || globalReEntryEnabled;
+
+        // Map UI executionType to backend RentryType
+        const rentryTypeMap = {
+          ReExecute: "REX",
+          "ReEntry On Close": "REN",
+          "ReEntry On Cost": "RENC",
+        };
+
+        // Use per-leg action type or auto-determine based on executionType
+        let finalActionType = reEntryActionType; // Use per-leg value
+        if (reEntryExecutionType === "ReEntry On Cost") {
+          finalActionType = "ON_COST";
+        } else if (reEntryExecutionType === "ReEntry On Close") {
+          finalActionType = "ON_CLOSE";
+        }
+
         const effectiveReEntryObj = effectiveReEntryEnabled
           ? {
               isRentry: true,
-              RentryType:
-                reEntryExecutionType === "Combined"
-                  ? "RENC"
-                  : reEntryExecutionType === "Exit"
-                  ? "REX"
-                  : "REN",
+              RentryType: rentryTypeMap[reEntryExecutionType] || "REX",
               TradeCycle: String(reEntryCycles || prevReEntry?.TradeCycle || 1),
-              RentryActionTypeId: "ON_CLOSE",
+              RentryActionTypeId: finalActionType,
             }
           : {
               isRentry: false,
-              RentryType: "REN",
+              RentryType: "REX",
               TradeCycle: "0",
-              RentryActionTypeId: "ON_CLOSE",
+              RentryActionTypeId: "IMMDT",
             };
 
         // Trail SL settings
@@ -495,8 +672,8 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
           },
           isTrailSL: effectiveTrailSlEnabled,
           // Respect existing flags updated via AdvanceFeatures panel
-          IsMoveSLCTC: existingActiveLong?.IsMoveSLCTC ?? false,
-          isExitAll: existingActiveLong?.isExitAll ?? false,
+          IsMoveSLCTC: existingActiveStrike?.IsMoveSLCTC ?? false,
+          isExitAll: existingActiveStrike?.isExitAll ?? false,
           isPrePunchSL: prePunchSL,
           reEntry: effectiveReEntryObj,
           waitNTrade: effectiveWaitObj,
@@ -608,7 +785,11 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     const longList = Array.isArray(firstScript.LongEquationoptionStrikeList)
       ? firstScript.LongEquationoptionStrikeList
       : [];
-    const count = Math.max(1, longList.length);
+    const shortList = Array.isArray(firstScript.ShortEquationoptionStrikeList)
+      ? firstScript.ShortEquationoptionStrikeList
+      : [];
+    // Use whichever list has more legs (for edit mode compatibility)
+    const count = Math.max(1, longList.length, shortList.length);
     const newLegs = Array.from({ length: count }, (_, i) => `L${i + 1}`);
     setLegs(newLegs);
     // ensure ActiveLegIndex exists
@@ -623,7 +804,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     if (!strategyScripts || !strategyScripts[0]) return;
 
     const longList = strategyScripts[0].LongEquationoptionStrikeList || [];
-    const count = Math.max(1, longList.length);
+    const shortList = strategyScripts[0].ShortEquationoptionStrikeList || [];
+    // Use whichever list has more legs (for edit mode compatibility)
+    const count = Math.max(1, longList.length, shortList.length);
     const newLegs = Array.from({ length: count }, (_, i) => `L${i + 1}`);
 
     // Only update if legs count changed
@@ -648,65 +831,8 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     setValue("ActiveLegIndex", index, { shouldDirty: true });
   }, [selectedLeg, legs, setValue]);
 
-  // persist advanced feature local fields into top-level AdvanceFeatures for global visibility
-  useEffect(() => {
-    const af = getValues("AdvanceFeatures") || {};
-    const next = { ...af };
-    if (waitTradeEnabled) {
-      next["Wait & Trade"] = true;
-      next.WaitTradeMovement = waitTradeMovement;
-      next.WaitTradeType = waitTradeType;
-    } else if (af["Wait & Trade"]) {
-      // keep flag until user unticks in AdvanceFeatures panel; don't delete silently
-    }
-    if (premiumDiffEnabled) {
-      next["Premium Difference"] = true;
-      next.PremiumDifferenceValue = premiumDiffValue;
-    }
-    if (reEntryEnabled) {
-      next["Re Entry/Execute"] = true;
-      next.ReEntryExecutionType = reEntryExecutionType;
-      next.ReEntryCycles = reEntryCycles;
-    }
-    if (trailSlEnabled) {
-      next["Trail SL"] = true;
-      next.TrailSlType = trailSlType;
-      next.TrailSlPriceMovement = trailSlPriceMovement;
-      next.TrailSlTrailingValue = trailSlTrailingValue;
-    }
-    setValue("AdvanceFeatures", next, { shouldDirty: true });
-  }, [
-    waitTradeEnabled,
-    waitTradeMovement,
-    waitTradeType,
-    premiumDiffEnabled,
-    premiumDiffValue,
-    reEntryEnabled,
-    reEntryExecutionType,
-    reEntryCycles,
-    trailSlEnabled,
-    trailSlType,
-    trailSlPriceMovement,
-    trailSlTrailingValue,
-    setValue,
-    getValues,
-  ]);
-
-  // sync local premiumDiffValue from global AdvanceFeatures when not editing locally
-  useEffect(() => {
-    const globalVal = advanceFeatures?.PremiumDifferenceValue;
-    if (
-      !premiumDiffEnabled &&
-      typeof globalVal === "number" &&
-      globalVal !== premiumDiffValue
-    ) {
-      setPremiumDiffValue(globalVal);
-    }
-  }, [
-    advanceFeatures?.PremiumDifferenceValue,
-    premiumDiffEnabled,
-    premiumDiffValue,
-  ]);
+  // ✅ REMOVED: No longer need to persist advance features to global AdvanceFeatures
+  // The per-leg store now handles this independently for each leg
 
   // derive lot size & exchange for display
   const exchange =
@@ -715,29 +841,31 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   // derive existing feature flags for stable rendering (prevents flicker when external toggle updates before local state sync)
   const existingActiveLong =
     strategyScripts?.[0]?.LongEquationoptionStrikeList?.[activeLegIndex];
+  const existingActiveShort =
+    strategyScripts?.[0]?.ShortEquationoptionStrikeList?.[activeLegIndex];
+  const existingActiveStrike = existingActiveLong || existingActiveShort;
+
   const featureWaitTradeActive =
     advanceFeatures?.["Wait & Trade"] ||
     waitTradeEnabled ||
-    existingActiveLong?.waitNTrade?.isWaitnTrade;
+    existingActiveStrike?.waitNTrade?.isWaitnTrade;
   const featurePremiumActive =
     advanceFeatures?.["Premium Difference"] ||
     premiumDiffEnabled ||
-    existingActiveLong?.IsPriceDiffrenceConstrant;
+    existingActiveStrike?.IsPriceDiffrenceConstrant;
   const featureReEntryActive =
     advanceFeatures?.["Re Entry/Execute"] ||
     reEntryEnabled ||
-    existingActiveLong?.reEntry?.isRentry;
+    existingActiveStrike?.reEntry?.isRentry;
   const featureTrailSlActive =
     advanceFeatures?.["Trail SL"] ||
     trailSlEnabled ||
-    existingActiveLong?.isTrailSL;
+    existingActiveStrike?.isTrailSL;
 
-  // stable premium value selection (avoid 0->value flicker)
-  const globalPremiumValue = advanceFeatures?.PremiumDifferenceValue;
-  const premiumInputValue =
-    typeof globalPremiumValue === "number" && !Number.isNaN(globalPremiumValue)
-      ? globalPremiumValue
-      : premiumDiffValue;
+  // ✅ REMOVED: No longer need stable premium value from global
+
+  // ✅ REMOVED: No longer need stable premium value from global
+  // Each leg has its own independent premium value in per-leg store
 
   // ✅ Add leg handler (moved from OrderType)
   const handleAddLeg = () => {
@@ -860,6 +988,13 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     }
   };
 
+  const handleSelectLeg = (index) => {
+    const legName = legs[index];
+    if (!legName) return;
+    setSelectedLeg(legName);
+    setValue("ActiveLegIndex", index, { shouldDirty: true });
+  };
+
   // ✅ Delete leg handler
   const handleDeleteLeg = () => {
     const scripts = getValues("StrategyScriptList") || [];
@@ -944,27 +1079,65 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         </div>
       )}
       <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419] text-black dark:text-white">
-        {/* ✅ Strategy Legs Section (moved from OrderType) */}
-        <div className="space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          <div className="mt-2 overflow-x-auto">
-            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 pt-2">
-              <div className="flex flex-wrap gap-2 flex-1 mb-2 md:mb-0">
-                {legs.map((leg, idx) => (
-                  <div key={leg} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLeg(leg)}
-                      className={`md:px-12 px-6 py-2 rounded-lg text-sm font-medium border transition ${
-                        selectedLeg === leg
-                          ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
-                          : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
-                      }`}
-                    >
-                      {leg}
-                    </button>
+          <button
+            type="button"
+            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-5 py-2 rounded-lg text-sm font-medium transition"
+            onClick={handleAddLeg}
+          >
+            + Add Leg
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {legs.map((leg, idx) => {
+            const isActive = idx === activeLegIndex;
+            const summary = getLegSummary(idx);
+            return (
+              <div
+                key={leg}
+                className={`rounded-xl border transition-colors ${
+                  isActive
+                    ? "border-blue-300 bg-blue-50/40 dark:border-[#0F3F62] dark:bg-[#0F3F62]/10"
+                    : "border-gray-200 bg-white dark:border-[#2C2F36] dark:bg-[#1E2027]"
+                }`}
+              >
+                <div
+                  className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-3 ${
+                    isActive ? "cursor-default" : "cursor-pointer"
+                  }`}
+                  onClick={() => !isActive && handleSelectLeg(idx)}
+                >
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      {`Leg ${idx + 1}`}
+                      {summary.title && (
+                        <span className="ml-2 text-xs font-medium text-blue-600 dark:text-blue-300">
+                          {summary.title}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {summary.subtitle || "Configure leg parameters"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isActive ? (
+                      <span className="px-2 py-1 text-[10px] font-semibold uppercase rounded-full bg-blue-100 text-blue-700 dark:bg-[#0F3F62]/40 dark:text-blue-200">
+                        Active
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectLeg(idx)}
+                        className="px-3 py-1.5 text-xs font-medium border rounded-lg text-blue-600 border-blue-300 dark:text-blue-200 dark:border-blue-500 hover:bg-blue-50 dark:hover:bg-[#0F3F62]/30 transition"
+                      >
+                        Edit
+                      </button>
+                    )}
                     {legs.length > 1 && (
                       <button
                         type="button"
@@ -972,630 +1145,648 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           e.stopPropagation();
                           handleRemoveLeg(idx);
                         }}
-                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow"
-                        aria-label={`Remove ${leg}`}
-                        title="Remove leg"
+                        className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
                       >
-                        ×
+                        Remove
                       </button>
                     )}
                   </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white md:px-8 px-6 py-3 rounded-lg text-sm font-medium transition"
-                onClick={handleAddLeg}
-              >
-                + Add
-              </button>
-            </div>
-          </div>
-        </div>
+                </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-lg">{`Leg ${
-              activeLegIndex + 1
-            }`}</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              Lorem Ipsum donor
-            </p>
-          </div>
-        </div>
+                {isActive && (
+                  <div className="px-4 pb-4 pt-3 space-y-4 border-t border-dashed border-gray-200 dark:border-[#2C2F36]">
+                    {selectedStrategyTypes?.[0] === "indicator" && (
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <label className="block mb-1 text-green-600 font-medium">
+                            When Long Condition
+                          </label>
+                          <select
+                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                            disabled={isDisabled}
+                            value={longCondition}
+                            onChange={(e) => setLongCondition(e.target.value)}
+                          >
+                            {conditionOptions.map((opt) => (
+                              <option key={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-red-500 font-medium">
+                            When Short Condition
+                          </label>
+                          <select
+                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                            disabled={isDisabled}
+                            value={shortCondition}
+                            onChange={(e) =>
+                              setLongCondition(
+                                e.target.value === "CE" ? "PE" : "CE"
+                              )
+                            }
+                          >
+                            {conditionOptions.map((opt) => (
+                              <option key={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
-        <div className="border rounded-xl p-4 space-y-4 bg-white border-gray-200 dark:border-[#1E2027] dark:bg-[#1E2027]">
-          {selectedStrategyTypes?.[0] === "indicator" && (
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block mb-1 text-green-600 font-medium">
-                  When Long Condition
-                </label>
-                <select
-                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                  disabled={isDisabled}
-                  value={longCondition}
-                  onChange={(e) => setLongCondition(e.target.value)}
-                >
-                  {conditionOptions.map((opt) => (
-                    <option key={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 text-red-500 font-medium">
-                  When Short Condition
-                </label>
-                <select
-                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                  disabled={isDisabled}
-                  value={shortCondition}
-                  onChange={(e) =>
-                    // enforce opposite relationship
-                    setLongCondition(e.target.value === "CE" ? "PE" : "CE")
-                  }
-                >
-                  {conditionOptions.map((opt) => (
-                    <option key={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          <div
-            className={`grid gap-3 text-xs ${
-              selectedStrategyTypes?.[0] === "indicator"
-                ? "grid-cols-2"
-                : "grid-cols-3"
-            }`}
-          >
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Qty
-              </label>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    !isDisabled && setQtyMultiplier((m) => (m > 1 ? m - 1 : 1))
-                  }
-                  className="px-2 py-1 border rounded dark:border-[#2C2F36]"
-                  disabled={isDisabled || qtyMultiplier <= 1}
-                >
-                  -
-                </button>
-                <input
-                  type="text"
-                  value={qtyDisplay}
-                  readOnly
-                  className="border rounded px-2 py-2 w-full text-center dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36] cursor-not-allowed"
-                  disabled
-                />
-                <button
-                  type="button"
-                  onClick={() => !isDisabled && setQtyMultiplier((m) => m + 1)}
-                  className="px-2 py-1 border rounded dark:border-[#2C2F36]"
-                  disabled={isDisabled || lotSizeBase === 0}
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-[10px] mt-1 text-gray-500 dark:text-gray-500">
-                Multiples of lot ({lotSizeBase})
-              </p>
-            </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Position
-              </label>
-              <div className="flex space-x-2">
-                {["BUY", "SELL"].map((pos) => (
-                  <button
-                    type="button"
-                    key={pos}
-                    onClick={() => setPosition(pos)}
-                    className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
-                      position === pos
-                        ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
-                        : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
-                    }`}
-                    disabled={isDisabled}
-                  >
-                    {pos}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {selectedStrategyTypes?.[0] !== "indicator" && (
-              <div>
-                <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                  Option Type
-                </label>
-                <div className="flex space-x-2">
-                  {["Call", "Put"].map((type) => (
-                    <button
-                      type="button"
-                      key={type}
-                      onClick={() => setOptionType(type)}
-                      className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
-                        optionType === type
-                          ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
-                          : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
+                    <div
+                      className={`grid gap-3 text-xs ${
+                        selectedStrategyTypes?.[0] === "indicator"
+                          ? "grid-cols-2"
+                          : "grid-cols-3"
                       }`}
-                      disabled={isDisabled}
                     >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Expiry
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-                value={expiryType}
-                onChange={(e) => setExpiryType(e.target.value)}
-              >
-                {expiryOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Strike Criteria select */}
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Strike Criteria
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                value={selectedStrikeCriteria}
-                onChange={(e) => handleStrikeCriteriaChange(e.target.value)}
-                disabled={isDisabled}
-              >
-                {strikeCriteriaOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dynamic Strike Type field */}
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Strike Type
-              </label>
-              {isATMMode ? (
-                <select
-                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                  value={strikeTypeSelectValue}
-                  onChange={(e) => setStrikeTypeSelectValue(e.target.value)}
-                  disabled={isDisabled}
-                >
-                  {(selectedStrikeCriteria === "ATM_PT"
-                    ? atmPointsOptions
-                    : atmPercentOptions
-                  ).map((op) => (
-                    <option key={op.value} value={op.value}>
-                      {op.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="number"
-                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                  value={strikeTypeNumber}
-                  onChange={(e) =>
-                    setStrikeTypeNumber(Math.max(0, Number(e.target.value)))
-                  }
-                  disabled={isDisabled}
-                  placeholder="Enter value"
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Stop Loss
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-                value={slTypeSel}
-                onChange={(e) => setSlTypeSel(e.target.value)}
-              >
-                {slOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Partially Qty Booked
-              </label>
-              <input
-                type="number"
-                value={stopLossQty}
-                onChange={(e) =>
-                  !isDisabled &&
-                  setStopLossQty(
-                    Math.max(
-                      0,
-                      Number.isNaN(+e.target.value) ? 0 : +e.target.value
-                    )
-                  )
-                }
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                On Price
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-                value={slAction}
-                onChange={(e) => setSlAction(e.target.value)}
-              >
-                {onPriceOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                TP
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-                value={tpTypeSel}
-                onChange={(e) => setTpTypeSel(e.target.value)}
-              >
-                {tpOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                Partially Qty Booked
-              </label>
-              <input
-                type="number"
-                value={targetValue}
-                onChange={(e) =>
-                  !isDisabled &&
-                  setTargetValue(
-                    Math.max(
-                      0,
-                      Number.isNaN(+e.target.value) ? 0 : +e.target.value
-                    )
-                  )
-                }
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                On Price
-              </label>
-              <select
-                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                disabled={isDisabled}
-                value={tpAction}
-                onChange={(e) => setTpAction(e.target.value)}
-              >
-                {onPriceOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Advanced Features Section */}
-          {(featureWaitTradeActive ||
-            featurePremiumActive ||
-            featureReEntryActive ||
-            featureTrailSlActive) && (
-            <div className="mt-4 space-y-3">
-              <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
-                --- Advance Features ---
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-xs">
-                {featureWaitTradeActive && (
-                  <>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Wait & Trade
-                      </label>
-                      <select
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                        value={waitTradeType}
-                        onChange={(e) => setWaitTradeType(e.target.value)}
-                      >
-                        {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map((o) => (
-                          <option key={o}>{o}</option>
-                        ))}
-                      </select>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Qty
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              !isDisabled &&
+                              setQtyMultiplier((m) => (m > 1 ? m - 1 : 1))
+                            }
+                            className="px-2 py-1 border rounded dark:border-[#2C2F36]"
+                            disabled={isDisabled || qtyMultiplier <= 1}
+                          >
+                            -
+                          </button>
+                          <input
+                            type="text"
+                            value={qtyDisplay}
+                            readOnly
+                            className="border rounded px-2 py-2 w-full text-center dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36] cursor-not-allowed"
+                            disabled
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              !isDisabled && setQtyMultiplier((m) => m + 1)
+                            }
+                            className="px-2 py-1 border rounded dark:border-[#2C2F36]"
+                            disabled={isDisabled || lotSizeBase === 0}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <p className="text-[10px] mt-1 text-gray-500 dark:text-gray-500">
+                          Multiples of lot ({lotSizeBase})
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Position
+                        </label>
+                        <div className="flex space-x-2">
+                          {["BUY", "SELL"].map((pos) => (
+                            <button
+                              type="button"
+                              key={pos}
+                              onClick={() => setPosition(pos)}
+                              className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
+                                position === pos
+                                  ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
+                                  : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
+                              }`}
+                              disabled={isDisabled}
+                            >
+                              {pos}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {selectedStrategyTypes?.[0] !== "indicator" && (
+                        <div>
+                          <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                            Option Type
+                          </label>
+                          <div className="flex space-x-2">
+                            {["Call", "Put"].map((type) => (
+                              <button
+                                type="button"
+                                key={type}
+                                onClick={() => setOptionType(type)}
+                                className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
+                                  optionType === type
+                                    ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
+                                    : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
+                                }`}
+                                disabled={isDisabled}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Movement
-                      </label>
-                      <input
-                        type="number"
-                        value={waitTradeMovement}
-                        min={0}
-                        onChange={(e) =>
-                          setWaitTradeMovement(
-                            Math.max(0, Number(e.target.value) || 0)
-                          )
-                        }
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      />
+
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Expiry
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                          value={expiryType}
+                          onChange={(e) => setExpiryType(e.target.value)}
+                        >
+                          {expiryOptions.map((opt) => (
+                            <option key={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Strike Criteria
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          value={selectedStrikeCriteria}
+                          onChange={(e) =>
+                            handleStrikeCriteriaChange(e.target.value)
+                          }
+                          disabled={isDisabled}
+                        >
+                          {strikeCriteriaOptions.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Strike Type
+                        </label>
+                        {isATMMode ? (
+                          <select
+                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                            value={strikeTypeSelectValue}
+                            onChange={(e) =>
+                              setStrikeTypeSelectValue(e.target.value)
+                            }
+                            disabled={isDisabled}
+                          >
+                            {(selectedStrikeCriteria === "ATM_PT"
+                              ? atmPointsOptions
+                              : atmPercentOptions
+                            ).map((op) => (
+                              <option key={op.value} value={op.value}>
+                                {op.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="number"
+                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                            value={strikeTypeNumber}
+                            onChange={(e) =>
+                              setStrikeTypeNumber(
+                                Math.max(0, Number(e.target.value))
+                              )
+                            }
+                            disabled={isDisabled}
+                            placeholder="Enter value"
+                          />
+                        )}
+                      </div>
                     </div>
-                  </>
-                )}
-                {featurePremiumActive && (
-                  <div>
-                    <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                      Premium
-                    </label>
-                    <input
-                      type="number"
-                      value={premiumInputValue}
-                      min={0}
-                      onChange={(e) => {
-                        const val = Math.max(0, Number(e.target.value) || 0);
-                        setPremiumDiffValue(val);
-                        const af = getValues("AdvanceFeatures") || {};
-                        if (af.PremiumDifferenceValue !== val) {
-                          setValue(
-                            "AdvanceFeatures",
-                            {
-                              ...af,
-                              "Premium Difference": true,
-                              PremiumDifferenceValue: val,
-                            },
-                            { shouldDirty: true }
-                          );
-                        }
-                      }}
-                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                    />
+
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Stop Loss
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                          value={slTypeSel}
+                          onChange={(e) => setSlTypeSel(e.target.value)}
+                        >
+                          {slOptions.map((opt) => (
+                            <option key={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Partially Qty Booked
+                        </label>
+                        <input
+                          type="number"
+                          value={stopLossQty}
+                          onChange={(e) =>
+                            !isDisabled &&
+                            setStopLossQty(
+                              Math.max(
+                                0,
+                                Number.isNaN(+e.target.value)
+                                  ? 0
+                                  : +e.target.value
+                              )
+                            )
+                          }
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          On Price
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                          value={slAction}
+                          onChange={(e) => setSlAction(e.target.value)}
+                        >
+                          {onPriceOptions.map((opt) => (
+                            <option key={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          TP
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                          value={tpTypeSel}
+                          onChange={(e) => setTpTypeSel(e.target.value)}
+                        >
+                          {tpOptions.map((opt) => (
+                            <option key={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          Partially Qty Booked
+                        </label>
+                        <input
+                          type="number"
+                          value={targetValue}
+                          onChange={(e) =>
+                            !isDisabled &&
+                            setTargetValue(
+                              Math.max(
+                                0,
+                                Number.isNaN(+e.target.value)
+                                  ? 0
+                                  : +e.target.value
+                              )
+                            )
+                          }
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                          On Price
+                        </label>
+                        <select
+                          className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                          disabled={isDisabled}
+                          value={tpAction}
+                          onChange={(e) => setTpAction(e.target.value)}
+                        >
+                          {onPriceOptions.map((opt) => (
+                            <option key={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {(featureWaitTradeActive ||
+                      featurePremiumActive ||
+                      featureReEntryActive ||
+                      featureTrailSlActive) && (
+                      <div className="mt-2 space-y-3">
+                        <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
+                          --- Advance Features ---
+                        </div>
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          {featureWaitTradeActive && (
+                            <>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Wait & Trade
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={waitTradeType}
+                                  onChange={(e) =>
+                                    setWaitTradeType(e.target.value)
+                                  }
+                                >
+                                  {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map(
+                                    (o) => (
+                                      <option key={o}>{o}</option>
+                                    )
+                                  )}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Movement
+                                </label>
+                                <input
+                                  type="number"
+                                  value={waitTradeMovement}
+                                  min={0}
+                                  onChange={(e) =>
+                                    setWaitTradeMovement(
+                                      Math.max(0, Number(e.target.value) || 0)
+                                    )
+                                  }
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                />
+                              </div>
+                            </>
+                          )}
+                          {featurePremiumActive && (
+                            <div>
+                              <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                Premium
+                              </label>
+                              <input
+                                type="number"
+                                value={premiumDiffValue}
+                                min={0}
+                                onChange={(e) => {
+                                  const val = Math.max(
+                                    0,
+                                    Number(e.target.value) || 0
+                                  );
+                                  setPremiumDiffValue(val);
+                                }}
+                                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                              />
+                            </div>
+                          )}
+                          {featureReEntryActive && (
+                            <>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Re-Entry Type
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={reEntryExecutionType}
+                                  onChange={(e) =>
+                                    setReEntryExecutionType(e.target.value)
+                                  }
+                                >
+                                  <option value="ReExecute">ReExecute</option>
+                                  <option value="ReEntry On Cost">
+                                    ReEntry On Cost
+                                  </option>
+                                  <option value="ReEntry On Close">
+                                    ReEntry On Close
+                                  </option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Action Type
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={reEntryActionType}
+                                  onChange={(e) =>
+                                    setReEntryActionType(e.target.value)
+                                  }
+                                  disabled={
+                                    reEntryExecutionType ===
+                                      "ReEntry On Cost" ||
+                                    reEntryExecutionType === "ReEntry On Close"
+                                  }
+                                >
+                                  <option value="ON_CLOSE">On Close</option>
+                                  <option value="IMMDT">Immediate</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Cycles
+                                </label>
+                                <input
+                                  type="number"
+                                  value={reEntryCycles}
+                                  min={1}
+                                  onChange={(e) =>
+                                    setReEntryCycles(
+                                      Math.max(1, Number(e.target.value) || 1)
+                                    )
+                                  }
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                />
+                              </div>
+                            </>
+                          )}
+                          {featureTrailSlActive && (
+                            <>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Trail SL Type
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={trailSlType}
+                                  onChange={(e) =>
+                                    setTrailSlType(e.target.value)
+                                  }
+                                >
+                                  <option value="%">%</option>
+                                  <option value="Pt">Pt</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Price Movement
+                                </label>
+                                <input
+                                  type="number"
+                                  value={trailSlPriceMovement}
+                                  min={0}
+                                  onChange={(e) =>
+                                    setTrailSlPriceMovement(
+                                      Math.max(0, Number(e.target.value) || 0)
+                                    )
+                                  }
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block mb-1 text-gray-600 dark:text-gray-400">
+                                  Trailing Value
+                                </label>
+                                <input
+                                  type="number"
+                                  value={trailSlTrailingValue}
+                                  min={0}
+                                  onChange={(e) =>
+                                    setTrailSlTrailingValue(
+                                      Math.max(0, Number(e.target.value) || 0)
+                                    )
+                                  }
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      className={`flex ${
+                        selectedStrategyTypes?.[0] === "indicator"
+                          ? "justify-between"
+                          : "justify-end"
+                      } items-center pt-2`}
+                    >
+                      {selectedStrategyTypes?.[0] === "indicator" && (
+                        <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={prePunchSL}
+                            onChange={() => setPrePunchSL(!prePunchSL)}
+                            disabled={isDisabled}
+                          />
+                          <span>
+                            Pre Punch SL{" "}
+                            <span className="text-[11px]">
+                              (Advance Feature)
+                            </span>
+                          </span>
+                        </label>
+                      )}
+
+                      <div className="flex space-x-4 text-xl text-gray-400 dark:text-gray-500">
+                        <FiTrash2
+                          className="text-red-500 cursor-pointer hover:text-red-600 transition"
+                          onClick={handleDeleteLeg}
+                          title="Delete leg"
+                        />
+                        <img
+                          src={leg1CopyIcon}
+                          className="cursor-pointer hover:opacity-75 transition"
+                          onClick={handleCopyLeg}
+                          alt="Copy leg"
+                          title="Copy leg"
+                        />
+                      </div>
+                    </div>
+
+                    {selectedStrategyTypes?.[0] === "indicator" && (
+                      <>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={signalCandleCondition}
+                            onChange={() =>
+                              setSignalCandleCondition(!signalCandleCondition)
+                            }
+                            disabled={isDisabled}
+                          />
+                          <span>
+                            Add Signal Candle Condition{" "}
+                            <span className="text-[11px] text-gray-400">
+                              (Optional)
+                            </span>
+                          </span>
+                        </label>
+
+                        {signalCandleCondition && (
+                          <div className="mt-4 p-4 border border-gray-200 dark:border-[#2C2F36] rounded-lg bg-gray-50 dark:bg-[#1A1D23] space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={tradeOnTriggerCandle}
+                                  onChange={() =>
+                                    setTradeOnTriggerCandle(
+                                      !tradeOnTriggerCandle
+                                    )
+                                  }
+                                  disabled={isDisabled}
+                                />
+                                <span>Trade on Trigger Candle</span>
+                              </label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                  Buy When
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={buyWhen}
+                                  onChange={(e) => setBuyWhen(e.target.value)}
+                                  disabled={isDisabled}
+                                >
+                                  <option value="Low Break">Low Break</option>
+                                  <option value="High Break">High Break</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                  Short When
+                                </label>
+                                <select
+                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                                  value={shortWhen}
+                                  onChange={(e) => setShortWhen(e.target.value)}
+                                  disabled={isDisabled}
+                                >
+                                  <option value="Low Break">Low Break</option>
+                                  <option value="High Break">High Break</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center">
+                              <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={ofContinuousCandle}
+                                  onChange={() =>
+                                    setOfContinuousCandle(!ofContinuousCandle)
+                                  }
+                                  disabled={isDisabled}
+                                />
+                                <span>Of Continious Candle</span>
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
-                {featureReEntryActive && (
-                  <>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Re-Entry Type
-                      </label>
-                      <select
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                        value={reEntryExecutionType}
-                        onChange={(e) =>
-                          setReEntryExecutionType(e.target.value)
-                        }
-                      >
-                        <option value="Combined">Combined</option>
-                        <option value="Leg Wise">Leg Wise</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Cycles
-                      </label>
-                      <input
-                        type="number"
-                        value={reEntryCycles}
-                        min={1}
-                        onChange={(e) =>
-                          setReEntryCycles(
-                            Math.max(1, Number(e.target.value) || 1)
-                          )
-                        }
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      />
-                    </div>
-                  </>
-                )}
-                {featureTrailSlActive && (
-                  <>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Trail SL Type
-                      </label>
-                      <select
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                        value={trailSlType}
-                        onChange={(e) => setTrailSlType(e.target.value)}
-                      >
-                        <option value="%">%</option>
-                        <option value="Pt">Pt</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Price Movement
-                      </label>
-                      <input
-                        type="number"
-                        value={trailSlPriceMovement}
-                        min={0}
-                        onChange={(e) =>
-                          setTrailSlPriceMovement(
-                            Math.max(0, Number(e.target.value) || 0)
-                          )
-                        }
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                        Trailing Value
-                      </label>
-                      <input
-                        type="number"
-                        value={trailSlTrailingValue}
-                        min={0}
-                        onChange={(e) =>
-                          setTrailSlTrailingValue(
-                            Math.max(0, Number(e.target.value) || 0)
-                          )
-                        }
-                        className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      />
-                    </div>
-                  </>
-                )}
               </div>
-            </div>
-          )}
-
-          <div
-            className={`flex ${
-              selectedStrategyTypes?.[0] === "indicator"
-                ? "justify-between"
-                : "justify-end"
-            } items-center pt-2`}
-          >
-            {selectedStrategyTypes?.[0] === "indicator" && (
-              <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={prePunchSL}
-                  onChange={() => setPrePunchSL(!prePunchSL)}
-                  disabled={isDisabled}
-                />
-                <span>
-                  Pre Punch SL{" "}
-                  <span className="text-[11px]">(Advance Feature)</span>
-                </span>
-              </label>
-            )}
-
-            <div className="flex space-x-4 text-xl text-gray-400 dark:text-gray-500">
-              <FiTrash2
-                className="text-red-500 cursor-pointer hover:text-red-600 transition"
-                onClick={handleDeleteLeg}
-                title="Delete leg"
-              />
-              <img
-                src={leg1CopyIcon}
-                className="cursor-pointer hover:opacity-75 transition"
-                onClick={handleCopyLeg}
-                alt="Copy leg"
-                title="Copy leg"
-              />
-            </div>
-          </div>
+            );
+          })}
         </div>
-
-        {selectedStrategyTypes?.[0] === "indicator" && (
-          <>
-            <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={signalCandleCondition}
-                onChange={() =>
-                  setSignalCandleCondition(!signalCandleCondition)
-                }
-                disabled={isDisabled}
-              />
-              <span>
-                Add Signal Candle Condition{" "}
-                <span className="text-[11px] text-gray-400">(Optional)</span>
-              </span>
-            </label>
-
-            {signalCandleCondition && (
-              <div className="mt-4 p-4 border border-gray-200 dark:border-[#2C2F36] rounded-lg bg-gray-50 dark:bg-[#1A1D23] space-y-4">
-                {/* Trade on Trigger Candle */}
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={tradeOnTriggerCandle}
-                      onChange={() =>
-                        setTradeOnTriggerCandle(!tradeOnTriggerCandle)
-                      }
-                      disabled={isDisabled}
-                    />
-                    <span>Trade on Trigger Candle</span>
-                  </label>
-                </div>
-
-                {/* Buy When and Short When */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
-                      Buy When
-                    </label>
-                    <select
-                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      value={buyWhen}
-                      onChange={(e) => setBuyWhen(e.target.value)}
-                      disabled={isDisabled}
-                    >
-                      <option value="Low Break">Low Break</option>
-                      <option value="High Break">High Break</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
-                      Short When
-                    </label>
-                    <select
-                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                      value={shortWhen}
-                      onChange={(e) => setShortWhen(e.target.value)}
-                      disabled={isDisabled}
-                    >
-                      <option value="Low Break">Low Break</option>
-                      <option value="High Break">High Break</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Of Continuous Candle */}
-                <div className="flex items-center">
-                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={ofContinuousCandle}
-                      onChange={() =>
-                        setOfContinuousCandle(!ofContinuousCandle)
-                      }
-                      disabled={isDisabled}
-                    />
-                    <span>Of Continious Candle</span>
-                  </label>
-                </div>
-              </div>
-            )}
-          </>
-        )}
       </div>
     </div>
   );

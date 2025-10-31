@@ -127,27 +127,20 @@ const DeployedStrategiesList = ({
                 </div>
 
                 <div className="flex items-center gap-4 lg:gap-6 lg:ml-auto">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={notificationGeneral}
-                      alt="notification"
-                      className="w-5 h-5"
-                    />
-                    <div className="flex flex-col justify-center items-end">
-                      <span className="text-[#212121] opacity-50 dark:text-gray-400 text-xs whitespace-nowrap">
-                        PnL
-                      </span>
-                      <span
-                        className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap min-w-[100px] ${
-                          brokerItem.totalPnl >= 0
-                            ? "text-green-600"
-                            : "text-red-500"
-                        }`}
-                        title={`₹${brokerItem.brokerPNL.toFixed(2)}`}
-                      >
-                        ₹{brokerItem.brokerPNL.toFixed(2)}
-                      </span>
-                    </div>
+                  <div className="flex flex-col justify-center items-end">
+                    <span className="text-[#212121] opacity-50 dark:text-gray-400 text-xs whitespace-nowrap">
+                      PnL
+                    </span>
+                    <span
+                      className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap min-w-[100px] ${
+                        brokerItem.totalPnl >= 0
+                          ? "text-green-600"
+                          : "text-red-500"
+                      }`}
+                      title={`₹${brokerItem.brokerPNL.toFixed(2)}`}
+                    >
+                      ₹{brokerItem.brokerPNL.toFixed(2)}
+                    </span>
                   </div>
                   <button
                     onClick={() => toggleExpand(brokerItem.broker.code)}

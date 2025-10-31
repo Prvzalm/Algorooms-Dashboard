@@ -3,66 +3,51 @@ import { useFormContext } from "react-hook-form";
 import TradeSettings from "./TradeSettings";
 
 const OrderType = ({ selectedStrategyTypes }) => {
-  const { setValue, getValues, watch } = useFormContext();
+  const { setValue, watch } = useFormContext();
 
-  const [selectedDays, setSelectedDays] = useState([
+  // Use form values directly - no local state needed
+  const selectedDays = watch("ActiveDays") || [
     "MON",
     "TUE",
     "WED",
     "THU",
     "FRI",
-  ]);
-  const [selectedLeg, setSelectedLeg] = useState("L1");
-  const [startTime, setStartTime] = useState("09:16");
-  const [squareOffTime, setSquareOffTime] = useState("15:15");
-  const [productType, setProductType] = useState("MIS");
+  ];
+  const startTime = watch("TradeStartTime") || "09:16";
+  const squareOffTime = watch("AutoSquareOffTime") || "15:15";
+  const productTypeNum = watch("ProductType");
+  const isBtSt = watch("isBtSt");
 
-  // CNC Settings state
+  // Derive display value from form
+  const productType =
+    productTypeNum === 0
+      ? "MIS"
+      : productTypeNum === 1 && isBtSt
+      ? "BTST"
+      : productTypeNum === 1 && !isBtSt
+      ? "CNC"
+      : "MIS";
+
+  // CNC Settings state (these are UI-only, not in form)
   const [showCNCSettings, setShowCNCSettings] = useState(true);
   const [cncEntryDays, setCncEntryDays] = useState(4);
   const [cncExitDays, setCncExitDays] = useState(0);
-
-  // Prefill from form values (edit mode)
-  useEffect(() => {
-    const vDays = getValues("ActiveDays");
-    if (Array.isArray(vDays) && vDays.length) setSelectedDays(vDays);
-    const vStart = getValues("TradeStartTime");
-    if (vStart) setStartTime(vStart);
-    const vSq = getValues("AutoSquareOffTime") || getValues("TradeStopTime");
-    if (vSq) setSquareOffTime(vSq);
-    const prod = getValues("ProductType");
-    if (prod === 0) setProductType("MIS");
-    if (prod === 1 && getValues("isBtSt")) setProductType("BTST");
-    else if (prod === 1 && !getValues("isBtSt")) setProductType("CNC");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const orderTypes = ["MIS", "CNC", "BTST"];
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
 
   const toggleDay = (day) => {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+    const newDays = selectedDays.includes(day)
+      ? selectedDays.filter((d) => d !== day)
+      : [...selectedDays, day];
+    setValue("ActiveDays", newDays, { shouldDirty: true });
   };
 
-  useEffect(() => {
-    setValue("ActiveDays", selectedDays, { shouldDirty: true });
-  }, [selectedDays, setValue]);
-
-  useEffect(() => {
-    setValue("TradeStartTime", startTime, { shouldDirty: true });
-  }, [startTime, setValue]);
-
-  useEffect(() => {
-    setValue("AutoSquareOffTime", squareOffTime, { shouldDirty: true });
-  }, [squareOffTime, setValue]);
-
-  useEffect(() => {
+  const handleProductTypeChange = (type) => {
     const productTypeMap = { MIS: 0, CNC: 1, BTST: 1 };
-    setValue("ProductType", productTypeMap[productType], { shouldDirty: true });
-    setValue("isBtSt", productType === "BTST", { shouldDirty: true });
-  }, [productType, setValue]);
+    setValue("ProductType", productTypeMap[type], { shouldDirty: true });
+    setValue("isBtSt", type === "BTST", { shouldDirty: true });
+  };
 
   return (
     <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419]">

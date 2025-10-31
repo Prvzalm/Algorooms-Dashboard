@@ -1,13 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
   const [executionType, setExecutionType] = useState(
-    initialData.executionType || "Combined"
+    initialData.executionType || "ReExecute"
   );
   const [cycles, setCycles] = useState(initialData.cycles || "1");
   const [actionType, setActionType] = useState(
-    initialData.actionType || "ON_CLOSE"
+    initialData.actionType || "IMMDT"
   );
+
+  // Update state when modal opens with new initialData
+  useEffect(() => {
+    if (isOpen) {
+      setExecutionType(initialData.executionType || "ReExecute");
+      setCycles(initialData.cycles || "1");
+      setActionType(initialData.actionType || "IMMDT");
+    }
+  }, [
+    isOpen,
+    initialData.executionType,
+    initialData.cycles,
+    initialData.actionType,
+  ]);
 
   const handleSave = () => {
     onSave({
@@ -20,11 +34,15 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
 
   if (!isOpen) return null;
 
+  // Determine if action type dropdown should be disabled
+  const isActionTypeDisabled =
+    executionType === "ReEntry On Cost" || executionType === "ReEntry On Close";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white dark:bg-[#15171C] rounded-xl p-6 w-[90%] max-w-md space-y-4">
         <h3 className="text-lg font-semibold text-black dark:text-white">
-          Re-Entry/Execute
+          Re-Entry/Execute Configuration
         </h3>
 
         <div className="bg-blue-50 dark:bg-[#1E2027] p-4 rounded-lg">
@@ -33,53 +51,30 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               i
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Execute combined executes all strategy components as a single
-              order. Execute leg-wise executes each component separately.
-              Choices depend on strategy complexity and market conditions,
-              affecting execution and risk management.
+              Configure re-entry behavior for your strategy. Choose execution
+              type and number of cycles based on your risk management needs.
             </p>
           </div>
         </div>
 
         <div className="space-y-4">
-          {/* Toggle between Combined, Leg Wise, and Exit */}
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setExecutionType("Combined")}
-              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                executionType === "Combined"
-                  ? "bg-[#0096FF] text-white"
-                  : "bg-gray-100 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300"
-              }`}
+          {/* Re-Entry Type Dropdown */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Re-Entry Type
+            </label>
+            <select
+              value={executionType}
+              onChange={(e) => setExecutionType(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
             >
-              Combined
-            </button>
-            <button
-              type="button"
-              onClick={() => setExecutionType("Leg Wise")}
-              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                executionType === "Leg Wise"
-                  ? "bg-[#0096FF] text-white"
-                  : "bg-gray-100 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              Leg Wise
-            </button>
-            <button
-              type="button"
-              onClick={() => setExecutionType("Exit")}
-              className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                executionType === "Exit"
-                  ? "bg-[#0096FF] text-white"
-                  : "bg-gray-100 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              Exit
-            </button>
+              <option value="ReExecute">ReExecute</option>
+              <option value="ReEntry On Cost">ReEntry On Cost</option>
+              <option value="ReEntry On Close">ReEntry On Close</option>
+            </select>
           </div>
 
-          {/* Action Type */}
+          {/* Action Type - Disabled for "ReEntry On Cost" and "ReEntry On Close" */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Action Type
@@ -87,7 +82,10 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             <select
               value={actionType}
               onChange={(e) => setActionType(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+              disabled={isActionTypeDisabled}
+              className={`w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333] ${
+                isActionTypeDisabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               <option value="ON_CLOSE">On Close</option>
               <option value="IMMDT">Immediate</option>
@@ -97,7 +95,7 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
           {/* Re-entry/Execute cycles input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Re-Entry/Execute cycles
+              Re-Entry/Execute Cycles
             </label>
             <div className="relative">
               <input
@@ -105,24 +103,9 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
                 min="1"
                 value={cycles}
                 onChange={(e) => setCycles(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333] pr-8"
+                className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                 placeholder="Enter cycles"
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <button
-                  type="button"
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M7 14l5-5 5 5z" />
-                  </svg>
-                </button>
-              </div>
             </div>
           </div>
         </div>

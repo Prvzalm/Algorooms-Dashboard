@@ -4,9 +4,12 @@ import { infoIcon } from "../../../assets";
 import ReEntryExecuteModal from "./ReEntryExecuteModal";
 import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
+import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
 
 const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   const { setValue, getValues, watch } = useFormContext();
+  const { setLegAdvanceFeature, getLegAdvanceFeatures } =
+    useStrategyBuilderStore();
   const [noTradeAfter, setNoTradeAfter] = useState("15:15");
 
   // Watch reactive values to avoid infinite loops
@@ -114,18 +117,19 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   }, [strategyScripts, activeLegIndex]);
 
   const isDisabledAdvance = (label) => {
-    // Rule 1: Move SL to Cost active -> disable all except Exit All and Premium Difference
+    // Rule 1: Move SL to Cost active -> disable all except Premium Difference (Exit All also disabled)
     if (
       advState["Move SL to Cost"] &&
-      label !== "Exit All on SL/Tgt" &&
       label !== "Premium Difference" &&
       label !== "Move SL to Cost"
     ) {
       return true;
     }
-    // Rule 2: Exit All disables Re Entry/Execute
-    if (advState["Exit All on SL/Tgt"] && label === "Re Entry/Execute") {
-      return true;
+    // Rule 2: Exit All disables Re Entry/Execute and Move SL to Cost
+    if (advState["Exit All on SL/Tgt"]) {
+      if (label === "Re Entry/Execute" || label === "Move SL to Cost") {
+        return true;
+      }
     }
     // Rule 3: Wait & Trade disables Move SL to Cost
     if (advState["Wait & Trade"] && label === "Move SL to Cost") {
@@ -165,14 +169,18 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
           "Wait & Trade": false,
           "Pre Punch SL": false,
           "Trail SL": false,
+          "Exit All on SL/Tgt": false, // ✅ Disable Exit All when Move SL to Cost is enabled
           "Re Entry/Execute": prev["Re Entry/Execute"],
-          "Exit All on SL/Tgt": prev["Exit All on SL/Tgt"],
           "Premium Difference": prev["Premium Difference"],
         }));
       }
       if (label === "Exit All on SL/Tgt") {
-        // exit all -> disable re entry
-        setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
+        // exit all -> disable re entry and Move SL to Cost
+        setAdvState((prev) => ({
+          ...prev,
+          "Re Entry/Execute": false,
+          "Move SL to Cost": false, // ✅ Disable Move SL to Cost when Exit All is enabled
+        }));
       }
       if (label === "Wait & Trade") {
         // wait & trade disables move SL to cost
@@ -214,19 +222,20 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             MovementValue: s.waitNTrade?.MovementValue ?? "0",
           };
         });
+        // Update per-leg store
+        setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", !!checked);
         break;
       case "Premium Difference":
         if (checked) {
-          // Get existing values to populate modal
-          const scripts = strategyScripts || [];
-          const firstScript = scripts[0] || {};
-          const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[activeLegIndex] || {};
+          // Get existing values to populate modal - from per-leg store
+          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
+          const currentPremValue =
+            legFeatures.premiumDiffValue ||
+            currentStrike.PriceDiffrenceConstrantValue ||
+            "0";
 
           // Initialize temp value with existing value
-          setPremiumDiffTempValue(
-            currentStrike.PriceDiffrenceConstrantValue || "0"
-          );
+          setPremiumDiffTempValue(currentPremValue);
 
           // Open modal for value input
           setShowPremiumDiffModal(true);
@@ -235,26 +244,40 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             s.IsPriceDiffrenceConstrant = false;
             s.PriceDiffrenceConstrantValue = "0";
           });
+          // Clear per-leg store
+          setLegAdvanceFeature(activeLegIndex, "premiumDiffEnabled", false);
+          setLegAdvanceFeature(activeLegIndex, "premiumDiffValue", 0);
         }
         break;
       case "Re Entry/Execute":
         if (checked) {
-          // Get existing values to populate modal
+          // Get existing values from per-leg store or strike data
+          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
           const currentStrike = longs[activeLegIndex] || {};
 
-          // Initialize temp data with existing values
+          // Map backend RentryType to UI executionType
+          const rentryTypeToUI = (rentryType) => {
+            const map = {
+              REX: "ReExecute",
+              REN: "ReEntry On Close",
+              RENC: "ReEntry On Cost",
+            };
+            return map[rentryType] || "ReExecute";
+          };
+
+          // Initialize temp data with existing values (prefer leg store)
           setReEntryTempData({
             executionType:
-              currentStrike.reEntry?.RentryType === "RENC"
-                ? "Combined"
-                : currentStrike.reEntry?.RentryType === "REX"
-                ? "Exit"
-                : "Leg Wise",
-            cycles: currentStrike.reEntry?.TradeCycle || "1",
-            actionType: currentStrike.reEntry?.RentryActionTypeId || "ON_CLOSE",
+              legFeatures.reEntryExecutionType ||
+              rentryTypeToUI(currentStrike.reEntry?.RentryType),
+            cycles:
+              legFeatures.reEntryCycles ||
+              currentStrike.reEntry?.TradeCycle ||
+              "1",
+            actionType: currentStrike.reEntry?.RentryActionTypeId || "IMMDT",
           });
 
           // Show modal to configure Re-Entry/Execute
@@ -265,11 +288,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
             s.reEntry = {
               ...(s.reEntry || {}),
               isRentry: false,
-              RentryType: "REN",
+              RentryType: "REX",
               TradeCycle: "0",
-              RentryActionTypeId: "ON_CLOSE",
+              RentryActionTypeId: "IMMDT",
             };
           });
+          // Clear per-leg store
+          setLegAdvanceFeature(activeLegIndex, "reEntryEnabled", false);
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -283,19 +308,26 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         break;
       case "Trail SL":
         if (checked) {
-          // Get existing values to populate modal
+          // Get existing values from per-leg store or strike data
+          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
           const currentStrike = longs[activeLegIndex] || {};
 
-          // Initialize temp data with existing values
+          // Initialize temp data with existing values (prefer leg store)
           setTrailSlTempData({
             trailingType:
-              currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%",
+              legFeatures.trailSlType ||
+              (currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%"),
             priceMovement:
-              currentStrike.TrailingSL?.InstrumentMovementValue || "0",
-            trailingValue: currentStrike.TrailingSL?.TrailingValue || "0",
+              legFeatures.trailSlPriceMovement ||
+              currentStrike.TrailingSL?.InstrumentMovementValue ||
+              "0",
+            trailingValue:
+              legFeatures.trailSlTrailingValue ||
+              currentStrike.TrailingSL?.TrailingValue ||
+              "0",
           });
 
           // Show modal to configure Trail SL
@@ -310,6 +342,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               TrailingValue: "0",
             };
           });
+          // Clear per-leg store
+          setLegAdvanceFeature(activeLegIndex, "trailSlEnabled", false);
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -353,7 +387,17 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         Number(premiumDiffTempValue) > 0 ? premiumDiffTempValue : "0";
     });
     setShowPremiumDiffModal(false);
-    if (Number(premiumDiffTempValue) === 0) {
+
+    // Update per-leg store
+    const isEnabled = Number(premiumDiffTempValue) > 0;
+    setLegAdvanceFeature(activeLegIndex, "premiumDiffEnabled", isEnabled);
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "premiumDiffValue",
+      Number(premiumDiffTempValue)
+    );
+
+    if (!isEnabled) {
       setAdvState((prev) => ({ ...prev, "Premium Difference": false }));
     }
     const currentAf = getValues("AdvanceFeatures") || {};
@@ -361,7 +405,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
       "AdvanceFeatures",
       {
         ...currentAf,
-        "Premium Difference": Number(premiumDiffTempValue) > 0,
+        "Premium Difference": isEnabled,
         PremiumDifferenceValue: premiumDiffTempValue,
       },
       { shouldDirty: true }
@@ -369,21 +413,41 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   };
 
   const saveReEntryExecute = (data) => {
+    // Map UI executionType to backend RentryType
     const rentryTypeMap = {
-      Combined: "RENC",
-      "Leg Wise": "REN",
-      Exit: "REX",
+      ReExecute: "REX",
+      "ReEntry On Close": "REN",
+      "ReEntry On Cost": "RENC",
     };
+
+    // For "ReEntry On Cost" and "ReEntry On Close", actionType should be fixed
+    let finalActionType = data.actionType;
+    if (data.executionType === "ReEntry On Cost") {
+      finalActionType = "ON_COST"; // Backend value for cost-based re-entry
+    } else if (data.executionType === "ReEntry On Close") {
+      finalActionType = "ON_CLOSE"; // Backend value for close-based re-entry
+    }
 
     updateFirstStrike((s) => {
       s.reEntry = {
         ...(s.reEntry || {}),
         isRentry: true,
-        RentryType: rentryTypeMap[data.executionType] || "REN",
+        RentryType: rentryTypeMap[data.executionType] || "REX",
         TradeCycle: data.cycles,
-        RentryActionTypeId: data.actionType || "ON_CLOSE",
+        RentryActionTypeId: finalActionType,
       };
     });
+
+    // Update per-leg store
+    setLegAdvanceFeature(activeLegIndex, "reEntryEnabled", true);
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "reEntryExecutionType",
+      data.executionType
+    );
+    setLegAdvanceFeature(activeLegIndex, "reEntryCycles", Number(data.cycles));
+    setLegAdvanceFeature(activeLegIndex, "reEntryActionType", finalActionType);
+
     setAdvState((prev) => ({ ...prev, "Re Entry/Execute": true }));
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -393,7 +457,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         "Re Entry/Execute": true,
         ReEntryExecutionType: data.executionType,
         ReEntryCycles: data.cycles,
-        ReEntryActionType: data.actionType,
+        ReEntryActionType: finalActionType,
       },
       { shouldDirty: true }
     );
@@ -409,6 +473,21 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         TrailingValue: data.trailingValue,
       };
     });
+
+    // Update per-leg store
+    setLegAdvanceFeature(activeLegIndex, "trailSlEnabled", true);
+    setLegAdvanceFeature(activeLegIndex, "trailSlType", data.trailingType);
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "trailSlPriceMovement",
+      Number(data.priceMovement)
+    );
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "trailSlTrailingValue",
+      Number(data.trailingValue)
+    );
+
     setAdvState((prev) => ({ ...prev, "Trail SL": true }));
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -483,6 +562,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                 <input
                   type="number"
                   placeholder="Max Trade Cycle"
+                  value={watch("MaxTrade") || ""}
                   onChange={(e) =>
                     setValue("MaxTrade", Number(e.target.value) || 0, {
                       shouldDirty: true,

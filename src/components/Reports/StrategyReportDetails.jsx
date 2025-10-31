@@ -352,7 +352,7 @@ const StrategyReportDetails = ({
                 Max Drawdown
               </div>
               <div className="font-medium text-rose-600">
-                {formatCurrency(summaryMetrics.maxDrawdown)}
+                {summaryMetrics?.maxDrawdown}
               </div>
             </div>
           </div>

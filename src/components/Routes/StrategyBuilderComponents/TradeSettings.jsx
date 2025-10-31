@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { FiInfo } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
 
@@ -15,12 +15,14 @@ const intervals = [
 ];
 
 const TradeSettings = () => {
-  const { setValue } = useFormContext();
-  const [transactionType, setTransactionType] = useState("Both Side");
-  const [chartType, setChartType] = useState("Candle");
-  const [interval, setInterval] = useState("1 min");
+  const { setValue, watch } = useFormContext();
 
-  // mapping helpers
+  // Use form values directly
+  const formTransactionType = watch("TransactionType") ?? 0;
+  const formChartType = watch("ChartType") ?? 1;
+  const formInterval = watch("Interval") ?? 1;
+
+  // Mapping helpers
   const transactionMap = {
     "Both Side": 0,
     "Only Long": 1,
@@ -36,20 +38,45 @@ const TradeSettings = () => {
     return isNaN(num) ? 0 : num;
   };
 
-  // push to form whenever user changes
-  useEffect(() => {
-    setValue("TransactionType", transactionMap[transactionType], {
-      shouldDirty: true,
-    });
-  }, [transactionType, setValue]);
+  // Reverse mapping for display
+  const transactionReverseMap = {
+    0: "Both Side",
+    1: "Only Long",
+    2: "Only Short",
+  };
+  const chartTypeReverseMap = {
+    1: "Candle",
+    2: "Heikin Ashi",
+  };
+  const intervalReverseMap = (num) => {
+    if (num === 60) return "1H";
+    if (num === 1) return "1 min";
+    if (num === 3) return "3 min";
+    if (num === 5) return "5 min";
+    if (num === 10) return "10 min";
+    if (num === 15) return "15 min";
+    if (num === 30) return "30 min";
+    return "1 min";
+  };
 
-  useEffect(() => {
-    setValue("ChartType", chartTypeMap[chartType], { shouldDirty: true });
-  }, [chartType, setValue]);
+  // Derive display values from form
+  const transactionType =
+    transactionReverseMap[formTransactionType] || "Both Side";
+  const chartType = chartTypeReverseMap[formChartType] || "Candle";
+  const interval = intervalReverseMap(formInterval);
 
-  useEffect(() => {
-    setValue("Interval", intervalMap(interval), { shouldDirty: true });
-  }, [interval, setValue]);
+  // Direct handlers without local state
+  const handleTransactionChange = (value) => {
+    setValue("TransactionType", transactionMap[value], { shouldDirty: true });
+  };
+
+  const handleChartTypeChange = (value) => {
+    setValue("ChartType", chartTypeMap[value], { shouldDirty: true });
+  };
+
+  const handleIntervalChange = (value) => {
+    setValue("Interval", intervalMap(value), { shouldDirty: true });
+  };
 
   const baseBtn =
     "px-3 py-2 rounded border text-xs transition whitespace-nowrap";
@@ -69,7 +96,7 @@ const TradeSettings = () => {
               <button
                 type="button"
                 key={option}
-                onClick={() => setTransactionType(option)}
+                onClick={() => handleTransactionChange(option)}
                 className={`${baseBtn} ${
                   transactionType === option
                     ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
@@ -91,7 +118,7 @@ const TradeSettings = () => {
               <button
                 type="button"
                 key={type}
-                onClick={() => setChartType(type)}
+                onClick={() => handleChartTypeChange(type)}
                 className={`${baseBtn} ${
                   chartType === type
                     ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
@@ -114,7 +141,7 @@ const TradeSettings = () => {
             <button
               type="button"
               key={intvl}
-              onClick={() => setInterval(intvl)}
+              onClick={() => handleIntervalChange(intvl)}
               className={`${baseBtn} ${
                 interval === intvl
                   ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
