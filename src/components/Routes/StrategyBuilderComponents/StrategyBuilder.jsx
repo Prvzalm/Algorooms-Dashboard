@@ -21,6 +21,7 @@ import {
   getDefaultPayload,
 } from "../../../stores/strategyBuilderStore";
 import { buildStrategyPayload } from "../../../utils/strategyPayload";
+import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -30,7 +31,7 @@ const StrategyBuilder = () => {
   const methods = useForm({
     defaultValues: initialFormValuesRef.current,
   });
-  const { handleSubmit, setValue, reset, getValues } = methods;
+  const { handleSubmit, setValue, reset, getValues, watch } = methods;
   const { mutate, isPending } = useCreateStrategyMutation();
   const {
     data: editDetails,
@@ -86,8 +87,7 @@ const StrategyBuilder = () => {
   } = useStrategyBuilderStore();
 
   // State for instrument quantities
-  const [instrumentQty, setInstrumentQty] = useState(1);
-  const [equityInstrumentQtys, setEquityInstrumentQtys] = useState({});
+  const watchedScripts = watch("StrategyScriptList") || [];
 
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
@@ -109,8 +109,6 @@ const StrategyBuilder = () => {
     setSelectedStrategyTypes([id]);
 
     // Reset quantities
-    setInstrumentQty(1);
-    setEquityInstrumentQtys({});
   };
 
   // ✅ OPTIMIZED: Single effect to sync Zustand payload with form
@@ -139,24 +137,29 @@ const StrategyBuilder = () => {
       shouldDirty: true,
     });
 
+    const existingScripts = getValues("StrategyScriptList") || [];
+    const previous = existingScripts[0] || {};
     const scriptData = {
+      ...previous,
       InstrumentToken: selectedInstrument.InstrumentToken || "",
       InstrumentName: selectedInstrument.Name || "",
-      Qty: 0,
-      LongEquationoptionStrikeList: [],
-      ShortEquationoptionStrikeList: [],
-      StrikeTickValue: 0,
+      Qty: previous.Qty ?? (selectedInstrument.LotSize || 0),
+      LongEquationoptionStrikeList: previous.LongEquationoptionStrikeList || [],
+      ShortEquationoptionStrikeList:
+        previous.ShortEquationoptionStrikeList || [],
+      StrikeTickValue: previous.StrikeTickValue || 0,
     };
 
-    const scripts = getValues("StrategyScriptList") || [];
-    const first = scripts[0];
-
-    if (scripts.length === 0 || !first?.InstrumentName) {
+    if (existingScripts.length === 0 || !previous.InstrumentName) {
       setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
       updatePayload({
         StrategySegmentType: selectedInstrument.SegmentType,
         StrategyScriptList: [scriptData],
       });
+    } else {
+      const nextScripts = [{ ...scriptData }];
+      setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
+      updatePayload({ StrategyScriptList: nextScripts });
     }
   }, [selectedInstrument, setValue, getValues, updatePayload]);
 
@@ -210,14 +213,25 @@ const StrategyBuilder = () => {
       },
     });
 
-    const scripts = selectedEquityInstruments.map((ins) => ({
-      InstrumentToken: ins.InstrumentToken || "",
-      InstrumentName: ins.Name || "",
-      Qty: 1,
-      LongEquationoptionStrikeList: [buildDefaultStrike("PE")],
-      ShortEquationoptionStrikeList: [buildDefaultStrike("CE")],
-      StrikeTickValue: 0,
-    }));
+    const existingScripts = getValues("StrategyScriptList") || [];
+    const scripts = selectedEquityInstruments.map((ins, idx) => {
+      const previous = existingScripts[idx] || {};
+      return {
+        InstrumentToken: ins.InstrumentToken || "",
+        InstrumentName: ins.Name || "",
+        Qty: previous.Qty || 1,
+        LongEquationoptionStrikeList: (previous.LongEquationoptionStrikeList &&
+        previous.LongEquationoptionStrikeList.length > 0
+          ? previous.LongEquationoptionStrikeList
+          : [buildDefaultStrike("PE")]) || [buildDefaultStrike("PE")],
+        ShortEquationoptionStrikeList:
+          (previous.ShortEquationoptionStrikeList &&
+          previous.ShortEquationoptionStrikeList.length > 0
+            ? previous.ShortEquationoptionStrikeList
+            : [buildDefaultStrike("CE")]) || [buildDefaultStrike("CE")],
+        StrikeTickValue: previous.StrikeTickValue || 0,
+      };
+    });
 
     setValue("StrategySegmentType", "Equity", { shouldDirty: true });
     setValue("StrategyScriptList", scripts, { shouldDirty: true });
@@ -311,18 +325,6 @@ const StrategyBuilder = () => {
         EntryDaysBeforExpiry: d.EntryDaysBeforExpiry || 0,
         ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
       };
-
-      console.log(
-        "🔄 Edit Mode - Detected Strategy Type:",
-        detectedStrategyType,
-        {
-          fromBackend: d.StrategyType,
-          hasEquations: hasIndicatorEquations,
-          longEntry: d.LongEntryEquation?.length || 0,
-          shortEntry: d.ShortEntryEquation?.length || 0,
-          scriptList: d.StrategyScriptList,
-        }
-      );
 
       reset(mapped);
       setSelectedStrategyTypes([mapped.StrategyType]);
@@ -790,6 +792,7 @@ const StrategyBuilder = () => {
       (selectedInstrument &&
         (selectedInstrument.SegmentType === "Equity" ||
           selectedInstrument.SegmentType === "Future")));
+  const isPriceBased = selectedStrategyTypes?.[0] === "price";
 
   if (editing && editLoading) {
     return <div className="p-6">Loading strategy...</div>;
@@ -844,7 +847,8 @@ const StrategyBuilder = () => {
                 </div>
               </div>
 
-              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+              <div className="relative">
+                <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
                 <h2 className="font-semibold dark:text-white">
                   Select Instruments
                 </h2>
@@ -918,12 +922,27 @@ const StrategyBuilder = () => {
                           <input
                             type="number"
                             min="1"
-                            value={instrumentQty}
-                            onChange={(e) =>
-                              setInstrumentQty(
-                                Math.max(1, parseInt(e.target.value) || 1)
-                              )
+                            value={
+                              Number(watchedScripts?.[0]?.Qty) > 0
+                                ? watchedScripts[0].Qty
+                                : 1
                             }
+                            onChange={(e) => {
+                              const nextQty = Math.max(
+                                1,
+                                parseInt(e.target.value, 10) || 1
+                              );
+                              const current =
+                                getValues("StrategyScriptList") || [];
+                              if (!current.length) return;
+                              const updated = current.map((script, idx) =>
+                                idx === 0 ? { ...script, Qty: nextQty } : script
+                              );
+                              setValue("StrategyScriptList", updated, {
+                                shouldDirty: true,
+                              });
+                              updatePayload({ StrategyScriptList: updated });
+                            }}
                             className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
@@ -949,9 +968,6 @@ const StrategyBuilder = () => {
                                     i.InstrumentToken !== ins.InstrumentToken
                                 )
                               );
-                              const newQtys = { ...equityInstrumentQtys };
-                              delete newQtys[ins.InstrumentToken];
-                              setEquityInstrumentQtys(newQtys);
                             }}
                             className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
                             title="Remove instrument"
@@ -999,17 +1015,28 @@ const StrategyBuilder = () => {
                                 type="number"
                                 min="1"
                                 value={
-                                  equityInstrumentQtys[ins.InstrumentToken] || 1
+                                  Number(watchedScripts[idx]?.Qty ?? 1) || 1
                                 }
-                                onChange={(e) =>
-                                  setEquityInstrumentQtys({
-                                    ...equityInstrumentQtys,
-                                    [ins.InstrumentToken]: Math.max(
-                                      1,
-                                      parseInt(e.target.value) || 1
-                                    ),
-                                  })
-                                }
+                                onChange={(e) => {
+                                  const nextQty = Math.max(
+                                    1,
+                                    parseInt(e.target.value, 10) || 1
+                                  );
+                                  const current =
+                                    getValues("StrategyScriptList") || [];
+                                  if (!current.length) return;
+                                  const updated = current.map((script, sIdx) =>
+                                    sIdx === idx
+                                      ? { ...script, Qty: nextQty }
+                                      : script
+                                  );
+                                  setValue("StrategyScriptList", updated, {
+                                    shouldDirty: true,
+                                  });
+                                  updatePayload({
+                                    StrategyScriptList: updated,
+                                  });
+                                }}
                                 className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               />
                             </div>
@@ -1019,6 +1046,8 @@ const StrategyBuilder = () => {
                     </div>
                   </div>
                 )}
+              </div>
+                {isPriceBased && <ComingSoonOverlay />}
               </div>
               <InstrumentModal
                 visible={showInstrumentModal}
@@ -1034,6 +1063,7 @@ const StrategyBuilder = () => {
             {!hideLeg1 && (
               <OrderType
                 selectedStrategyTypes={selectedStrategyTypes}
+                comingSoon={isPriceBased}
                 hideLeg1={hideLeg1}
               />
             )}
@@ -1044,6 +1074,7 @@ const StrategyBuilder = () => {
               <Leg1
                 selectedStrategyTypes={selectedStrategyTypes}
                 selectedInstrument={selectedInstrument}
+                comingSoon={isPriceBased}
                 editing={editing}
               />
             )}
@@ -1051,6 +1082,7 @@ const StrategyBuilder = () => {
               <div className="mt-0">
                 <OrderType
                   selectedStrategyTypes={selectedStrategyTypes}
+                  comingSoon={isPriceBased}
                   hideLeg1={hideLeg1}
                 />
               </div>
@@ -1061,7 +1093,10 @@ const StrategyBuilder = () => {
         {selectedStrategyTypes[0] === "indicator" && <EntryCondition />}
 
         <div className="overflow-x-hidden">
-          <RiskAndAdvance selectedStrategyTypes={selectedStrategyTypes} />
+          <RiskAndAdvance
+            selectedStrategyTypes={selectedStrategyTypes}
+            comingSoon={isPriceBased}
+          />
         </div>
 
         {/* Mobile view: fixed button at bottom */}

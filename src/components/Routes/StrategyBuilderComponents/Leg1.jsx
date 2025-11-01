@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
@@ -6,8 +6,9 @@ import {
   useStrategyBuilderStore,
   createDefaultStrike,
 } from "../../../stores/strategyBuilderStore";
+import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 
-const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
+const Leg1 = ({ selectedStrategyTypes, selectedInstrument, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
   const { updatePayload, setLegAdvanceFeature, getLegAdvanceFeatures } =
     useStrategyBuilderStore();
@@ -15,21 +16,36 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
 
+  const rawBuyWhen = watch("BuyWhen");
+  const rawShortWhen = watch("ShortWhen");
+  const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
+  const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
+
   // ✅ Legs management state (moved from OrderType)
   const [legs, setLegs] = useState(["L1"]);
   const [selectedLeg, setSelectedLeg] = useState("L1");
 
-  // local UI state
-  const [position, setPosition] = useState("BUY");
-  const [optionType, setOptionType] = useState("Call");
-  const [prePunchSL, setPrePunchSL] = useState(false);
-  const [signalCandleCondition, setSignalCandleCondition] = useState(false);
+  const [signalCandleCondition, setSignalCandleCondition] = useState(
+    tradeOnTriggerCandle || !!rawBuyWhen || !!rawShortWhen || ofContinuousCandle
+  );
 
-  // Signal Candle Condition fields
-  const [tradeOnTriggerCandle, setTradeOnTriggerCandle] = useState(false);
-  const [buyWhen, setBuyWhen] = useState("Low Break");
-  const [shortWhen, setShortWhen] = useState("Low Break");
-  const [ofContinuousCandle, setOfContinuousCandle] = useState(false);
+  useEffect(() => {
+    if (
+      tradeOnTriggerCandle ||
+      rawBuyWhen ||
+      rawShortWhen ||
+      ofContinuousCandle
+    ) {
+      setSignalCandleCondition(true);
+    }
+  }, [tradeOnTriggerCandle, rawBuyWhen, rawShortWhen, ofContinuousCandle]);
+
+  const buyWhen = rawBuyWhen || "Low Break";
+  const shortWhen = rawShortWhen || "Low Break";
+
+  const strategyType = selectedStrategyTypes?.[0] ?? "time";
+  const isTimeStrategy = strategyType === "time";
+  const isIndicatorStrategy = strategyType === "indicator";
 
   // available options (unchanged)
   const expiryOptions = ["WEEKLY", "MONTHLY"];
@@ -37,10 +53,6 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const tpOptions = ["TP%", "TP pt"];
   const onPriceOptions = ["On Price", "On Close"];
   const conditionOptions = ["CE", "PE"];
-
-  // condition states (controlled)
-  const [longCondition, setLongCondition] = useState("CE");
-  const shortCondition = longCondition === "CE" ? "PE" : "CE";
 
   // NEW: strike criteria menu (as per screenshot)
   const strikeCriteriaOptions = [
@@ -51,43 +63,31 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     { label: "CP <=", value: "CP_LTE" },
   ];
 
-  // NEW controlled expiry & action/type states
-  const [expiryType, setExpiryType] = useState("WEEKLY");
-  const [slTypeSel, setSlTypeSel] = useState("SL%");
-  const [tpTypeSel, setTpTypeSel] = useState("TP%");
-  const [slAction, setSlAction] = useState("On Price");
-  const [tpAction, setTpAction] = useState("On Price");
-  // target value (TP) state
-  const [targetValue, setTargetValue] = useState(0);
-
   // NEW: ladder options for ATM pt / ATM %
-  const atmPointsOptions = (() => {
+  const atmPointsOptions = useMemo(() => {
     const arr = [];
-    for (let p = 2000; p >= 50; p -= 50)
+    for (let p = 2000; p >= 50; p -= 50) {
       arr.push({ label: `ITM ${p}`, value: `ITM_${p}` });
+    }
     arr.push({ label: "ATM", value: "ATM" });
-    for (let p = 50; p <= 2000; p += 50)
+    for (let p = 50; p <= 2000; p += 50) {
       arr.push({ label: `OTM ${p}`, value: `OTM_${p}` });
+    }
     return arr;
-  })();
-  const atmPercentOptions = (() => {
+  }, []);
+  const atmPercentOptions = useMemo(() => {
     const arr = [];
-    for (let p = 20; p >= 0.5; p -= 0.5)
-      arr.push({ label: `ITM ${p.toFixed(1)}%`, value: `ITM_${p.toFixed(1)}` });
+    for (let p = 20; p >= 0.5; p -= 0.5) {
+      const formatted = p.toFixed(1);
+      arr.push({ label: `ITM ${formatted}%`, value: `ITM_${formatted}` });
+    }
     arr.push({ label: "ATM", value: "ATM" });
-    for (let p = 0.5; p <= 20; p += 0.5)
-      arr.push({ label: `OTM ${p.toFixed(1)}%`, value: `OTM_${p.toFixed(1)}` });
+    for (let p = 0.5; p <= 20; p += 0.5) {
+      const formatted = p.toFixed(1);
+      arr.push({ label: `OTM ${formatted}%`, value: `OTM_${formatted}` });
+    }
     return arr;
-  })();
-
-  const [selectedStrikeCriteria, setSelectedStrikeCriteria] = useState(
-    strikeCriteriaOptions[0].value
-  );
-  const [strikeTypeSelectValue, setStrikeTypeSelectValue] = useState("ATM");
-  const [strikeTypeNumber, setStrikeTypeNumber] = useState(0);
-  const isATMMode =
-    selectedStrikeCriteria === "ATM_PT" ||
-    selectedStrikeCriteria === "ATM_PERCENT";
+  }, []);
 
   const strikeCriteriaToType = (crit) => {
     if (crit === "ATM_PERCENT") return "ATMPER";
@@ -130,107 +130,319 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
         return strikeObj.type || "ATM";
     }
   };
+  const strategyScript = strategyScripts?.[0] || {};
+  const longStrikes = Array.isArray(strategyScript.LongEquationoptionStrikeList)
+    ? strategyScript.LongEquationoptionStrikeList
+    : [];
+  const shortStrikes = Array.isArray(
+    strategyScript.ShortEquationoptionStrikeList
+  )
+    ? strategyScript.ShortEquationoptionStrikeList
+    : [];
 
-  const getLegSummary = (idx) => {
-    const script = strategyScripts?.[0];
-    const longLeg = script?.LongEquationoptionStrikeList?.[idx];
-    const shortLeg = script?.ShortEquationoptionStrikeList?.[idx];
+  const existingActiveLong = longStrikes[activeLegIndex];
+  const existingActiveShort = shortStrikes[activeLegIndex];
 
-    // Use whichever has data (Long takes priority if both exist)
-    const legData = longLeg || shortLeg;
-    const isActive = idx === activeLegIndex;
+  const isPopulatedStrike = useCallback((strike) => {
+    if (!strike) return false;
+    const qty = Number(strike.Qty || 0);
+    const target = Number(strike.Target || 0);
+    const stop = Number(strike.StopLoss);
+    const strikeOffset = Number(strike?.strikeTypeobj?.StrikeValue || 0);
+    const hasCustomType =
+      strike?.strikeTypeobj?.type && strike.strikeTypeobj.type !== "ATM";
+    const hasWait = strike?.waitNTrade?.isWaitnTrade;
+    const hasPremium = strike?.IsPriceDiffrenceConstrant;
+    const hasReEntry = strike?.reEntry?.isRentry;
+    const hasTrail = strike?.isTrailSL;
 
-    const transaction =
-      legData?.TransactionType || (isActive ? position : "SELL");
-    const optionSymbol =
-      legData?.StrikeType ||
-      (isActive
-        ? selectedStrategyTypes?.[0] === "indicator"
-          ? longCondition
-          : optionType === "Call"
-          ? "CE"
-          : "PE"
-        : "");
-    const qtyValue =
-      legData?.Qty ||
-      (isActive
-        ? String(
-            Math.max(1, qtyMultiplier) * (selectedInstrument?.LotSize || 0)
-          )
-        : "");
-    const strikeObj =
-      legData?.strikeTypeobj ||
-      (isActive
-        ? {
-            type: strikeCriteriaToType(selectedStrikeCriteria),
-            StrikeValue: isATMMode
-              ? parseStrikeToken(strikeTypeSelectValue)
-              : strikeTypeNumber,
-            RangeFrom: 0,
-            RangeTo: 0,
-          }
-        : null);
-    const targetText = longLeg?.Target ?? (isActive ? String(targetValue) : "");
-    const stopLossText =
-      longLeg?.StopLoss ?? (isActive ? String(stopLossQty) : "");
-    const instrumentName =
-      longLeg?.InstrumentName ||
-      script?.InstrumentName ||
-      selectedInstrument?.Name ||
-      "";
+    const hasStopConfigured = !Number.isNaN(stop) && stop !== 0 && stop !== 30;
 
-    const summaryBits = [
-      instrumentName || null,
-      qtyValue ? `Qty ${qtyValue}` : null,
-      `Strike ${formatStrikeSummary(strikeObj)}`,
-      targetText ? `TP ${targetText}` : null,
-      stopLossText ? `SL ${stopLossText}` : null,
-    ].filter(Boolean);
+    return (
+      qty > 0 ||
+      target > 0 ||
+      hasStopConfigured ||
+      strikeOffset !== 0 ||
+      hasCustomType ||
+      !!hasWait ||
+      !!hasPremium ||
+      !!hasReEntry ||
+      !!hasTrail
+    );
+  }, []);
 
-    return {
-      title: `${transaction || "SELL"} ${optionSymbol || ""}`.trim(),
-      subtitle: summaryBits.join(" • "),
-    };
-  };
+  const longPopulated = isPopulatedStrike(existingActiveLong);
+  const shortPopulated = isPopulatedStrike(existingActiveShort);
 
-  const formatStrikeOffset = (value, criteria) => {
-    const numeric = Number(value) || 0;
-    const abs = Math.abs(numeric);
-    return criteria === "ATM_PERCENT" ? abs.toFixed(1) : String(abs);
-  };
+  const primaryStrikeSource =
+    longPopulated && !shortPopulated
+      ? "long"
+      : !longPopulated && shortPopulated
+      ? "short"
+      : longPopulated
+      ? "long"
+      : shortPopulated
+      ? "short"
+      : "long";
 
-  const applyStrikeSelection = (criteria, rawValue) => {
-    setSelectedStrikeCriteria((prev) => (prev === criteria ? prev : criteria));
+  const existingActiveStrike =
+    primaryStrikeSource === "short"
+      ? existingActiveShort || existingActiveLong
+      : existingActiveLong || existingActiveShort;
 
-    if (criteria === "ATM_PT" || criteria === "ATM_PERCENT") {
-      const formatted = formatStrikeOffset(rawValue, criteria);
-      const numeric = Number(rawValue) || 0;
-      const nextValue =
-        numeric === 0
-          ? "ATM"
-          : numeric < 0
-          ? `ITM_${formatted}`
-          : `OTM_${formatted}`;
+  const position = existingActiveStrike?.TransactionType || "BUY";
+  const expiryType = existingActiveStrike?.ExpiryType || "WEEKLY";
+  const slTypeSel = existingActiveStrike?.SLType === "slpt" ? "SL pt" : "SL%";
+  const tpTypeSel =
+    existingActiveStrike?.TargetType === "tgpt" ? "TP pt" : "TP%";
+  const slAction =
+    existingActiveStrike?.SLActionTypeId === "ONCLOSE"
+      ? "On Close"
+      : "On Price";
+  const tpAction =
+    existingActiveStrike?.TargetActionTypeId === "ONCLOSE"
+      ? "On Close"
+      : "On Price";
+  const targetValue = Number(existingActiveStrike?.Target) || 0;
+  const stopLossQty = Number(existingActiveStrike?.StopLoss) || 30;
+  const prePunchSL = !!existingActiveStrike?.isPrePunchSL;
 
-      setStrikeTypeSelectValue((prev) =>
-        prev === nextValue ? prev : nextValue
-      );
-      setStrikeTypeNumber((prev) => (prev === 0 ? prev : 0));
-    } else {
-      const numeric = Number(rawValue) || 0;
-      setStrikeTypeNumber((prev) => (prev === numeric ? prev : numeric));
-      setStrikeTypeSelectValue((prev) => (prev === "ATM" ? prev : "ATM"));
+  const longCondition = isIndicatorStrategy
+    ? (longPopulated
+        ? existingActiveLong?.StrikeType
+        : existingActiveShort?.StrikeType) || "CE"
+    : "";
+  const optionType = existingActiveStrike?.StrikeType === "PE" ? "Put" : "Call";
+  const shortCondition = isIndicatorStrategy
+    ? shortPopulated
+      ? existingActiveShort?.StrikeType
+      : longCondition === "CE"
+      ? "PE"
+      : "CE"
+    : "";
+
+  const backendStrikeType = existingActiveStrike?.strikeTypeobj?.type || "ATM";
+  const selectedStrikeCriteria = (() => {
+    if (backendStrikeType === "ATMPER") return "ATM_PERCENT";
+    if (backendStrikeType === "ATM") return "ATM_PT";
+    if (backendStrikeType === "CPNEAR") return "CP";
+    if (backendStrikeType === "CPGREATERTHAN") return "CP_GTE";
+    if (backendStrikeType === "CPLESSTHAN") return "CP_LTE";
+    return "ATM_PT";
+  })();
+
+  const strikeValueNumeric =
+    Number(existingActiveStrike?.strikeTypeobj?.StrikeValue) || 0;
+  const isATMMode =
+    selectedStrikeCriteria === "ATM_PT" ||
+    selectedStrikeCriteria === "ATM_PERCENT";
+
+  const formatATMSelection = (value, criteria) => {
+    if (!value) return "ATM";
+    const abs = Math.abs(value);
+    if (criteria === "ATM_PERCENT") {
+      const formatted = Number(abs).toFixed(1);
+      return value < 0 ? `ITM_${formatted}` : `OTM_${formatted}`;
     }
+    return value < 0 ? `ITM_${abs}` : `OTM_${abs}`;
   };
 
-  const handleStrikeCriteriaChange = (criteria) => {
-    applyStrikeSelection(criteria, 0);
-  };
+  const strikeTypeSelectValue = isATMMode
+    ? formatATMSelection(strikeValueNumeric, selectedStrikeCriteria)
+    : "ATM";
+  const strikeTypeNumber = !isATMMode ? Math.max(0, strikeValueNumeric) : 0;
 
-  // Qty multiplier
-  const [qtyMultiplier, setQtyMultiplier] = useState(1);
-  // NEW: stop loss qty state (maps to StopLoss)
-  const [stopLossQty, setStopLossQty] = useState(30);
+  const lotSizeBase = selectedInstrument?.LotSize || 0;
+  const effectiveLotSize =
+    lotSizeBase || Number(existingActiveStrike?.lotSize) || 0;
+
+  const qtyMultiplier = useMemo(() => {
+    if (!effectiveLotSize) return 1;
+    const rawQty = Number(existingActiveStrike?.Qty);
+    if (!Number.isFinite(rawQty) || rawQty <= 0) {
+      return 1;
+    }
+    const ratio = rawQty / effectiveLotSize;
+    return Math.max(1, Math.round(ratio) || 1);
+  }, [existingActiveStrike, effectiveLotSize]);
+
+  const qtyDisplay = effectiveLotSize
+    ? Math.max(1, qtyMultiplier) * effectiveLotSize
+    : Number(existingActiveStrike?.Qty) || 0;
+
+  const getLegSummary = useCallback(
+    (idx) => {
+      const script = strategyScripts?.[0];
+      const longLeg = script?.LongEquationoptionStrikeList?.[idx];
+      const shortLeg = script?.ShortEquationoptionStrikeList?.[idx];
+      const isActive = idx === activeLegIndex;
+
+      const longLegPopulated = isPopulatedStrike(longLeg);
+      const shortLegPopulated = isPopulatedStrike(shortLeg);
+
+      let legData = longLeg;
+      if (!longLegPopulated && shortLegPopulated) {
+        legData = shortLeg;
+      } else if (!longLegPopulated && !shortLegPopulated) {
+        legData = shortLeg || longLeg;
+      }
+
+      const sourceStrike = legData || (isActive ? existingActiveStrike : null);
+
+      const transaction =
+        sourceStrike?.TransactionType || (isActive ? position : "SELL");
+      const optionSymbol =
+        sourceStrike?.StrikeType ||
+        (isActive
+          ? isIndicatorStrategy
+            ? longCondition
+            : optionType === "Call"
+            ? "CE"
+            : "PE"
+          : "");
+
+      const qtyValue =
+        sourceStrike?.Qty ||
+        (isActive
+          ? String(
+              Math.max(1, qtyMultiplier) * (selectedInstrument?.LotSize || 0)
+            )
+          : "");
+
+      const strikeObj =
+        sourceStrike?.strikeTypeobj ||
+        (isActive
+          ? {
+              type: strikeCriteriaToType(selectedStrikeCriteria),
+              StrikeValue: isATMMode
+                ? parseStrikeToken(strikeTypeSelectValue)
+                : strikeTypeNumber,
+              RangeFrom: 0,
+              RangeTo: 0,
+            }
+          : null);
+
+      const targetText =
+        sourceStrike &&
+        sourceStrike.Target !== undefined &&
+        sourceStrike.Target !== null
+          ? String(sourceStrike.Target)
+          : isActive
+          ? String(targetValue)
+          : "";
+      const stopLossText =
+        sourceStrike &&
+        sourceStrike.StopLoss !== undefined &&
+        sourceStrike.StopLoss !== null
+          ? String(sourceStrike.StopLoss)
+          : isActive
+          ? String(stopLossQty)
+          : "";
+      const instrumentName =
+        sourceStrike?.InstrumentName ||
+        script?.InstrumentName ||
+        selectedInstrument?.Name ||
+        "";
+
+      const summaryBits = [
+        instrumentName || null,
+        qtyValue ? `Qty ${qtyValue}` : null,
+        `Strike ${formatStrikeSummary(strikeObj)}`,
+        targetText ? `TP ${targetText}` : null,
+        stopLossText ? `SL ${stopLossText}` : null,
+      ].filter(Boolean);
+
+      return {
+        title: `${transaction || "SELL"} ${optionSymbol || ""}`.trim(),
+        subtitle: summaryBits.join(" • "),
+      };
+    },
+    [
+      strategyScripts,
+      activeLegIndex,
+      position,
+      isIndicatorStrategy,
+      longCondition,
+      optionType,
+      qtyMultiplier,
+      selectedInstrument,
+      selectedStrikeCriteria,
+      isATMMode,
+      strikeTypeSelectValue,
+      strikeTypeNumber,
+      targetValue,
+      stopLossQty,
+      existingActiveStrike,
+      isPopulatedStrike,
+    ]
+  );
+
+  const applyStrikeUpdate = useCallback(
+    (mutator) => {
+      const scripts = getValues("StrategyScriptList") || [];
+      if (!scripts.length) return;
+
+      const prevBase = scripts[0] || {};
+      const base = { ...prevBase };
+      const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+        ? [...base.LongEquationoptionStrikeList]
+        : [];
+      const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+        ? [...base.ShortEquationoptionStrikeList]
+        : [];
+
+      while (longArr.length <= activeLegIndex) {
+        longArr.push(createDefaultStrike());
+      }
+
+      if (!isTimeStrategy) {
+        while (shortArr.length <= activeLegIndex) {
+          shortArr.push(createDefaultStrike());
+        }
+      }
+
+      const longStrike = { ...longArr[activeLegIndex] };
+      const shortStrike = !isTimeStrategy
+        ? { ...shortArr[activeLegIndex] }
+        : undefined;
+
+      mutator({ longStrike, shortStrike });
+
+      longArr[activeLegIndex] = longStrike;
+      if (!isTimeStrategy && shortStrike) {
+        shortArr[activeLegIndex] = shortStrike;
+      }
+
+      const instrumentLot = selectedInstrument?.LotSize || 0;
+
+      const nextBase = {
+        ...base,
+        LongEquationoptionStrikeList: longArr,
+        ...(isTimeStrategy ? {} : { ShortEquationoptionStrikeList: shortArr }),
+      };
+
+      if (instrumentLot && !nextBase.Qty) {
+        nextBase.Qty = instrumentLot;
+      }
+
+      const prevJSON = JSON.stringify(prevBase);
+      const nextJSON = JSON.stringify(nextBase);
+
+      if (prevJSON !== nextJSON) {
+        const updatedScripts = [nextBase];
+        setValue("StrategyScriptList", updatedScripts, { shouldDirty: true });
+        updatePayload({ StrategyScriptList: updatedScripts });
+      }
+    },
+    [
+      activeLegIndex,
+      getValues,
+      selectedInstrument,
+      isTimeStrategy,
+      setValue,
+      updatePayload,
+    ]
+  );
 
   // ✅ Per-leg advance features using Zustand store
   const getPerLegFeature = (featureName, defaultValue) => {
@@ -263,8 +475,6 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     setPerLegFeature("premiumDiffEnabled", val);
   const setPremiumDiffValue = (val) =>
     setPerLegFeature("premiumDiffValue", val);
-  const [showPremiumDiffInlineInput, setShowPremiumDiffInlineInput] =
-    useState(false);
 
   // Re-Entry/Execute states (per-leg)
   const reEntryEnabled = getPerLegFeature("reEntryEnabled", false);
@@ -295,469 +505,118 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   const setTrailSlTrailingValue = (val) =>
     setPerLegFeature("trailSlTrailingValue", val);
 
-  // compute disabled state when no instrument selected
-  const isDisabled = !selectedInstrument || !selectedInstrument.InstrumentToken;
-
-  // Default payload/object for Leg1 when clearing/resetting
-  const LEG1_DEFAULTS = {
-    position: "BUY",
-    optionType: "Call",
-    prePunchSL: false,
-    signalCandleCondition: false,
-    // add other fields you use in payload here with sensible defaults
-    Qty: 0,
-    ExpiryType: "WEEKLY",
-    StrikeType: "ATM",
-    SLType: "SL%",
-    TPType: "TP%",
-  };
-
-  // derive lot size
-  const lotSizeBase = selectedInstrument?.LotSize || 0;
-  const qtyDisplay = Math.max(1, qtyMultiplier) * lotSizeBase;
-
-  // REMOVED: syncing local Leg1 state into form (Leg1 field no longer needed)
-  // useEffect(() => {
-  //   setValue("Leg1", { position, optionType, prePunchSL, signalCandleCondition }, { shouldDirty: true });
-  // }, [position, optionType, prePunchSL, signalCandleCondition, setValue]);
-
-  // UPDATED: instrument change effect (removed setValue for Leg1)
-  useLayoutEffect(() => {
-    if (!selectedInstrument) {
-      setPosition(LEG1_DEFAULTS.position);
-      setOptionType(LEG1_DEFAULTS.optionType);
-      setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
-      setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
-      return;
-    }
-    // Prefill from existing strike at current leg (edit or when switching legs)
-    const scripts = getValues("StrategyScriptList") || [];
-    const first = scripts[0];
-
-    // Check both Long and Short lists for indicator-based strategies
-    const longAt = first?.LongEquationoptionStrikeList?.[activeLegIndex];
-    const shortAt = first?.ShortEquationoptionStrikeList?.[activeLegIndex];
-
-    // Use whichever has data (Long takes priority if both exist)
-    const strikeData = longAt || shortAt;
-
-    if (strikeData) {
-      setPosition(strikeData.TransactionType || "BUY");
-      if (selectedStrategyTypes?.[0] === "time") {
-        setOptionType(strikeData.StrikeType === "PE" ? "Put" : "Call");
-      }
-      setExpiryType(strikeData.ExpiryType || "WEEKLY");
-      setSlTypeSel(strikeData.SLType === "slpt" ? "SL pt" : "SL%");
-      setTpTypeSel(strikeData.TargetType === "tgpt" ? "TP pt" : "TP%");
-      setStopLossQty(Number(strikeData.StopLoss) ?? 30);
-      setTargetValue(Number(strikeData.Target) ?? 0);
-      setPrePunchSL(!!strikeData.isPrePunchSL);
-      setSlAction(
-        strikeData.SLActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
-      );
-      setTpAction(
-        strikeData.TargetActionTypeId === "ONCLOSE" ? "On Close" : "On Price"
-      );
-      // derive wait & trade
-      if (strikeData.waitNTrade?.isWaitnTrade) {
-        setWaitTradeEnabled(true);
-        setWaitTradeMovement(Number(strikeData.waitNTrade.MovementValue) || 0);
-        // map backend typeId to label
-        const wtMapRev = {
-          "wtpr_-": "% ↓",
-          wt_eq: "% ↑",
-          "wtpt_+": "pt ↑",
-          "wtpt_-": "pt ↓",
-        };
-        setWaitTradeType(wtMapRev[strikeData.waitNTrade.typeId] || "% ↑");
-      } else {
-        setWaitTradeEnabled(false);
-        // ✅ DON'T reset movement value - preserve per-leg value
-        // User may have configured it but not enabled the feature yet
-      }
-      // derive premium difference
-      if (strikeData.IsPriceDiffrenceConstrant) {
-        setPremiumDiffEnabled(true);
-        setPremiumDiffValue(
-          Number(strikeData.PriceDiffrenceConstrantValue) || 0
-        );
-      } else {
-        setPremiumDiffEnabled(false);
-        // ✅ DON'T reset premium value - preserve per-leg value
-      }
-
-      // derive re-entry/execute
-      if (strikeData.reEntry?.isRentry) {
-        setReEntryEnabled(true);
-        // Map backend RentryType to UI executionType
-        const rentryTypeReverseMap = {
-          REX: "ReExecute",
-          REN: "ReEntry On Close",
-          RENC: "ReEntry On Cost",
-        };
-        setReEntryExecutionType(
-          rentryTypeReverseMap[strikeData.reEntry.RentryType] || "ReExecute"
-        );
-        setReEntryCycles(Number(strikeData.reEntry.TradeCycle) || 1);
-        setReEntryActionType(strikeData.reEntry.RentryActionTypeId || "IMMDT");
-      } else {
-        setReEntryEnabled(false);
-        setReEntryExecutionType("ReExecute");
-        setReEntryCycles(1);
-        // ✅ DON'T reset action type - preserve per-leg value
-      }
-
-      // derive trail SL
-      if (strikeData.isTrailSL && strikeData.TrailingSL) {
-        setTrailSlEnabled(true);
-        setTrailSlType(
-          strikeData.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%"
-        );
-        setTrailSlPriceMovement(
-          Number(strikeData.TrailingSL.InstrumentMovementValue) || 0
-        );
-        setTrailSlTrailingValue(
-          Number(strikeData.TrailingSL.TrailingValue) || 0
-        );
-      } else {
-        setTrailSlEnabled(false);
-        setTrailSlType("%");
-        setTrailSlPriceMovement(0);
-        setTrailSlTrailingValue(0);
-      }
-      const typeMapRev = {
-        ATM: "ATM_PT",
-        ATMPER: "ATM_PERCENT",
-        CPNEAR: "CP",
-        CPGREATERTHAN: "CP_GTE",
-        CPLESSTHAN: "CP_LTE",
-      };
-      const t = strikeData.strikeTypeobj?.type;
-      const svNum = Number(strikeData?.strikeTypeobj?.StrikeValue) || 0;
-      if (t) {
-        const mapped =
-          typeMapRev[t] || (String(t).startsWith("CP") ? "CP" : "ATM_PT");
-        applyStrikeSelection(mapped, svNum);
-      }
-      // set qty multiplier per leg from saved Qty
-      const lot = selectedInstrument?.LotSize || 0;
-      const legQty = Number(strikeData.Qty) || 0;
-      if (lot > 0 && legQty > 0) {
-        const mult = Math.max(1, Math.round(legQty / lot));
-        setQtyMultiplier(mult);
-      } else {
-        // default qty multiplier for fresh legs
-        setQtyMultiplier(1);
-      }
-    } else {
-      // new selection reset
-      setPosition(LEG1_DEFAULTS.position);
-      setOptionType(LEG1_DEFAULTS.optionType);
-      setPrePunchSL(LEG1_DEFAULTS.prePunchSL);
-      setSignalCandleCondition(LEG1_DEFAULTS.signalCandleCondition);
-      setQtyMultiplier(1);
-      // reset advanced features
-      setWaitTradeEnabled(false);
-      setWaitTradeMovement(0);
-      setWaitTradeType("% ↑");
-      setPremiumDiffEnabled(false);
-      setPremiumDiffValue(0);
-      setReEntryEnabled(false);
-      setReEntryExecutionType("ReExecute");
-      setReEntryCycles(1);
-      setTrailSlEnabled(false);
-      setTrailSlType("%");
-      setTrailSlPriceMovement(0);
-      setTrailSlTrailingValue(0);
-    }
-  }, [selectedInstrument, editing, activeLegIndex, strategyScripts]);
-
-  // unified builder for StrategyScriptList (apply to active leg only)
   useEffect(() => {
-    // Skip processing if instrument not selected
-    if (!selectedInstrument) return;
+    const scripts = getValues("StrategyScriptList") || [];
+    if (!scripts.length) return;
 
-    // Function to update form values - called at the end to prevent excessive renders
-    const updateFormValues = () => {
-      const isTime = selectedStrategyTypes?.[0] === "time";
+    const base = { ...(scripts[0] || {}) };
+    const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+      ? [...base.LongEquationoptionStrikeList]
+      : [];
+    const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+      ? [...base.ShortEquationoptionStrikeList]
+      : [];
 
-      // Get current values
-      const scripts = getValues("StrategyScriptList") || [];
-      const base = { ...(scripts[0] || {}) };
-      const existingActiveLong =
-        scripts?.[0]?.LongEquationoptionStrikeList?.[activeLegIndex];
+    let updated = false;
 
-      // Set instrument identity
-      base.InstrumentToken =
-        selectedInstrument.InstrumentToken || base.InstrumentToken || "";
-      base.InstrumentName =
-        selectedInstrument.Name || base.InstrumentName || "";
-      base.StrikeTickValue = base.StrikeTickValue || 0;
+    while (longArr.length <= activeLegIndex) {
+      longArr.push(createDefaultStrike());
+      updated = true;
+    }
 
-      // Set lot sizes
-      const lotSizeBase = selectedInstrument?.LotSize || 0;
-      base.Qty = lotSizeBase;
-      const legQty = Math.max(1, qtyMultiplier) * lotSizeBase;
-
-      // Helper functions
-      const mapCriteriaType = (crit) => {
-        if (crit === "ATM_PERCENT") return "ATMPER";
-        if (crit === "ATM_PT") return "ATM";
-        if (crit === "CP") return "CPNEAR";
-        if (crit === "CP_GTE") return "CPGREATERTHAN";
-        if (crit === "CP_LTE") return "CPLESSTHAN";
-        return crit;
-      };
-
-      const parseOffsetValue = (raw) => {
-        if (raw === "ATM") return 0;
-        const parts = raw.split("_");
-        if (parts.length < 2) return 0;
-        const side = parts[0];
-        const num = parseFloat(parts[1]);
-        if (isNaN(num)) return 0;
-        return side === "ITM" ? -num : num;
-      };
-
-      // Values for strike calculation
-      const strikeValueRaw = isATMMode
-        ? strikeTypeSelectValue
-        : strikeTypeNumber;
-      const strikeValueNumeric =
-        typeof strikeValueRaw === "number"
-          ? strikeValueRaw
-          : parseOffsetValue(strikeValueRaw);
-
-      // Type codes
-      const slTypeCode = slTypeSel === "SL%" ? "slpr" : "slpt";
-      const tpTypeCode = tpTypeSel === "TP%" ? "tgpr" : "tgpt";
-      const actionMap = (v) => (v === "On Close" ? "ONCLOSE" : "ONPRICE");
-
-      // Wait & Trade type mapping
-      const mapWaitTradeType = (label) => {
-        const map = {
-          "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
-          "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
-          "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
-          "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
-          Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
-        };
-        return map[label] || map["% ↑"];
-      };
-      const wtTypeMeta = mapWaitTradeType(waitTradeType);
-
-      // Create strike object builder
-      const buildStrike = (strikeTypeSymbol) => {
-        // Derive effective feature states
-        const prevWait = existingActiveLong?.waitNTrade;
-        const prevPremEnabled = existingActiveLong?.IsPriceDiffrenceConstrant;
-        const prevPremValue = existingActiveLong?.PriceDiffrenceConstrantValue;
-        const prevReEntry = existingActiveLong?.reEntry;
-        const prevTrailSL = existingActiveLong?.TrailingSL;
-
-        // Wait & Trade settings
-        const effectiveWaitEnabled = waitTradeEnabled || prevWait?.isWaitnTrade;
-        let effectiveWaitObj;
-
-        if (effectiveWaitEnabled) {
-          if (waitTradeEnabled) {
-            effectiveWaitObj = {
-              isWaitnTrade: true,
-              isPerPt: wtTypeMeta.isPerPt,
-              typeId: wtTypeMeta.typeId,
-              MovementValue: String(waitTradeMovement),
-            };
-          } else if (prevWait?.isWaitnTrade) {
-            effectiveWaitObj = { ...prevWait };
-          }
-        } else {
-          effectiveWaitObj = {
-            isWaitnTrade: false,
-            isPerPt: wtTypeMeta.isPerPt,
-            typeId: wtTypeMeta.typeId,
-            MovementValue: "0",
-          };
-        }
-
-        // Premium difference settings
-        const globalPremEnabled = advanceFeatures?.["Premium Difference"];
-        const globalPremValue = advanceFeatures?.PremiumDifferenceValue;
-        const effectivePremiumEnabled =
-          premiumDiffEnabled || prevPremEnabled || globalPremEnabled;
-        const effectivePremiumValue = premiumDiffEnabled
-          ? String(premiumDiffValue)
-          : globalPremValue !== undefined
-          ? String(globalPremValue)
-          : prevPremEnabled
-          ? String(prevPremValue)
-          : "0";
-
-        // Re-Entry/Execute settings
-        const globalReEntryEnabled = advanceFeatures?.["Re Entry/Execute"];
-        const effectiveReEntryEnabled =
-          reEntryEnabled || prevReEntry?.isRentry || globalReEntryEnabled;
-
-        // Map UI executionType to backend RentryType
-        const rentryTypeMap = {
-          ReExecute: "REX",
-          "ReEntry On Close": "REN",
-          "ReEntry On Cost": "RENC",
-        };
-
-        // Use per-leg action type or auto-determine based on executionType
-        let finalActionType = reEntryActionType; // Use per-leg value
-        if (reEntryExecutionType === "ReEntry On Cost") {
-          finalActionType = "ON_COST";
-        } else if (reEntryExecutionType === "ReEntry On Close") {
-          finalActionType = "ON_CLOSE";
-        }
-
-        const effectiveReEntryObj = effectiveReEntryEnabled
-          ? {
-              isRentry: true,
-              RentryType: rentryTypeMap[reEntryExecutionType] || "REX",
-              TradeCycle: String(reEntryCycles || prevReEntry?.TradeCycle || 1),
-              RentryActionTypeId: finalActionType,
-            }
-          : {
-              isRentry: false,
-              RentryType: "REX",
-              TradeCycle: "0",
-              RentryActionTypeId: "IMMDT",
-            };
-
-        // Trail SL settings
-        const globalTrailSlEnabled = advanceFeatures?.["Trail SL"];
-        const effectiveTrailSlEnabled =
-          trailSlEnabled ||
-          existingActiveLong?.isTrailSL ||
-          globalTrailSlEnabled;
-        const effectiveTrailSlObj = effectiveTrailSlEnabled
-          ? {
-              TrailingType: trailSlType === "%" ? "tslpr" : "tslpt",
-              InstrumentMovementValue:
-                String(trailSlPriceMovement) ||
-                String(prevTrailSL?.InstrumentMovementValue) ||
-                "0",
-              TrailingValue:
-                String(trailSlTrailingValue) ||
-                String(prevTrailSL?.TrailingValue) ||
-                "0",
-            }
-          : {
-              TrailingType: "tslpr",
-              InstrumentMovementValue: "0",
-              TrailingValue: "0",
-            };
-
-        // Return completed strike object
-        return {
-          TransactionType: position,
-          StrikeType: strikeTypeSymbol,
-          StrikeValueType: 0,
-          StrikeValue: 0,
-          SLActionTypeId: actionMap(slAction),
-          TargetActionTypeId: actionMap(tpAction),
-          TargetType: tpTypeCode,
-          SLType: slTypeCode,
-          Target: String(targetValue),
-          StopLoss: String(stopLossQty),
-          Qty: String(legQty),
-          ExpiryType: expiryType,
-          strikeTypeobj: {
-            type: mapCriteriaType(selectedStrikeCriteria),
-            StrikeValue: strikeValueNumeric,
-            RangeFrom: 0,
-            RangeTo: 0,
-          },
-          isTrailSL: effectiveTrailSlEnabled,
-          // Respect existing flags updated via AdvanceFeatures panel
-          IsMoveSLCTC: existingActiveStrike?.IsMoveSLCTC ?? false,
-          isExitAll: existingActiveStrike?.isExitAll ?? false,
-          isPrePunchSL: prePunchSL,
-          reEntry: effectiveReEntryObj,
-          waitNTrade: effectiveWaitObj,
-          TrailingSL: effectiveTrailSlObj,
-          lotSize: lotSizeBase,
-          IsPriceDiffrenceConstrant: effectivePremiumEnabled,
-          PriceDiffrenceConstrantValue: String(effectivePremiumValue),
-        };
-      };
-
-      // Create strikes
-      const optionStrikeType = optionType === "Call" ? "CE" : "PE";
-      const longStrike = buildStrike(isTime ? optionStrikeType : longCondition);
-
-      // Prepare arrays
-      const longArr = Array.isArray(base.LongEquationoptionStrikeList)
-        ? [...base.LongEquationoptionStrikeList]
-        : [];
-      const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
-        ? [...base.ShortEquationoptionStrikeList]
-        : [];
-
-      // Ensure arrays have enough slots
-      while (longArr.length <= activeLegIndex) longArr.push(undefined);
-      if (!isTime)
-        while (shortArr.length <= activeLegIndex) shortArr.push(undefined);
-
-      // Set strikes
-      longArr[activeLegIndex] = longStrike;
-      if (!isTime) {
-        const shortStrike = buildStrike(shortCondition);
-        shortArr[activeLegIndex] = shortStrike;
+    if (!isTimeStrategy) {
+      while (shortArr.length <= activeLegIndex) {
+        shortArr.push(createDefaultStrike());
+        updated = true;
       }
+    }
 
-      // Filter out undefined values
-      base.LongEquationoptionStrikeList = longArr.filter(
-        (x) => x !== undefined
-      );
-      if (!isTime)
-        base.ShortEquationoptionStrikeList = shortArr.filter(
-          (x) => x !== undefined
-        );
+    if (!updated) return;
 
-      // Compare existing and new values to avoid unnecessary updates
-      const prevJSON = JSON.stringify(scripts[0] || {});
-      const nextJSON = JSON.stringify(base);
+    const next = [
+      {
+        ...base,
+        LongEquationoptionStrikeList: longArr,
+        ...(isTimeStrategy ? {} : { ShortEquationoptionStrikeList: shortArr }),
+      },
+    ];
 
-      if (prevJSON !== nextJSON) {
-        setValue("StrategyScriptList", [base], { shouldDirty: true });
+    setValue("StrategyScriptList", next, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: next });
+  }, [activeLegIndex, getValues, isTimeStrategy, setValue, updatePayload]);
+
+  useEffect(() => {
+    if (!effectiveLotSize || !existingActiveStrike) return;
+    const currentQty = Number(existingActiveStrike.Qty) || 0;
+    if (currentQty > 0) return;
+
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      const defaultQty = String(effectiveLotSize);
+      longStrike.Qty = defaultQty;
+      longStrike.lotSize = effectiveLotSize;
+      if (shortStrike) {
+        shortStrike.Qty = defaultQty;
+        shortStrike.lotSize = effectiveLotSize;
       }
+    });
+  }, [effectiveLotSize, existingActiveStrike, applyStrikeUpdate]);
+
+  useEffect(() => {
+    if (!existingActiveStrike) return;
+
+    const wtMapRev = {
+      "wtpr_-": "% ↓",
+      wt_eq: "% ↑",
+      "wtpt_+": "pt ↑",
+      "wtpt_-": "pt ↓",
     };
 
-    // Use a timeout to debounce multiple rapid updates
-    // This is critical to prevent the maximum update depth error
-    const timeoutId = setTimeout(() => {
-      updateFormValues();
-    }, 0);
+    const wait = existingActiveStrike.waitNTrade;
+    if (wait?.isWaitnTrade) {
+      if (!waitTradeEnabled) setWaitTradeEnabled(true);
+      const movement = Number(wait.MovementValue) || 0;
+      if (waitTradeMovement !== movement) setWaitTradeMovement(movement);
+      const label = wtMapRev[wait.typeId] || "% ↑";
+      if (waitTradeType !== label) setWaitTradeType(label);
+    }
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
+    if (existingActiveStrike.IsPriceDiffrenceConstrant) {
+      const value =
+        Number(existingActiveStrike.PriceDiffrenceConstrantValue) || 0;
+      if (!premiumDiffEnabled) setPremiumDiffEnabled(true);
+      if (premiumDiffValue !== value) setPremiumDiffValue(value);
+    }
+
+    if (existingActiveStrike.reEntry?.isRentry) {
+      const rentryTypeMap = {
+        REX: "ReExecute",
+        REN: "ReEntry On Close",
+        RENC: "ReEntry On Cost",
+      };
+      const exec =
+        rentryTypeMap[existingActiveStrike.reEntry.RentryType] || "ReExecute";
+      if (!reEntryEnabled) setReEntryEnabled(true);
+      if (reEntryExecutionType !== exec) setReEntryExecutionType(exec);
+      const cycles = Number(existingActiveStrike.reEntry.TradeCycle) || 1;
+      if (reEntryCycles !== cycles) setReEntryCycles(cycles);
+      const action = existingActiveStrike.reEntry.RentryActionTypeId || "IMMDT";
+      if (reEntryActionType !== action) setReEntryActionType(action);
+    }
+
+    if (existingActiveStrike.isTrailSL && existingActiveStrike.TrailingSL) {
+      if (!trailSlEnabled) setTrailSlEnabled(true);
+      const typeLabel =
+        existingActiveStrike.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%";
+      if (trailSlType !== typeLabel) setTrailSlType(typeLabel);
+      const movement =
+        Number(existingActiveStrike.TrailingSL.InstrumentMovementValue) || 0;
+      if (trailSlPriceMovement !== movement) setTrailSlPriceMovement(movement);
+      const trailing =
+        Number(existingActiveStrike.TrailingSL.TrailingValue) || 0;
+      if (trailSlTrailingValue !== trailing) setTrailSlTrailingValue(trailing);
+    }
   }, [
-    selectedInstrument,
-    selectedStrategyTypes,
-    qtyMultiplier,
-    selectedStrikeCriteria,
-    strikeTypeSelectValue,
-    strikeTypeNumber,
-    isATMMode,
-    longCondition,
-    shortCondition,
-    prePunchSL,
-    position,
-    optionType,
-    getValues,
-    setValue,
-    stopLossQty,
-    targetValue,
-    slTypeSel,
-    tpTypeSel,
-    slAction,
-    tpAction,
-    expiryType,
-    activeLegIndex,
+    existingActiveStrike,
     waitTradeEnabled,
     waitTradeMovement,
     waitTradeType,
@@ -766,17 +625,508 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
     reEntryEnabled,
     reEntryExecutionType,
     reEntryCycles,
+    reEntryActionType,
+    trailSlEnabled,
+    trailSlType,
+    trailSlPriceMovement,
+    trailSlTrailingValue,
+    setWaitTradeEnabled,
+    setWaitTradeMovement,
+    setWaitTradeType,
+    setPremiumDiffEnabled,
+    setPremiumDiffValue,
+    setReEntryEnabled,
+    setReEntryExecutionType,
+    setReEntryCycles,
+    setReEntryActionType,
+    setTrailSlEnabled,
+    setTrailSlType,
+    setTrailSlPriceMovement,
+    setTrailSlTrailingValue,
+  ]);
+
+  useEffect(() => {
+    const mapWaitTradeType = (label) => {
+      const meta = {
+        "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
+        "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
+        "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
+        "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
+        Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
+      };
+      return meta[label] || meta["% ↑"];
+    };
+
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      const meta = mapWaitTradeType(waitTradeType);
+      const globalEnabled = advanceFeatures?.["Wait & Trade"];
+
+      const applyToStrike = (strike) => {
+        const prev = strike.waitNTrade || {};
+        const effectiveEnabled =
+          waitTradeEnabled || prev.isWaitnTrade || globalEnabled;
+
+        if (!effectiveEnabled) {
+          strike.waitNTrade = {
+            isWaitnTrade: false,
+            isPerPt: meta.isPerPt,
+            typeId: meta.typeId,
+            MovementValue: "0",
+          };
+          return;
+        }
+
+        if (waitTradeEnabled) {
+          strike.waitNTrade = {
+            isWaitnTrade: true,
+            isPerPt: meta.isPerPt,
+            typeId: meta.typeId,
+            MovementValue: String(waitTradeMovement || 0),
+          };
+          return;
+        }
+
+        if (globalEnabled) {
+          const globalType =
+            advanceFeatures?.WaitTradeType || prev.typeId || meta.typeId;
+          const globalMovement =
+            advanceFeatures?.WaitTradeMovement ?? prev.MovementValue ?? "0";
+          strike.waitNTrade = {
+            isWaitnTrade: true,
+            isPerPt: globalType,
+            typeId: globalType,
+            MovementValue: String(globalMovement),
+          };
+          return;
+        }
+
+        if (prev.isWaitnTrade) {
+          strike.waitNTrade = { ...prev };
+          return;
+        }
+
+        strike.waitNTrade = {
+          isWaitnTrade: false,
+          isPerPt: meta.isPerPt,
+          typeId: meta.typeId,
+          MovementValue: "0",
+        };
+      };
+
+      applyToStrike(longStrike);
+      if (shortStrike) applyToStrike(shortStrike);
+    });
+  }, [
+    waitTradeEnabled,
+    waitTradeMovement,
+    waitTradeType,
+    advanceFeatures,
+    applyStrikeUpdate,
+  ]);
+
+  useEffect(() => {
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      const globalEnabled = advanceFeatures?.["Premium Difference"];
+      const globalValue = advanceFeatures?.PremiumDifferenceValue;
+
+      const applyToStrike = (strike) => {
+        const effectiveEnabled =
+          premiumDiffEnabled ||
+          strike.IsPriceDiffrenceConstrant ||
+          globalEnabled;
+
+        if (!effectiveEnabled) {
+          strike.IsPriceDiffrenceConstrant = false;
+          strike.PriceDiffrenceConstrantValue = String(
+            strike.PriceDiffrenceConstrantValue || "0"
+          );
+          return;
+        }
+
+        const value = premiumDiffEnabled
+          ? Number(premiumDiffValue) || 0
+          : globalValue !== undefined
+          ? Number(globalValue) || 0
+          : Number(strike.PriceDiffrenceConstrantValue) || 0;
+
+        strike.IsPriceDiffrenceConstrant = value > 0;
+        strike.PriceDiffrenceConstrantValue = String(value);
+      };
+
+      applyToStrike(longStrike);
+      if (shortStrike) applyToStrike(shortStrike);
+    });
+  }, [
+    premiumDiffEnabled,
+    premiumDiffValue,
+    advanceFeatures,
+    applyStrikeUpdate,
+  ]);
+
+  useEffect(() => {
+    const mapUiToCode = {
+      ReExecute: "REX",
+      "ReEntry On Close": "REN",
+      "ReEntry On Cost": "RENC",
+    };
+    const mapCodeToUi = {
+      REX: "ReExecute",
+      REN: "ReEntry On Close",
+      RENC: "ReEntry On Cost",
+    };
+
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      const globalEnabled = advanceFeatures?.["Re Entry/Execute"];
+
+      const applyToStrike = (strike) => {
+        const prev = strike.reEntry || {};
+        const effectiveEnabled =
+          reEntryEnabled || prev.isRentry || globalEnabled;
+
+        if (!effectiveEnabled) {
+          strike.reEntry = {
+            isRentry: false,
+            RentryType: "REX",
+            TradeCycle: "0",
+            RentryActionTypeId: "IMMDT",
+          };
+          return;
+        }
+
+        const executionType = reEntryEnabled
+          ? reEntryExecutionType
+          : advanceFeatures?.ReEntryExecutionType ||
+            mapCodeToUi[prev.RentryType] ||
+            "ReExecute";
+
+        const cycles = reEntryEnabled
+          ? Number(reEntryCycles) || 1
+          : Number(advanceFeatures?.ReEntryCycles || prev.TradeCycle || 1);
+
+        let actionType = reEntryEnabled
+          ? reEntryActionType
+          : advanceFeatures?.ReEntryActionType ||
+            prev.RentryActionTypeId ||
+            "IMMDT";
+
+        if (executionType === "ReEntry On Cost") {
+          actionType = "ON_COST";
+        } else if (executionType === "ReEntry On Close") {
+          actionType = "ON_CLOSE";
+        }
+
+        strike.reEntry = {
+          isRentry: true,
+          RentryType: mapUiToCode[executionType] || "REX",
+          TradeCycle: String(Math.max(1, cycles)),
+          RentryActionTypeId: actionType,
+        };
+      };
+
+      applyToStrike(longStrike);
+      if (shortStrike) applyToStrike(shortStrike);
+    });
+  }, [
+    reEntryEnabled,
+    reEntryExecutionType,
+    reEntryCycles,
+    reEntryActionType,
+    advanceFeatures,
+    applyStrikeUpdate,
+  ]);
+
+  useEffect(() => {
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      const globalEnabled = advanceFeatures?.["Trail SL"];
+
+      const applyToStrike = (strike) => {
+        const prev = strike.TrailingSL || {};
+        const effectiveEnabled =
+          trailSlEnabled || strike.isTrailSL || globalEnabled;
+
+        if (!effectiveEnabled) {
+          strike.isTrailSL = false;
+          strike.TrailingSL = {
+            TrailingType: "tslpr",
+            InstrumentMovementValue: "0",
+            TrailingValue: "0",
+          };
+          return;
+        }
+
+        const effectiveType = trailSlEnabled
+          ? trailSlType
+          : advanceFeatures?.TrailSlType ||
+            (prev.TrailingType === "tslpt" ? "Pt" : "%");
+
+        const movement = trailSlEnabled
+          ? Number(trailSlPriceMovement) || 0
+          : Number(
+              advanceFeatures?.TrailSlPriceMovement ??
+                prev.InstrumentMovementValue ??
+                0
+            );
+
+        const trailing = trailSlEnabled
+          ? Number(trailSlTrailingValue) || 0
+          : Number(
+              advanceFeatures?.TrailSlTrailingValue ?? prev.TrailingValue ?? 0
+            );
+
+        strike.isTrailSL = true;
+        strike.TrailingSL = {
+          TrailingType: effectiveType === "Pt" ? "tslpt" : "tslpr",
+          InstrumentMovementValue: String(movement),
+          TrailingValue: String(trailing),
+        };
+      };
+
+      applyToStrike(longStrike);
+      if (shortStrike) applyToStrike(shortStrike);
+    });
+  }, [
     trailSlEnabled,
     trailSlType,
     trailSlPriceMovement,
     trailSlTrailingValue,
     advanceFeatures,
+    applyStrikeUpdate,
   ]);
 
-  // ✅ Reset strike related controlled values when strategy type toggles
-  useEffect(() => {
-    applyStrikeSelection(selectedStrikeCriteria, 0);
-  }, [selectedStrategyTypes]);
+  const handleQtyMultiplierChange = useCallback(
+    (nextMultiplier) => {
+      if (!effectiveLotSize) return;
+      const safeMultiplier = Math.max(1, nextMultiplier);
+      const legQty = safeMultiplier * effectiveLotSize;
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const qtyString = String(legQty);
+        longStrike.Qty = qtyString;
+        longStrike.lotSize = effectiveLotSize;
+        if (shortStrike) {
+          shortStrike.Qty = qtyString;
+          shortStrike.lotSize = effectiveLotSize;
+        }
+      });
+    },
+    [applyStrikeUpdate, effectiveLotSize]
+  );
+
+  const handlePositionChange = useCallback(
+    (nextPosition) => {
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.TransactionType = nextPosition;
+        if (shortStrike) {
+          shortStrike.TransactionType = nextPosition;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleOptionTypeChange = useCallback(
+    (nextType) => {
+      const strikeSymbol = nextType === "Call" ? "CE" : "PE";
+      applyStrikeUpdate(({ longStrike }) => {
+        longStrike.StrikeType = strikeSymbol;
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleIndicatorConditionChange = useCallback(
+    (next) => {
+      const shortValue = next === "CE" ? "PE" : "CE";
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.StrikeType = next;
+        if (shortStrike) {
+          shortStrike.StrikeType = shortValue;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleExpiryChange = useCallback(
+    (value) => {
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.ExpiryType = value;
+        if (shortStrike) {
+          shortStrike.ExpiryType = value;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleStrikeCriteriaChange = useCallback(
+    (criteria) => {
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const strikeObj = {
+          type: strikeCriteriaToType(criteria),
+          StrikeValue: 0,
+          RangeFrom: 0,
+          RangeTo: 0,
+        };
+        longStrike.strikeTypeobj = strikeObj;
+        if (shortStrike) {
+          shortStrike.strikeTypeobj = { ...strikeObj };
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleStrikeSelectValueChange = useCallback(
+    (value) => {
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const strikeObj = {
+          type: strikeCriteriaToType(selectedStrikeCriteria),
+          StrikeValue: parseStrikeToken(value),
+          RangeFrom: 0,
+          RangeTo: 0,
+        };
+        longStrike.strikeTypeobj = strikeObj;
+        if (shortStrike) {
+          shortStrike.strikeTypeobj = { ...strikeObj };
+        }
+      });
+    },
+    [applyStrikeUpdate, selectedStrikeCriteria]
+  );
+
+  const handleStrikeNumberChange = useCallback(
+    (value) => {
+      const numeric = Math.max(0, Number(value) || 0);
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const strikeObj = {
+          type: strikeCriteriaToType(selectedStrikeCriteria),
+          StrikeValue: numeric,
+          RangeFrom: 0,
+          RangeTo: 0,
+        };
+        longStrike.strikeTypeobj = strikeObj;
+        if (shortStrike) {
+          shortStrike.strikeTypeobj = { ...strikeObj };
+        }
+      });
+    },
+    [applyStrikeUpdate, selectedStrikeCriteria]
+  );
+
+  const handleSlTypeChange = useCallback(
+    (label) => {
+      const code = label === "SL pt" ? "slpt" : "slpr";
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.SLType = code;
+        if (shortStrike) {
+          shortStrike.SLType = code;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleStopLossChange = useCallback(
+    (value) => {
+      const numeric = Math.max(0, Number(value) || 0);
+      const formatted = String(numeric);
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.StopLoss = formatted;
+        if (shortStrike) {
+          shortStrike.StopLoss = formatted;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleSlActionChange = useCallback(
+    (label) => {
+      const code = label === "On Close" ? "ONCLOSE" : "ONPRICE";
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.SLActionTypeId = code;
+        if (shortStrike) {
+          shortStrike.SLActionTypeId = code;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleTpTypeChange = useCallback(
+    (label) => {
+      const code = label === "TP pt" ? "tgpt" : "tgpr";
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.TargetType = code;
+        if (shortStrike) {
+          shortStrike.TargetType = code;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleTargetChange = useCallback(
+    (value) => {
+      const numeric = Math.max(0, Number(value) || 0);
+      const formatted = String(numeric);
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.Target = formatted;
+        if (shortStrike) {
+          shortStrike.Target = formatted;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handleTpActionChange = useCallback(
+    (label) => {
+      const code = label === "On Close" ? "ONCLOSE" : "ONPRICE";
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        longStrike.TargetActionTypeId = code;
+        if (shortStrike) {
+          shortStrike.TargetActionTypeId = code;
+        }
+      });
+    },
+    [applyStrikeUpdate]
+  );
+
+  const handlePrePunchToggle = useCallback(() => {
+    const next = !prePunchSL;
+    applyStrikeUpdate(({ longStrike, shortStrike }) => {
+      longStrike.isPrePunchSL = next;
+      if (shortStrike) {
+        shortStrike.isPrePunchSL = next;
+      }
+    });
+  }, [applyStrikeUpdate, prePunchSL]);
+
+  const handleTradeOnTriggerToggle = () => {
+    setValue("isTradeOnTriggerCandle", !tradeOnTriggerCandle, {
+      shouldDirty: true,
+    });
+  };
+
+  const handleBuyWhenChange = (value) => {
+    setValue("BuyWhen", value, { shouldDirty: true });
+  };
+
+  const handleShortWhenChange = (value) => {
+    setValue("ShortWhen", value, { shouldDirty: true });
+  };
+
+  const handleContinuousToggle = () => {
+    setValue("IsContiniousTriggerCandle", !ofContinuousCandle, {
+      shouldDirty: true,
+    });
+  };
+
+  // compute disabled state when no instrument selected
+  const isDisabled =
+    !selectedInstrument || !selectedInstrument.InstrumentToken;
+  const showComingSoon = comingSoon || selectedStrategyTypes?.[0] === "price";
 
   // ✅ Initialize legs from form or create first leg (moved from OrderType)
   useEffect(() => {
@@ -837,13 +1187,6 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   // derive lot size & exchange for display
   const exchange =
     selectedInstrument?.Exchange || selectedInstrument?.Segment || "";
-
-  // derive existing feature flags for stable rendering (prevents flicker when external toggle updates before local state sync)
-  const existingActiveLong =
-    strategyScripts?.[0]?.LongEquationoptionStrikeList?.[activeLegIndex];
-  const existingActiveShort =
-    strategyScripts?.[0]?.ShortEquationoptionStrikeList?.[activeLegIndex];
-  const existingActiveStrike = existingActiveLong || existingActiveShort;
 
   const featureWaitTradeActive =
     advanceFeatures?.["Wait & Trade"] ||
@@ -1068,8 +1411,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
   return (
     // changed: added relative group container
     <div className="relative group">
+      {showComingSoon && <ComingSoonOverlay />}
       {/* Hover overlay when no instrument selected */}
-      {!selectedInstrument && (
+      {!selectedInstrument && !showComingSoon && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center
                      bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
@@ -1165,7 +1509,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                             disabled={isDisabled}
                             value={longCondition}
-                            onChange={(e) => setLongCondition(e.target.value)}
+                            onChange={(e) =>
+                              handleIndicatorConditionChange(e.target.value)
+                            }
                           >
                             {conditionOptions.map((opt) => (
                               <option key={opt}>{opt}</option>
@@ -1181,7 +1527,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             disabled={isDisabled}
                             value={shortCondition}
                             onChange={(e) =>
-                              setLongCondition(
+                              handleIndicatorConditionChange(
                                 e.target.value === "CE" ? "PE" : "CE"
                               )
                             }
@@ -1210,7 +1556,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             type="button"
                             onClick={() =>
                               !isDisabled &&
-                              setQtyMultiplier((m) => (m > 1 ? m - 1 : 1))
+                              handleQtyMultiplierChange(qtyMultiplier - 1)
                             }
                             className="px-2 py-1 border rounded dark:border-[#2C2F36]"
                             disabled={isDisabled || qtyMultiplier <= 1}
@@ -1227,16 +1573,17 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           <button
                             type="button"
                             onClick={() =>
-                              !isDisabled && setQtyMultiplier((m) => m + 1)
+                              !isDisabled &&
+                              handleQtyMultiplierChange(qtyMultiplier + 1)
                             }
                             className="px-2 py-1 border rounded dark:border-[#2C2F36]"
-                            disabled={isDisabled || lotSizeBase === 0}
+                            disabled={isDisabled || effectiveLotSize === 0}
                           >
                             +
                           </button>
                         </div>
                         <p className="text-[10px] mt-1 text-gray-500 dark:text-gray-500">
-                          Multiples of lot ({lotSizeBase})
+                          Multiples of lot ({effectiveLotSize || "-"})
                         </p>
                       </div>
                       <div>
@@ -1248,7 +1595,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             <button
                               type="button"
                               key={pos}
-                              onClick={() => setPosition(pos)}
+                              onClick={() => handlePositionChange(pos)}
                               className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
                                 position === pos
                                   ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
@@ -1271,7 +1618,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                               <button
                                 type="button"
                                 key={type}
-                                onClick={() => setOptionType(type)}
+                                onClick={() => handleOptionTypeChange(type)}
                                 className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
                                   optionType === type
                                     ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
@@ -1296,7 +1643,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
                           value={expiryType}
-                          onChange={(e) => setExpiryType(e.target.value)}
+                          onChange={(e) => handleExpiryChange(e.target.value)}
                         >
                           {expiryOptions.map((opt) => (
                             <option key={opt}>{opt}</option>
@@ -1333,7 +1680,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                             value={strikeTypeSelectValue}
                             onChange={(e) =>
-                              setStrikeTypeSelectValue(e.target.value)
+                              handleStrikeSelectValueChange(e.target.value)
                             }
                             disabled={isDisabled}
                           >
@@ -1352,9 +1699,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                             className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                             value={strikeTypeNumber}
                             onChange={(e) =>
-                              setStrikeTypeNumber(
-                                Math.max(0, Number(e.target.value))
-                              )
+                              handleStrikeNumberChange(e.target.value)
                             }
                             disabled={isDisabled}
                             placeholder="Enter value"
@@ -1372,7 +1717,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
                           value={slTypeSel}
-                          onChange={(e) => setSlTypeSel(e.target.value)}
+                          onChange={(e) => handleSlTypeChange(e.target.value)}
                         >
                           {slOptions.map((opt) => (
                             <option key={opt}>{opt}</option>
@@ -1387,15 +1732,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           type="number"
                           value={stopLossQty}
                           onChange={(e) =>
-                            !isDisabled &&
-                            setStopLossQty(
-                              Math.max(
-                                0,
-                                Number.isNaN(+e.target.value)
-                                  ? 0
-                                  : +e.target.value
-                              )
-                            )
+                            !isDisabled && handleStopLossChange(e.target.value)
                           }
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
@@ -1409,7 +1746,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
                           value={slAction}
-                          onChange={(e) => setSlAction(e.target.value)}
+                          onChange={(e) => handleSlActionChange(e.target.value)}
                         >
                           {onPriceOptions.map((opt) => (
                             <option key={opt}>{opt}</option>
@@ -1427,7 +1764,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
                           value={tpTypeSel}
-                          onChange={(e) => setTpTypeSel(e.target.value)}
+                          onChange={(e) => handleTpTypeChange(e.target.value)}
                         >
                           {tpOptions.map((opt) => (
                             <option key={opt}>{opt}</option>
@@ -1442,15 +1779,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           type="number"
                           value={targetValue}
                           onChange={(e) =>
-                            !isDisabled &&
-                            setTargetValue(
-                              Math.max(
-                                0,
-                                Number.isNaN(+e.target.value)
-                                  ? 0
-                                  : +e.target.value
-                              )
-                            )
+                            !isDisabled && handleTargetChange(e.target.value)
                           }
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
@@ -1464,7 +1793,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                           disabled={isDisabled}
                           value={tpAction}
-                          onChange={(e) => setTpAction(e.target.value)}
+                          onChange={(e) => handleTpActionChange(e.target.value)}
                         >
                           {onPriceOptions.map((opt) => (
                             <option key={opt}>{opt}</option>
@@ -1667,7 +1996,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                           <input
                             type="checkbox"
                             checked={prePunchSL}
-                            onChange={() => setPrePunchSL(!prePunchSL)}
+                            onChange={handlePrePunchToggle}
                             disabled={isDisabled}
                           />
                           <span>
@@ -1721,11 +2050,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                                 <input
                                   type="checkbox"
                                   checked={tradeOnTriggerCandle}
-                                  onChange={() =>
-                                    setTradeOnTriggerCandle(
-                                      !tradeOnTriggerCandle
-                                    )
-                                  }
+                                  onChange={handleTradeOnTriggerToggle}
                                   disabled={isDisabled}
                                 />
                                 <span>Trade on Trigger Candle</span>
@@ -1740,7 +2065,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                                 <select
                                   className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                                   value={buyWhen}
-                                  onChange={(e) => setBuyWhen(e.target.value)}
+                                  onChange={(e) =>
+                                    handleBuyWhenChange(e.target.value)
+                                  }
                                   disabled={isDisabled}
                                 >
                                   <option value="Low Break">Low Break</option>
@@ -1755,7 +2082,9 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                                 <select
                                   className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                                   value={shortWhen}
-                                  onChange={(e) => setShortWhen(e.target.value)}
+                                  onChange={(e) =>
+                                    handleShortWhenChange(e.target.value)
+                                  }
                                   disabled={isDisabled}
                                 >
                                   <option value="Low Break">Low Break</option>
@@ -1769,9 +2098,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, editing }) => {
                                 <input
                                   type="checkbox"
                                   checked={ofContinuousCandle}
-                                  onChange={() =>
-                                    setOfContinuousCandle(!ofContinuousCandle)
-                                  }
+                                  onChange={handleContinuousToggle}
                                   disabled={isDisabled}
                                 />
                                 <span>Of Continious Candle</span>

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
+import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import TradeSettings from "./TradeSettings";
 
-const OrderType = ({ selectedStrategyTypes }) => {
+const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, watch } = useFormContext();
 
   // Use form values directly - no local state needed
@@ -14,9 +15,12 @@ const OrderType = ({ selectedStrategyTypes }) => {
     "FRI",
   ];
   const startTime = watch("TradeStartTime") || "09:16";
-  const squareOffTime = watch("AutoSquareOffTime") || "15:15";
+  const tradeStopTime = watch("TradeStopTime") || "15:15";
+  const squareOffTime = watch("AutoSquareOffTime") || tradeStopTime;
   const productTypeNum = watch("ProductType");
   const isBtSt = watch("isBtSt");
+  const entryDays = watch("EntryDaysBeforExpiry") ?? 0;
+  const exitDays = watch("ExitDaysBeforExpiry") ?? 0;
 
   // Derive display value from form
   const productType =
@@ -30,8 +34,6 @@ const OrderType = ({ selectedStrategyTypes }) => {
 
   // CNC Settings state (these are UI-only, not in form)
   const [showCNCSettings, setShowCNCSettings] = useState(true);
-  const [cncEntryDays, setCncEntryDays] = useState(4);
-  const [cncExitDays, setCncExitDays] = useState(0);
 
   const orderTypes = ["MIS", "CNC", "BTST"];
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
@@ -50,14 +52,14 @@ const OrderType = ({ selectedStrategyTypes }) => {
   };
 
   return (
-    <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419]">
+    <div className="relative">
+      <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419]">
       <div className="text-lg font-semibold text-black dark:text-white">
         Order Type
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Select your type
       </p>
-
       <div className="flex items-center space-x-4 text-sm">
         {orderTypes.map((type) => (
           <label
@@ -68,7 +70,7 @@ const OrderType = ({ selectedStrategyTypes }) => {
               type="radio"
               name="productType"
               checked={productType === type}
-              onChange={() => setProductType(type)}
+              onChange={() => handleProductTypeChange(type)}
             />
             <span>{type}</span>
           </label>
@@ -106,19 +108,23 @@ const OrderType = ({ selectedStrategyTypes }) => {
               {/* Entry Days Slider */}
               <div>
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-3">
-                  Entry: {cncEntryDays} trading days before expiry
+                  Entry: {entryDays} trading days before expiry
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="4"
-                  value={cncEntryDays}
-                  onChange={(e) => setCncEntryDays(Number(e.target.value))}
+                  value={entryDays}
+                  onChange={(e) =>
+                    setValue("EntryDaysBeforExpiry", Number(e.target.value), {
+                      shouldDirty: true,
+                    })
+                  }
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                   style={{
                     background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
-                      (cncEntryDays / 4) * 100
-                    }%, #e5e7eb ${(cncEntryDays / 4) * 100}%, #e5e7eb 100%)`,
+                      (entryDays / 4) * 100
+                    }%, #e5e7eb ${(entryDays / 4) * 100}%, #e5e7eb 100%)`,
                   }}
                 />
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -133,19 +139,23 @@ const OrderType = ({ selectedStrategyTypes }) => {
               {/* Exit Days Slider */}
               <div>
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-3">
-                  Exit: {cncExitDays} trading days before expiry
+                  Exit: {exitDays} trading days before expiry
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="4"
-                  value={cncExitDays}
-                  onChange={(e) => setCncExitDays(Number(e.target.value))}
+                  value={exitDays}
+                  onChange={(e) =>
+                    setValue("ExitDaysBeforExpiry", Number(e.target.value), {
+                      shouldDirty: true,
+                    })
+                  }
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                   style={{
                     background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
-                      (cncExitDays / 4) * 100
-                    }%, #e5e7eb ${(cncExitDays / 4) * 100}%, #e5e7eb 100%)`,
+                      (exitDays / 4) * 100
+                    }%, #e5e7eb ${(exitDays / 4) * 100}%, #e5e7eb 100%)`,
                   }}
                 />
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -169,7 +179,9 @@ const OrderType = ({ selectedStrategyTypes }) => {
           <input
             type="time"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={(e) =>
+              setValue("TradeStartTime", e.target.value, { shouldDirty: true })
+            }
             className="border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#2C2F36]"
           />
         </div>
@@ -180,7 +192,14 @@ const OrderType = ({ selectedStrategyTypes }) => {
           <input
             type="time"
             value={squareOffTime}
-            onChange={(e) => setSquareOffTime(e.target.value)}
+            onChange={(e) => {
+              setValue("AutoSquareOffTime", e.target.value, {
+                shouldDirty: true,
+              });
+              setValue("TradeStopTime", e.target.value, {
+                shouldDirty: true,
+              });
+            }}
             className="border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#2C2F36]"
           />
         </div>
@@ -208,6 +227,8 @@ const OrderType = ({ selectedStrategyTypes }) => {
       </div>
 
       {selectedStrategyTypes?.[0] === "indicator" && <TradeSettings />}
+      </div>
+      {comingSoon && <ComingSoonOverlay />}
     </div>
   );
 };

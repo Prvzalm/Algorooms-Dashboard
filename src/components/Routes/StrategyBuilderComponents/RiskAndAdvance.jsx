@@ -5,12 +5,15 @@ import ReEntryExecuteModal from "./ReEntryExecuteModal";
 import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
 import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
+import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 
-const RiskAndAdvance = ({ selectedStrategyTypes }) => {
+const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
   const { setLegAdvanceFeature, getLegAdvanceFeatures } =
     useStrategyBuilderStore();
-  const [noTradeAfter, setNoTradeAfter] = useState("15:15");
+  const tradeStopTimeValue = watch("TradeStopTime");
+  const autoSquareOffTimeValue = watch("AutoSquareOffTime");
+  const noTradeAfter = tradeStopTimeValue || autoSquareOffTimeValue || "15:15";
 
   // Watch reactive values to avoid infinite loops
   const strategyScripts = watch("StrategyScriptList");
@@ -21,54 +24,24 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
     selectedStrategyTypes?.[0] === "indicator" &&
     getValues("StrategySegmentType") === "Equity";
 
-  // State for equity script fields
-  const [targetSlType, setTargetSlType] = useState("Percentage(%)");
-  const [targetOnEachScript, setTargetOnEachScript] = useState("");
-  const [stopLossOnEachScript, setStopLossOnEachScript] = useState("");
-
-  // Prefill on mount (edit mode)
-  useEffect(() => {
-    const stop = getValues("TradeStopTime") || getValues("AutoSquareOffTime");
-    if (stop) setNoTradeAfter(stop);
-
-    // Prefill equity script fields if they exist
-    const targetOnScript = getValues("TargetOnEachScript");
-    const stopLossOnScript = getValues("StopLossOnEachScript");
-    const targetSlTypeValue = getValues("TargetSlType");
-
-    if (targetOnScript) setTargetOnEachScript(String(targetOnScript));
-    if (stopLossOnScript) setStopLossOnEachScript(String(stopLossOnScript));
-    if (targetSlTypeValue) setTargetSlType(targetSlTypeValue);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const targetSlTypeRaw = watch("TargetSlType");
+  const targetSlType = targetSlTypeRaw || "Percentage(%)";
+  const rawTargetOnEachScript = watch("TargetOnEachScript");
+  const rawStopLossOnEachScript = watch("StopLossOnEachScript");
+  const targetOnEachScript =
+    rawTargetOnEachScript === null || rawTargetOnEachScript === undefined
+      ? ""
+      : String(rawTargetOnEachScript);
+  const stopLossOnEachScript =
+    rawStopLossOnEachScript === null || rawStopLossOnEachScript === undefined
+      ? ""
+      : String(rawStopLossOnEachScript);
 
   useEffect(() => {
-    setValue("TradeStopTime", noTradeAfter, { shouldDirty: true });
-  }, [noTradeAfter, setValue]);
-
-  // Handle form values for equity script fields
-  useEffect(() => {
-    if (isIndicatorEquityMode && targetOnEachScript !== "") {
-      setValue("TargetOnEachScript", Number(targetOnEachScript) || 0, {
-        shouldDirty: true,
-      });
+    if (isIndicatorEquityMode && !targetSlTypeRaw) {
+      setValue("TargetSlType", "Percentage(%)", { shouldDirty: true });
     }
-  }, [targetOnEachScript, setValue, isIndicatorEquityMode]);
-
-  useEffect(() => {
-    if (isIndicatorEquityMode && stopLossOnEachScript !== "") {
-      setValue("StopLossOnEachScript", Number(stopLossOnEachScript) || 0, {
-        shouldDirty: true,
-      });
-    }
-  }, [stopLossOnEachScript, setValue, isIndicatorEquityMode]);
-
-  useEffect(() => {
-    if (isIndicatorEquityMode) {
-      setValue("TargetSlType", targetSlType, { shouldDirty: true });
-    }
-  }, [targetSlType, setValue, isIndicatorEquityMode]);
+  }, [isIndicatorEquityMode, targetSlTypeRaw, setValue]);
 
   const trailingOptions = [
     "No Trailing",
@@ -135,6 +108,12 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
     if (advState["Wait & Trade"] && label === "Move SL to Cost") {
       return true;
     }
+    if (advState["Re Entry/Execute"] && label === "Exit All on SL/Tgt") {
+      return true;
+    }
+    if (advState["Trail SL"] && label === "Pre Punch SL") {
+      return true;
+    }
     return false;
   };
 
@@ -186,14 +165,29 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         // wait & trade disables move SL to cost
         setAdvState((prev) => ({ ...prev, "Move SL to Cost": false }));
       }
+      if (label === "Re Entry/Execute") {
+        setAdvState((prev) => ({
+          ...prev,
+          "Exit All on SL/Tgt": false,
+        }));
+      }
+      if (label === "Trail SL") {
+        setAdvState((prev) => ({
+          ...prev,
+          "Pre Punch SL": false,
+        }));
+      }
     }
     // Update a consolidated AdvanceFeatures map in form for simpler consumption in Leg1
     const currentAf = getValues("AdvanceFeatures") || {};
-    setValue(
-      "AdvanceFeatures",
-      { ...currentAf, [label]: checked },
-      { shouldDirty: true }
-    );
+    const nextAf = { ...currentAf, [label]: checked };
+    if (label === "Re Entry/Execute" && checked) {
+      nextAf["Exit All on SL/Tgt"] = false;
+    }
+    if (label === "Trail SL" && checked) {
+      nextAf["Pre Punch SL"] = false;
+    }
+    setValue("AdvanceFeatures", nextAf, { shouldDirty: true });
 
     switch (label) {
       case "Move SL to Cost":
@@ -282,6 +276,12 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
 
           // Show modal to configure Re-Entry/Execute
           setShowReEntryModal(true);
+
+          // Ensure conflicting exit-all state is cleared
+          updateFirstStrike((s) => {
+            s.isExitAll = false;
+          });
+          setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
         } else {
           // Directly disable when unchecking
           updateFirstStrike((s) => {
@@ -332,6 +332,11 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
 
           // Show modal to configure Trail SL
           setShowTrailSlModal(true);
+
+          // Ensure Pre Punch SL is cleared when Trail SL is enabled
+          updateFirstStrike((s) => {
+            s.isPrePunchSL = false;
+          });
         } else {
           // Directly disable when unchecking
           updateFirstStrike((s) => {
@@ -505,13 +510,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
   };
 
   return (
-    <div
-      className={`grid gap-6 ${
-        selectedStrategyTypes?.[0] === "indicator"
-          ? "md:grid-cols-1"
-          : "md:grid-cols-2"
-      }`}
-    >
+    <div className="relative">
+      <div
+        className={`grid gap-6 ${
+          selectedStrategyTypes?.[0] === "indicator"
+            ? "md:grid-cols-1"
+            : "md:grid-cols-2"
+        }`}
+      >
       {/* Placeholder left column for 'price' to force right-side positioning */}
       {selectedStrategyTypes?.[0] === "price" && (
         <div className="hidden md:block" />
@@ -579,7 +585,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
               <input
                 type="time"
                 value={noTradeAfter}
-                onChange={(e) => setNoTradeAfter(e.target.value)}
+                onChange={(e) => {
+                  setValue("TradeStopTime", e.target.value, {
+                    shouldDirty: true,
+                  });
+                  setValue("AutoSquareOffTime", e.target.value, {
+                    shouldDirty: true,
+                  });
+                }}
                 className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
               />
             </div>
@@ -592,14 +605,42 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                   type="number"
                   value={targetOnEachScript}
                   placeholder="Target on each script"
-                  onChange={(e) => setTargetOnEachScript(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setValue("TargetOnEachScript", "", {
+                        shouldDirty: true,
+                      });
+                      return;
+                    }
+                    const num = Number(val);
+                    if (!Number.isNaN(num)) {
+                      setValue("TargetOnEachScript", num, {
+                        shouldDirty: true,
+                      });
+                    }
+                  }}
                   className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
                 />
                 <input
                   type="number"
                   value={stopLossOnEachScript}
                   placeholder="Stop Loss on each script"
-                  onChange={(e) => setStopLossOnEachScript(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setValue("StopLossOnEachScript", "", {
+                        shouldDirty: true,
+                      });
+                      return;
+                    }
+                    const num = Number(val);
+                    if (!Number.isNaN(num)) {
+                      setValue("StopLossOnEachScript", num, {
+                        shouldDirty: true,
+                      });
+                    }
+                  }}
                   className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
                 />
                 <div className="flex-1 min-w-[160px]">
@@ -608,7 +649,11 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                   </label>
                   <select
                     value={targetSlType}
-                    onChange={(e) => setTargetSlType(e.target.value)}
+                    onChange={(e) =>
+                      setValue("TargetSlType", e.target.value, {
+                        shouldDirty: true,
+                      })
+                    }
                     className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                   >
                     <option value="Percentage(%)">Percentage(%)</option>
@@ -806,7 +851,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
                   <input
                     type="time"
                     value={noTradeAfter}
-                    onChange={(e) => setNoTradeAfter(e.target.value)}
+                    onChange={(e) => {
+                      setValue("TradeStopTime", e.target.value, {
+                        shouldDirty: true,
+                      });
+                      setValue("AutoSquareOffTime", e.target.value, {
+                        shouldDirty: true,
+                      });
+                    }}
                     className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                   />
                 </div>
@@ -1060,6 +1112,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes }) => {
         initialData={trailSlTempData}
       />
     </div>
+    {(comingSoon || selectedStrategyTypes?.[0] === "price") && (
+      <ComingSoonOverlay />
+    )}
+  </div>
   );
 };
 
