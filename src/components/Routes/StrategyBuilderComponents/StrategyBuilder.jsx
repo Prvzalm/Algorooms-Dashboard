@@ -849,204 +849,207 @@ const StrategyBuilder = () => {
 
               <div className="relative">
                 <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-                <h2 className="font-semibold dark:text-white">
-                  Select Instruments
-                </h2>
-                <div
-                  className={`border-dashed border border-gray-300 rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027] transition-all ${
-                    selectedInstrument || selectedEquityInstruments.length
-                      ? "min-h-[2.5rem] py-2"
-                      : "min-h-[6rem]"
-                  }`}
-                  onClick={openInstrumentModal}
-                >
-                  <span
-                    className={`text-gray-400 dark:text-gray-500 ${
+                  <h2 className="font-semibold dark:text-white">
+                    Select Instruments
+                  </h2>
+                  <div
+                    className={`border-dashed border border-gray-300 rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027] transition-all ${
                       selectedInstrument || selectedEquityInstruments.length
-                        ? "text-sm"
-                        : "text-xl"
+                        ? "min-h-[2.5rem] py-2"
+                        : "min-h-[6rem]"
                     }`}
+                    onClick={openInstrumentModal}
                   >
-                    {selectedInstrument || selectedEquityInstruments.length
-                      ? "Change"
-                      : "+ Add"}
-                  </span>
-                </div>
+                    <span
+                      className={`text-gray-400 dark:text-gray-500 ${
+                        selectedInstrument || selectedEquityInstruments.length
+                          ? "text-sm"
+                          : "text-xl"
+                      }`}
+                    >
+                      {selectedInstrument || selectedEquityInstruments.length
+                        ? "Change"
+                        : "+ Add"}
+                    </span>
+                  </div>
 
-                {selectedInstrument && !selectedEquityInstruments.length && (
-                  <div className="mt-2 border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative">
-                    {(selectedInstrument.SegmentType === "Equity" ||
-                      selectedInstrument.SegmentType === "Future") && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedInstrument("")}
-                        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
-                        title="Remove instrument"
-                      >
-                        <span className="text-sm font-bold">×</span>
-                      </button>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Instrument Name
-                        </div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {selectedInstrument.Name}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Lot Size
-                        </div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {selectedInstrument.LotSize || 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Exchange
-                        </div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {selectedInstrument.Exchange ||
-                            selectedInstrument.Segment ||
-                            "—"}
-                        </div>
-                      </div>
+                  {selectedInstrument && !selectedEquityInstruments.length && (
+                    <div className="mt-2 border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative">
                       {(selectedInstrument.SegmentType === "Equity" ||
                         selectedInstrument.SegmentType === "Future") && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInstrument("")}
+                          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
+                          title="Remove instrument"
+                        >
+                          <span className="text-sm font-bold">×</span>
+                        </button>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                            Quantity
+                            Instrument Name
                           </div>
-                          <input
-                            type="number"
-                            min="1"
-                            value={
-                              Number(watchedScripts?.[0]?.Qty) > 0
-                                ? watchedScripts[0].Qty
-                                : 1
-                            }
-                            onChange={(e) => {
-                              const nextQty = Math.max(
-                                1,
-                                parseInt(e.target.value, 10) || 1
-                              );
-                              const current =
-                                getValues("StrategyScriptList") || [];
-                              if (!current.length) return;
-                              const updated = current.map((script, idx) =>
-                                idx === 0 ? { ...script, Qty: nextQty } : script
-                              );
-                              setValue("StrategyScriptList", updated, {
-                                shouldDirty: true,
-                              });
-                              updatePayload({ StrategyScriptList: updated });
-                            }}
-                            className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {selectedInstrument.Name}
+                          </div>
                         </div>
-                      )}
+                        <div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                            Lot Size
+                          </div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {selectedInstrument.LotSize || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                            Exchange
+                          </div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {selectedInstrument.Exchange ||
+                              selectedInstrument.Segment ||
+                              "—"}
+                          </div>
+                        </div>
+                        {(selectedInstrument.SegmentType === "Equity" ||
+                          selectedInstrument.SegmentType === "Future") && (
+                          <div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                              Quantity
+                            </div>
+                            <input
+                              type="number"
+                              min="1"
+                              value={
+                                Number(watchedScripts?.[0]?.Qty) > 0
+                                  ? watchedScripts[0].Qty
+                                  : 1
+                              }
+                              onChange={(e) => {
+                                const nextQty = Math.max(
+                                  1,
+                                  parseInt(e.target.value, 10) || 1
+                                );
+                                const current =
+                                  getValues("StrategyScriptList") || [];
+                                if (!current.length) return;
+                                const updated = current.map((script, idx) =>
+                                  idx === 0
+                                    ? { ...script, Qty: nextQty }
+                                    : script
+                                );
+                                setValue("StrategyScriptList", updated, {
+                                  shouldDirty: true,
+                                });
+                                updatePayload({ StrategyScriptList: updated });
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedEquityInstruments.length > 0 && (
-                  <div className="mt-2 overflow-x-auto">
-                    <div className="flex gap-3 pb-2">
-                      {selectedEquityInstruments.map((ins) => (
-                        <div
-                          key={ins.InstrumentToken}
-                          className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex-shrink-0 w-[280px]"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedEquityInstruments(
-                                selectedEquityInstruments.filter(
-                                  (i) =>
-                                    i.InstrumentToken !== ins.InstrumentToken
-                                )
-                              );
-                            }}
-                            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
-                            title="Remove instrument"
+                  {selectedEquityInstruments.length > 0 && (
+                    <div className="mt-2 overflow-x-auto">
+                      <div className="flex gap-3 pb-2">
+                        {selectedEquityInstruments.map((ins) => (
+                          <div
+                            key={ins.InstrumentToken}
+                            className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex-shrink-0 w-[280px]"
                           >
-                            <span className="text-sm font-bold">×</span>
-                          </button>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                Instrument Name
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedEquityInstruments(
+                                  selectedEquityInstruments.filter(
+                                    (i) =>
+                                      i.InstrumentToken !== ins.InstrumentToken
+                                  )
+                                );
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
+                              title="Remove instrument"
+                            >
+                              <span className="text-sm font-bold">×</span>
+                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                  Instrument Name
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {ins.Name}
+                                </div>
                               </div>
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {ins.Name}
+                              <div>
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                  Lot Size
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {ins.LotSize || 0}
+                                </div>
                               </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                Lot Size
+                              <div>
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                  Exchange
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {ins.Exchange || ins.Segment || "—"}
+                                </div>
                               </div>
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {ins.LotSize || 0}
+                              <div>
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                  Segment Type
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {ins.SegmentType || "—"}
+                                </div>
                               </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                Exchange
+                              <div className="col-span-2">
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                  Quantity
+                                </div>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={
+                                    Number(watchedScripts[idx]?.Qty ?? 1) || 1
+                                  }
+                                  onChange={(e) => {
+                                    const nextQty = Math.max(
+                                      1,
+                                      parseInt(e.target.value, 10) || 1
+                                    );
+                                    const current =
+                                      getValues("StrategyScriptList") || [];
+                                    if (!current.length) return;
+                                    const updated = current.map(
+                                      (script, sIdx) =>
+                                        sIdx === idx
+                                          ? { ...script, Qty: nextQty }
+                                          : script
+                                    );
+                                    setValue("StrategyScriptList", updated, {
+                                      shouldDirty: true,
+                                    });
+                                    updatePayload({
+                                      StrategyScriptList: updated,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
                               </div>
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {ins.Exchange || ins.Segment || "—"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                Segment Type
-                              </div>
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {ins.SegmentType || "—"}
-                              </div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                Quantity
-                              </div>
-                              <input
-                                type="number"
-                                min="1"
-                                value={
-                                  Number(watchedScripts[idx]?.Qty ?? 1) || 1
-                                }
-                                onChange={(e) => {
-                                  const nextQty = Math.max(
-                                    1,
-                                    parseInt(e.target.value, 10) || 1
-                                  );
-                                  const current =
-                                    getValues("StrategyScriptList") || [];
-                                  if (!current.length) return;
-                                  const updated = current.map((script, sIdx) =>
-                                    sIdx === idx
-                                      ? { ...script, Qty: nextQty }
-                                      : script
-                                  );
-                                  setValue("StrategyScriptList", updated, {
-                                    shouldDirty: true,
-                                  });
-                                  updatePayload({
-                                    StrategyScriptList: updated,
-                                  });
-                                }}
-                                className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
                 {isPriceBased && <ComingSoonOverlay />}
               </div>
               <InstrumentModal

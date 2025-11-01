@@ -518,491 +518,520 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
             : "md:grid-cols-2"
         }`}
       >
-      {/* Placeholder left column for 'price' to force right-side positioning */}
-      {selectedStrategyTypes?.[0] === "price" && (
-        <div className="hidden md:block" />
-      )}
-      {/* Left column: hide Risk Management here when price strategy */}
-      {/* Show Risk Management for all strategies except 'price' */}
-      {selectedStrategyTypes?.[0] !== "price" && (
-        <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-          {/* Risk Management (non-price left column) */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="font-semibold text-lg text-black dark:text-white">
-                Risk Management
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Lorem Ipsum donor
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <input
-              type="number"
-              defaultValue={getValues("ExitWhenTotalProfit") || ""}
-              placeholder="Exit When Over All Profit In Amount (INR)"
-              onChange={(e) =>
-                setValue("ExitWhenTotalProfit", Number(e.target.value) || 0, {
-                  shouldDirty: true,
-                })
-              }
-              className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-            />
-            <input
-              type="number"
-              defaultValue={getValues("ExitWhenTotalLoss") || ""}
-              placeholder="Exit When Over All Loss In Amount (INR)"
-              onChange={(e) =>
-                setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, {
-                  shouldDirty: true,
-                })
-              }
-              className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-            />
-            {selectedStrategyTypes?.[0] === "indicator" && (
-              <div className="flex-1 min-w-[160px]">
-                <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
-                  Max Trade Cycle
-                </label>
-                <input
-                  type="number"
-                  placeholder="Max Trade Cycle"
-                  value={watch("MaxTrade") || ""}
-                  onChange={(e) =>
-                    setValue("MaxTrade", Number(e.target.value) || 0, {
-                      shouldDirty: true,
-                    })
-                  }
-                  className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
-                />
+        {/* Placeholder left column for 'price' to force right-side positioning */}
+        {selectedStrategyTypes?.[0] === "price" && (
+          <div className="hidden md:block" />
+        )}
+        {/* Left column: hide Risk Management here when price strategy */}
+        {/* Show Risk Management for all strategies except 'price' */}
+        {selectedStrategyTypes?.[0] !== "price" && (
+          <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+            {/* Risk Management (non-price left column) */}
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="font-semibold text-lg text-black dark:text-white">
+                  Risk Management
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Lorem Ipsum donor
+                </p>
               </div>
-            )}
-            <div className="flex-1 min-w-[160px]">
-              <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
-                No Trade After
-              </label>
-              <input
-                type="time"
-                value={noTradeAfter}
-                onChange={(e) => {
-                  setValue("TradeStopTime", e.target.value, {
-                    shouldDirty: true,
-                  });
-                  setValue("AutoSquareOffTime", e.target.value, {
-                    shouldDirty: true,
-                  });
-                }}
-                className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
-              />
             </div>
-          </div>
-          {/* Additional fields for indicator-based equity strategies */}
-          {isIndicatorEquityMode && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <input
-                  type="number"
-                  value={targetOnEachScript}
-                  placeholder="Target on each script"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setValue("TargetOnEachScript", "", {
-                        shouldDirty: true,
-                      });
-                      return;
-                    }
-                    const num = Number(val);
-                    if (!Number.isNaN(num)) {
-                      setValue("TargetOnEachScript", num, {
-                        shouldDirty: true,
-                      });
-                    }
-                  }}
-                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
-                <input
-                  type="number"
-                  value={stopLossOnEachScript}
-                  placeholder="Stop Loss on each script"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setValue("StopLossOnEachScript", "", {
-                        shouldDirty: true,
-                      });
-                      return;
-                    }
-                    const num = Number(val);
-                    if (!Number.isNaN(num)) {
-                      setValue("StopLossOnEachScript", num, {
-                        shouldDirty: true,
-                      });
-                    }
-                  }}
-                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
+            <div className="flex flex-wrap gap-4">
+              <input
+                type="number"
+                defaultValue={getValues("ExitWhenTotalProfit") || ""}
+                placeholder="Exit When Over All Profit In Amount (INR)"
+                onChange={(e) =>
+                  setValue("ExitWhenTotalProfit", Number(e.target.value) || 0, {
+                    shouldDirty: true,
+                  })
+                }
+                className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+              />
+              <input
+                type="number"
+                defaultValue={getValues("ExitWhenTotalLoss") || ""}
+                placeholder="Exit When Over All Loss In Amount (INR)"
+                onChange={(e) =>
+                  setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, {
+                    shouldDirty: true,
+                  })
+                }
+                className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+              />
+              {selectedStrategyTypes?.[0] === "indicator" && (
                 <div className="flex-1 min-w-[160px]">
                   <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
-                    Target/SL Type
+                    Max Trade Cycle
                   </label>
-                  <select
-                    value={targetSlType}
+                  <input
+                    type="number"
+                    placeholder="Max Trade Cycle"
+                    value={watch("MaxTrade") || ""}
                     onChange={(e) =>
-                      setValue("TargetSlType", e.target.value, {
+                      setValue("MaxTrade", Number(e.target.value) || 0, {
                         shouldDirty: true,
                       })
                     }
                     className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
-                  >
-                    <option value="Percentage(%)">Percentage(%)</option>
-                    <option value="Points">Points</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-700 dark:text-white">
-              Profit Trailing
-            </p>
-            <div className="flex flex-wrap w-full gap-4 text-sm">
-              {trailingOptions.map((opt, idx) => (
-                <label
-                  key={opt}
-                  className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
-                >
-                  <input
-                    type="radio"
-                    name="profitTrailingLeft"
-                    checked={(watch("TrailProfitType") || 0) === idx}
-                    onChange={() =>
-                      setValue("TrailProfitType", idx, { shouldDirty: true })
-                    }
                   />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-            {/* Conditional trailing fields for non-price section */}
-            {(() => {
-              const t = watch("TrailProfitType") || 0;
-              return (
-                <div className="grid grid-cols-2 gap-3">
-                  {(t === 1 || t === 3) && (
-                    <>
-                      <input
-                        type="number"
-                        defaultValue={getValues("LockProfit") || ""}
-                        placeholder="If profit reaches"
-                        onChange={(e) =>
-                          setValue("LockProfit", Number(e.target.value) || 0, {
-                            shouldDirty: true,
-                          })
-                        }
-                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                      />
-                      <input
-                        type="number"
-                        defaultValue={getValues("LockProfitAt") || ""}
-                        placeholder="Lock profit at"
-                        onChange={(e) =>
-                          setValue(
-                            "LockProfitAt",
-                            Number(e.target.value) || 0,
-                            {
-                              shouldDirty: true,
-                            }
-                          )
-                        }
-                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                      />
-                    </>
-                  )}
-                  {(t === 2 || t === 3) && (
-                    <>
-                      <input
-                        type="number"
-                        defaultValue={getValues("ProfitTranches") || ""}
-                        placeholder="On every increase of"
-                        onChange={(e) =>
-                          setValue(
-                            "ProfitTranches",
-                            Number(e.target.value) || 0,
-                            {
-                              shouldDirty: true,
-                            }
-                          )
-                        }
-                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                      />
-                      <input
-                        type="number"
-                        defaultValue={getValues("TrailProfitBy") || ""}
-                        placeholder="Trail profit by"
-                        onChange={(e) =>
-                          setValue(
-                            "TrailProfitBy",
-                            Number(e.target.value) || 0,
-                            {
-                              shouldDirty: true,
-                            }
-                          )
-                        }
-                        className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                      />
-                    </>
-                  )}
                 </div>
-              );
-            })()}
-          </div>
-          {selectedStrategyTypes?.[0] === "price" && (
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                placeholder="If Profit Reaches"
-                onChange={(e) =>
-                  setValue("LockProfitAt", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
-                }
-                className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Lock Profit at"
-                onChange={(e) =>
-                  setValue("LockProfit", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
-                }
-                className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Every Increase In Profit By"
-                onChange={(e) =>
-                  setValue("TrailProfitBy", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
-                }
-                className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Trail Profit By"
-                onChange={(e) =>
-                  setValue("Trail_SL", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
-                }
-                className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-              />
+              )}
+              <div className="flex-1 min-w-[160px]">
+                <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
+                  No Trade After
+                </label>
+                <input
+                  type="time"
+                  value={noTradeAfter}
+                  onChange={(e) => {
+                    setValue("TradeStopTime", e.target.value, {
+                      shouldDirty: true,
+                    });
+                    setValue("AutoSquareOffTime", e.target.value, {
+                      shouldDirty: true,
+                    });
+                  }}
+                  className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                />
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Right column container (or only column for non-indicator) */}
-      {selectedStrategyTypes?.[0] !== "indicator" && (
-        <div className="space-y-6 md:flex md:flex-col md:justify-between">
-          {/* For price strategy, show Risk Management here instead (above strategy name) */}
-          {selectedStrategyTypes?.[0] === "price" && (
-            <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="font-semibold text-lg text-black dark:text-white">
-                    Risk Management
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Lorem Ipsum donor
-                  </p>
+            {/* Additional fields for indicator-based equity strategies */}
+            {isIndicatorEquityMode && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <input
+                    type="number"
+                    value={targetOnEachScript}
+                    placeholder="Target on each script"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setValue("TargetOnEachScript", "", {
+                          shouldDirty: true,
+                        });
+                        return;
+                      }
+                      const num = Number(val);
+                      if (!Number.isNaN(num)) {
+                        setValue("TargetOnEachScript", num, {
+                          shouldDirty: true,
+                        });
+                      }
+                    }}
+                    className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                  />
+                  <input
+                    type="number"
+                    value={stopLossOnEachScript}
+                    placeholder="Stop Loss on each script"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setValue("StopLossOnEachScript", "", {
+                          shouldDirty: true,
+                        });
+                        return;
+                      }
+                      const num = Number(val);
+                      if (!Number.isNaN(num)) {
+                        setValue("StopLossOnEachScript", num, {
+                          shouldDirty: true,
+                        });
+                      }
+                    }}
+                    className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                  />
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
+                      Target/SL Type
+                    </label>
+                    <select
+                      value={targetSlType}
+                      onChange={(e) =>
+                        setValue("TargetSlType", e.target.value, {
+                          shouldDirty: true,
+                        })
+                      }
+                      className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                    >
+                      <option value="Percentage(%)">Percentage(%)</option>
+                      <option value="Points">Points</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-4">
+            )}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-white">
+                Profit Trailing
+              </p>
+              <div className="flex flex-wrap w-full gap-4 text-sm">
+                {trailingOptions.map((opt, idx) => (
+                  <label
+                    key={opt}
+                    className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
+                  >
+                    <input
+                      type="radio"
+                      name="profitTrailingLeft"
+                      checked={(watch("TrailProfitType") || 0) === idx}
+                      onChange={() =>
+                        setValue("TrailProfitType", idx, { shouldDirty: true })
+                      }
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
+              </div>
+              {/* Conditional trailing fields for non-price section */}
+              {(() => {
+                const t = watch("TrailProfitType") || 0;
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    {(t === 1 || t === 3) && (
+                      <>
+                        <input
+                          type="number"
+                          defaultValue={getValues("LockProfit") || ""}
+                          placeholder="If profit reaches"
+                          onChange={(e) =>
+                            setValue(
+                              "LockProfit",
+                              Number(e.target.value) || 0,
+                              {
+                                shouldDirty: true,
+                              }
+                            )
+                          }
+                          className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                        />
+                        <input
+                          type="number"
+                          defaultValue={getValues("LockProfitAt") || ""}
+                          placeholder="Lock profit at"
+                          onChange={(e) =>
+                            setValue(
+                              "LockProfitAt",
+                              Number(e.target.value) || 0,
+                              {
+                                shouldDirty: true,
+                              }
+                            )
+                          }
+                          className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                        />
+                      </>
+                    )}
+                    {(t === 2 || t === 3) && (
+                      <>
+                        <input
+                          type="number"
+                          defaultValue={getValues("ProfitTranches") || ""}
+                          placeholder="On every increase of"
+                          onChange={(e) =>
+                            setValue(
+                              "ProfitTranches",
+                              Number(e.target.value) || 0,
+                              {
+                                shouldDirty: true,
+                              }
+                            )
+                          }
+                          className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                        />
+                        <input
+                          type="number"
+                          defaultValue={getValues("TrailProfitBy") || ""}
+                          placeholder="Trail profit by"
+                          onChange={(e) =>
+                            setValue(
+                              "TrailProfitBy",
+                              Number(e.target.value) || 0,
+                              {
+                                shouldDirty: true,
+                              }
+                            )
+                          }
+                          className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                        />
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+            {selectedStrategyTypes?.[0] === "price" && (
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="Exit When Over All Profit In Amount (INR)"
+                  placeholder="If Profit Reaches"
                   onChange={(e) =>
-                    setValue(
-                      "ExitWhenTotalProfit",
-                      Number(e.target.value) || 0,
-                      { shouldDirty: true }
-                    )
-                  }
-                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Exit When Over All Loss In Amount (INR)"
-                  onChange={(e) =>
-                    setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, {
+                    setValue("LockProfitAt", Number(e.target.value) || 0, {
                       shouldDirty: true,
                     })
                   }
-                  className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
                 />
-                <div className="flex-1 min-w-[160px]">
-                  <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
-                    No Trade After
-                  </label>
-                  <input
-                    type="time"
-                    value={noTradeAfter}
-                    onChange={(e) => {
-                      setValue("TradeStopTime", e.target.value, {
-                        shouldDirty: true,
-                      });
-                      setValue("AutoSquareOffTime", e.target.value, {
-                        shouldDirty: true,
-                      });
-                    }}
-                    className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Lock Profit at"
+                  onChange={(e) =>
+                    setValue("LockProfit", Number(e.target.value) || 0, {
+                      shouldDirty: true,
+                    })
+                  }
+                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Every Increase In Profit By"
+                  onChange={(e) =>
+                    setValue("TrailProfitBy", Number(e.target.value) || 0, {
+                      shouldDirty: true,
+                    })
+                  }
+                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Trail Profit By"
+                  onChange={(e) =>
+                    setValue("Trail_SL", Number(e.target.value) || 0, {
+                      shouldDirty: true,
+                    })
+                  }
+                  className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                />
               </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700 dark:text-white">
-                  Profit Trailing
-                </p>
-                <div className="flex flex-wrap w-full gap-4 text-sm">
-                  {trailingOptions.map((opt, idx) => (
-                    <label
-                      key={opt}
-                      className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
-                    >
-                      <input
-                        type="radio"
-                        name="profitTrailingRight"
-                        checked={(watch("TrailProfitType") || 0) === idx}
-                        onChange={() =>
-                          setValue("TrailProfitType", idx, {
-                            shouldDirty: true,
-                          })
-                        }
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-                {/* Conditional trailing fields for price section */}
-                {(() => {
-                  const t = watch("TrailProfitType") || 0;
-                  return (
-                    <div className="grid grid-cols-2 gap-3">
-                      {(t === 1 || t === 3) && (
-                        <>
-                          <input
-                            type="number"
-                            placeholder="If profit reaches"
-                            defaultValue={getValues("LockProfit") || ""}
-                            onChange={(e) =>
-                              setValue(
-                                "LockProfit",
-                                Number(e.target.value) || 0,
-                                {
-                                  shouldDirty: true,
-                                }
-                              )
-                            }
-                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Lock profit at"
-                            defaultValue={getValues("LockProfitAt") || ""}
-                            onChange={(e) =>
-                              setValue(
-                                "LockProfitAt",
-                                Number(e.target.value) || 0,
-                                {
-                                  shouldDirty: true,
-                                }
-                              )
-                            }
-                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                          />
-                        </>
-                      )}
-                      {(t === 2 || t === 3) && (
-                        <>
-                          <input
-                            type="number"
-                            placeholder="On every increase of"
-                            defaultValue={getValues("ProfitTranches") || ""}
-                            onChange={(e) =>
-                              setValue(
-                                "ProfitTranches",
-                                Number(e.target.value) || 0,
-                                {
-                                  shouldDirty: true,
-                                }
-                              )
-                            }
-                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Trail profit by"
-                            defaultValue={getValues("TrailProfitBy") || ""}
-                            onChange={(e) =>
-                              setValue(
-                                "TrailProfitBy",
-                                Number(e.target.value) || 0,
-                                {
-                                  shouldDirty: true,
-                                }
-                              )
-                            }
-                            className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-                          />
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-          {/* Advance Features hidden for 'price' strategy, Strategy Name always shown */}
-          {selectedStrategyTypes?.[0] !== "price" && (
-            <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="flex gap-2 items-center font-semibold text-lg text-black dark:text-white">
-                    Advance Features <img src={infoIcon} alt="" />
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Lorem Ipsum donor
-                  </p>
-                </div>
-              </div>
+            )}
+          </div>
+        )}
 
-              <div className="grid grid-cols-3 gap-y-4 mt-4 text-sm">
-                {advanceOptions.map((opt) => {
-                  const disabled = isDisabledAdvance(opt);
-                  return (
-                    <label
-                      key={opt}
-                      className={`flex items-center space-x-2 col-span-1 text-gray-700 dark:text-gray-300 ${
-                        disabled ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={!!advState[opt]}
-                        disabled={disabled}
-                        onChange={(e) => onToggleAdvance(opt, e.target.checked)}
-                      />
-                      <span>{opt}</span>
+        {/* Right column container (or only column for non-indicator) */}
+        {selectedStrategyTypes?.[0] !== "indicator" && (
+          <div className="space-y-6 md:flex md:flex-col md:justify-between">
+            {/* For price strategy, show Risk Management here instead (above strategy name) */}
+            {selectedStrategyTypes?.[0] === "price" && (
+              <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="font-semibold text-lg text-black dark:text-white">
+                      Risk Management
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Lorem Ipsum donor
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <input
+                    type="text"
+                    placeholder="Exit When Over All Profit In Amount (INR)"
+                    onChange={(e) =>
+                      setValue(
+                        "ExitWhenTotalProfit",
+                        Number(e.target.value) || 0,
+                        { shouldDirty: true }
+                      )
+                    }
+                    className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Exit When Over All Loss In Amount (INR)"
+                    onChange={(e) =>
+                      setValue(
+                        "ExitWhenTotalLoss",
+                        Number(e.target.value) || 0,
+                        {
+                          shouldDirty: true,
+                        }
+                      )
+                    }
+                    className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                  />
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="text-gray-500 block text-xs mb-1 dark:text-gray-400">
+                      No Trade After
                     </label>
-                  );
-                })}
+                    <input
+                      type="time"
+                      value={noTradeAfter}
+                      onChange={(e) => {
+                        setValue("TradeStopTime", e.target.value, {
+                          shouldDirty: true,
+                        });
+                        setValue("AutoSquareOffTime", e.target.value, {
+                          shouldDirty: true,
+                        });
+                      }}
+                      className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-white">
+                    Profit Trailing
+                  </p>
+                  <div className="flex flex-wrap w-full gap-4 text-sm">
+                    {trailingOptions.map((opt, idx) => (
+                      <label
+                        key={opt}
+                        className="flex items-center space-x-2 flex-1 min-w-[150px] text-gray-700 dark:text-gray-300"
+                      >
+                        <input
+                          type="radio"
+                          name="profitTrailingRight"
+                          checked={(watch("TrailProfitType") || 0) === idx}
+                          onChange={() =>
+                            setValue("TrailProfitType", idx, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {/* Conditional trailing fields for price section */}
+                  {(() => {
+                    const t = watch("TrailProfitType") || 0;
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        {(t === 1 || t === 3) && (
+                          <>
+                            <input
+                              type="number"
+                              placeholder="If profit reaches"
+                              defaultValue={getValues("LockProfit") || ""}
+                              onChange={(e) =>
+                                setValue(
+                                  "LockProfit",
+                                  Number(e.target.value) || 0,
+                                  {
+                                    shouldDirty: true,
+                                  }
+                                )
+                              }
+                              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Lock profit at"
+                              defaultValue={getValues("LockProfitAt") || ""}
+                              onChange={(e) =>
+                                setValue(
+                                  "LockProfitAt",
+                                  Number(e.target.value) || 0,
+                                  {
+                                    shouldDirty: true,
+                                  }
+                                )
+                              }
+                              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                            />
+                          </>
+                        )}
+                        {(t === 2 || t === 3) && (
+                          <>
+                            <input
+                              type="number"
+                              placeholder="On every increase of"
+                              defaultValue={getValues("ProfitTranches") || ""}
+                              onChange={(e) =>
+                                setValue(
+                                  "ProfitTranches",
+                                  Number(e.target.value) || 0,
+                                  {
+                                    shouldDirty: true,
+                                  }
+                                )
+                              }
+                              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Trail profit by"
+                              defaultValue={getValues("TrailProfitBy") || ""}
+                              onChange={(e) =>
+                                setValue(
+                                  "TrailProfitBy",
+                                  Number(e.target.value) || 0,
+                                  {
+                                    shouldDirty: true,
+                                  }
+                                )
+                              }
+                              className="bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+                            />
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
+            )}
+            {/* Advance Features hidden for 'price' strategy, Strategy Name always shown */}
+            {selectedStrategyTypes?.[0] !== "price" && (
+              <div className="p-4 border rounded-2xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="flex gap-2 items-center font-semibold text-lg text-black dark:text-white">
+                      Advance Features <img src={infoIcon} alt="" />
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Lorem Ipsum donor
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-y-4 mt-4 text-sm">
+                  {advanceOptions.map((opt) => {
+                    const disabled = isDisabledAdvance(opt);
+                    return (
+                      <label
+                        key={opt}
+                        className={`flex items-center space-x-2 col-span-1 text-gray-700 dark:text-gray-300 ${
+                          disabled ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!advState[opt]}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            onToggleAdvance(opt, e.target.checked)
+                          }
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="p-4 border rounded-2xl bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+              <h2 className="font-semibold text-lg text-black dark:text-white">
+                Strategy Name
+              </h2>
+              <input
+                type="text"
+                defaultValue={getValues("StrategyName") || ""}
+                placeholder="Enter your strategy name here"
+                onChange={(e) =>
+                  setValue("StrategyName", e.target.value, {
+                    shouldDirty: true,
+                  })
+                }
+                className="mt-3 bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 w-full dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
+              />
             </div>
-          )}
+          </div>
+        )}
+        {selectedStrategyTypes?.[0] === "indicator" && (
           <div className="p-4 border rounded-2xl bg-white dark:bg-[#131419] dark:border-[#1E2027]">
             <h2 className="font-semibold text-lg text-black dark:text-white">
               Strategy Name
@@ -1017,105 +1046,88 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
               className="mt-3 bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 w-full dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
             />
           </div>
-        </div>
-      )}
-      {selectedStrategyTypes?.[0] === "indicator" && (
-        <div className="p-4 border rounded-2xl bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-          <h2 className="font-semibold text-lg text-black dark:text-white">
-            Strategy Name
-          </h2>
-          <input
-            type="text"
-            defaultValue={getValues("StrategyName") || ""}
-            placeholder="Enter your strategy name here"
-            onChange={(e) =>
-              setValue("StrategyName", e.target.value, { shouldDirty: true })
-            }
-            className="mt-3 bg-blue-50 text-sm px-4 py-3 rounded-xl placeholder-gray-500 text-gray-700 w-full dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
-          />
-        </div>
-      )}
-      {showPremiumDiffModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#15171C] rounded-xl p-6 w-[90%] max-w-sm space-y-4">
-            <h3 className="text-lg font-semibold text-black dark:text-white">
-              Premium Difference
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Trade When Premium Difference &lt;=
-            </p>
-            <input
-              type="number"
-              value={premiumDiffTempValue}
-              onChange={(e) =>
-                setPremiumDiffTempValue(
-                  Math.max(0, Number(e.target.value) || 0)
-                )
-              }
-              className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
-              placeholder="Enter value"
-            />
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPremiumDiffModal(false);
-                  // if user cancels without value, also uncheck
-                  if (premiumDiffTempValue === 0) {
-                    setAdvState((prev) => ({
-                      ...prev,
-                      "Premium Difference": false,
-                    }));
-                    updateFirstStrike((s) => {
-                      s.IsPriceDiffrenceConstrant = false;
-                      s.PriceDiffrenceConstrantValue = 0;
-                    });
-                  }
-                }}
-                className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={savePremiumDifference}
-                className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
-              >
-                Save
-              </button>
+        )}
+        {showPremiumDiffModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white dark:bg-[#15171C] rounded-xl p-6 w-[90%] max-w-sm space-y-4">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
+                Premium Difference
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Trade When Premium Difference &lt;=
+              </p>
+              <input
+                type="number"
+                value={premiumDiffTempValue}
+                onChange={(e) =>
+                  setPremiumDiffTempValue(
+                    Math.max(0, Number(e.target.value) || 0)
+                  )
+                }
+                className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                placeholder="Enter value"
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPremiumDiffModal(false);
+                    // if user cancels without value, also uncheck
+                    if (premiumDiffTempValue === 0) {
+                      setAdvState((prev) => ({
+                        ...prev,
+                        "Premium Difference": false,
+                      }));
+                      updateFirstStrike((s) => {
+                        s.IsPriceDiffrenceConstrant = false;
+                        s.PriceDiffrenceConstrantValue = 0;
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={savePremiumDifference}
+                  className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Re-Entry/Execute Modal */}
+        <ReEntryExecuteModal
+          isOpen={showReEntryModal}
+          onClose={() => {
+            setShowReEntryModal(false);
+            // Uncheck the checkbox if user cancels
+            setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
+          }}
+          onSave={saveReEntryExecute}
+          initialData={reEntryTempData}
+        />
+
+        {/* Trail Stop Loss Modal */}
+        <TrailStopLossModal
+          isOpen={showTrailSlModal}
+          onClose={() => {
+            setShowTrailSlModal(false);
+            // Uncheck the checkbox if user cancels
+            setAdvState((prev) => ({ ...prev, "Trail SL": false }));
+          }}
+          onSave={saveTrailStopLoss}
+          initialData={trailSlTempData}
+        />
+      </div>
+      {(comingSoon || selectedStrategyTypes?.[0] === "price") && (
+        <ComingSoonOverlay />
       )}
-
-      {/* Re-Entry/Execute Modal */}
-      <ReEntryExecuteModal
-        isOpen={showReEntryModal}
-        onClose={() => {
-          setShowReEntryModal(false);
-          // Uncheck the checkbox if user cancels
-          setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
-        }}
-        onSave={saveReEntryExecute}
-        initialData={reEntryTempData}
-      />
-
-      {/* Trail Stop Loss Modal */}
-      <TrailStopLossModal
-        isOpen={showTrailSlModal}
-        onClose={() => {
-          setShowTrailSlModal(false);
-          // Uncheck the checkbox if user cancels
-          setAdvState((prev) => ({ ...prev, "Trail SL": false }));
-        }}
-        onSave={saveTrailStopLoss}
-        initialData={trailSlTempData}
-      />
     </div>
-    {(comingSoon || selectedStrategyTypes?.[0] === "price") && (
-      <ComingSoonOverlay />
-    )}
-  </div>
   );
 };
 

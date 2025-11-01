@@ -8,7 +8,11 @@ import {
 } from "../../../stores/strategyBuilderStore";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 
-const Leg1 = ({ selectedStrategyTypes, selectedInstrument, comingSoon = false }) => {
+const Leg1 = ({
+  selectedStrategyTypes,
+  selectedInstrument,
+  comingSoon = false,
+}) => {
   const { setValue, getValues, watch } = useFormContext();
   const { updatePayload, setLegAdvanceFeature, getLegAdvanceFeatures } =
     useStrategyBuilderStore();
@@ -1124,8 +1128,7 @@ const Leg1 = ({ selectedStrategyTypes, selectedInstrument, comingSoon = false })
   };
 
   // compute disabled state when no instrument selected
-  const isDisabled =
-    !selectedInstrument || !selectedInstrument.InstrumentToken;
+  const isDisabled = !selectedInstrument || !selectedInstrument.InstrumentToken;
   const showComingSoon = comingSoon || selectedStrategyTypes?.[0] === "price";
 
   // ✅ Initialize legs from form or create first leg (moved from OrderType)
