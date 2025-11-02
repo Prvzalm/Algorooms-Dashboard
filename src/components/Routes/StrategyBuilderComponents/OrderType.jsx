@@ -16,7 +16,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   ];
   const startTime = watch("TradeStartTime") || "09:16";
   const tradeStopTime = watch("TradeStopTime") || "15:15";
-  const squareOffTime = watch("AutoSquareOffTime") || tradeStopTime;
+  const squareOffTime = watch("AutoSquareOffTime") || "15:15";
   const productTypeNum = watch("ProductType");
   const isBtSt = watch("isBtSt");
   const entryDays = watch("EntryDaysBeforExpiry") ?? 0;

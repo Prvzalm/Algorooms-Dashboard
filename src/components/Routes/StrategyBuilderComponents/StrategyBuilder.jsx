@@ -22,6 +22,7 @@ import {
 } from "../../../stores/strategyBuilderStore";
 import { buildStrategyPayload } from "../../../utils/strategyPayload";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
+import StrategyBuilderSkeleton from "./StrategyBuilderSkeleton";
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -101,14 +102,14 @@ const StrategyBuilder = () => {
       ...baseDefaults,
       StrategyType: id,
       StrategySegmentType: id === "time" ? "Option" : "",
+      ActiveLegIndex: 0, // Reset to first leg
+      AdvanceFeatures: {}, // Clear advance features
     });
 
     // Clear instrument selections
     setSelectedInstrument("");
     setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([id]);
-
-    // Reset quantities
   };
 
   // ✅ OPTIMIZED: Single effect to sync Zustand payload with form
@@ -281,7 +282,8 @@ const StrategyBuilder = () => {
             : d.StrategySegmentType || "Option",
         ProductType: d.ProductType || 0,
         TradeStartTime: d.TradeStartTime || "09:16",
-        AutoSquareOffTime: d.AutoSquareOffTime || d.TradeStopTime || "15:15",
+        TradeStopTime: d.TradeStopTime || "15:15",
+        AutoSquareOffTime: d.AutoSquareOffTime || "15:15",
         ActiveDays: d.ActiveDays || ["MON", "TUE", "WED", "THU", "FRI"],
         ExitWhenTotalProfit: d.ExitWhenTotalProfit || 0,
         ExitWhenTotalLoss: d.ExitWhenTotalLoss || d.ExitWhenTotalLoss || 0,
@@ -412,109 +414,6 @@ const StrategyBuilder = () => {
       }
     }
   }, [selectedStrategyTypes, setValue, methods, updatePayload]);
-
-  // ✅ OPTIMIZED: Sync instrument selection with payload
-  useEffect(() => {
-    if (!selectedInstrument || !selectedInstrument.SegmentType) return;
-
-    // Update both form and Zustand
-    setValue("StrategySegmentType", selectedInstrument.SegmentType, {
-      shouldDirty: true,
-    });
-
-    const scriptData = {
-      InstrumentToken: selectedInstrument.InstrumentToken || "",
-      InstrumentName: selectedInstrument.Name || "",
-      Qty: 0,
-      LongEquationoptionStrikeList: [],
-      ShortEquationoptionStrikeList: [],
-      StrikeTickValue: 0,
-    };
-
-    const scripts = getValues("StrategyScriptList") || [];
-    const first = scripts[0];
-
-    if (scripts.length === 0 || !first?.InstrumentName) {
-      setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
-      updatePayload({
-        StrategySegmentType: selectedInstrument.SegmentType,
-        StrategyScriptList: [scriptData],
-      });
-    }
-  }, [selectedInstrument, setValue, getValues, updatePayload]);
-
-  // ✅ OPTIMIZED: Handle equity instruments for indicator-based strategies
-  useEffect(() => {
-    if (selectedStrategyTypes[0] !== "indicator") return;
-    if (!selectedEquityInstruments.length) return;
-
-    const buildDefaultStrike = (strikeType) => ({
-      TransactionType: "SELL",
-      StrikeType: strikeType,
-      StrikeValueType: 0,
-      StrikeValue: 0,
-      SLActionTypeId: "ONPRICE",
-      TargetActionTypeId: "ONPRICE",
-      isTrailSL: true,
-      IsRecursive: true,
-      IsMoveSLCTC: true,
-      isExitAll: true,
-      TargetType: "tgpr",
-      SLType: "slpr",
-      Target: "0",
-      StopLoss: "0",
-      Qty: "0",
-      isPrePunchSL: true,
-      IsPriceDiffrenceConstrant: true,
-      PriceDiffrenceConstrantValue: "0",
-      ExpiryType: "WEEKLY",
-      reEntry: {
-        isRentry: true,
-        RentryType: "REN",
-        TradeCycle: "0",
-        RentryActionTypeId: "ON_CLOSE",
-      },
-      waitNTrade: {
-        isWaitnTrade: true,
-        isPerPt: "wt_eq",
-        typeId: "wt_eq",
-        MovementValue: "0",
-      },
-      TrailingSL: {
-        TrailingType: "tslpr",
-        InstrumentMovementValue: "0",
-        TrailingValue: "0",
-      },
-      strikeTypeobj: {
-        type: "ATM",
-        StrikeValue: 0,
-        RangeFrom: 0,
-        RangeTo: 0,
-      },
-    });
-
-    const scripts = selectedEquityInstruments.map((ins) => ({
-      InstrumentToken: ins.InstrumentToken || "",
-      InstrumentName: ins.Name || "",
-      Qty: 1,
-      LongEquationoptionStrikeList: [buildDefaultStrike("PE")],
-      ShortEquationoptionStrikeList: [buildDefaultStrike("CE")],
-      StrikeTickValue: 0,
-    }));
-
-    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
-    setValue("StrategyScriptList", scripts, { shouldDirty: true });
-
-    updatePayload({
-      StrategySegmentType: "Equity",
-      StrategyScriptList: scripts,
-    });
-  }, [
-    selectedEquityInstruments,
-    selectedStrategyTypes,
-    setValue,
-    updatePayload,
-  ]);
 
   // ✅ Handle switching from equity multi-select back to single instrument
   useEffect(() => {
@@ -795,7 +694,7 @@ const StrategyBuilder = () => {
   const isPriceBased = selectedStrategyTypes?.[0] === "price";
 
   if (editing && editLoading) {
-    return <div className="p-6">Loading strategy...</div>;
+    return <StrategyBuilderSkeleton />;
   }
   if (editing && editError) {
     return <div className="p-6 text-red-500">Failed to load strategy.</div>;
@@ -956,7 +855,7 @@ const StrategyBuilder = () => {
                   {selectedEquityInstruments.length > 0 && (
                     <div className="mt-2 overflow-x-auto">
                       <div className="flex gap-3 pb-2">
-                        {selectedEquityInstruments.map((ins) => (
+                        {selectedEquityInstruments.map((ins, idx) => (
                           <div
                             key={ins.InstrumentToken}
                             className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex-shrink-0 w-[280px]"

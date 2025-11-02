@@ -182,7 +182,10 @@ export const useStrategyBuilderStore = create((set, get) => ({
         newPayload.StrategyType = strategyType;
         newPayload.StrategySegmentType = strategyType === "time" ? "Option" : "";
         newPayload.StrategyExecutionType = strategyType === "time" ? "tb" : strategyType === "indicator" ? "ib" : "pa";
-        set({ strategyPayload: newPayload });
+        set({
+            strategyPayload: newPayload,
+            perLegAdvanceFeatures: {}, // Clear per-leg features
+        });
     },
 
     setPayload: (payload) => set({ strategyPayload: payload }),

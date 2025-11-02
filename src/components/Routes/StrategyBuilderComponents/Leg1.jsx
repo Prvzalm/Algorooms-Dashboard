@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FiTrash2 } from "react-icons/fi";
 import { leg1CopyIcon } from "../../../assets";
@@ -13,9 +13,17 @@ const Leg1 = ({
   selectedInstrument,
   comingSoon = false,
 }) => {
+  // Guard to prevent feedback loops when hydrating per-leg features from existing strikes
+  const hydratingRef = useRef(false);
   const { setValue, getValues, watch } = useFormContext();
-  const { updatePayload, setLegAdvanceFeature, getLegAdvanceFeatures } =
-    useStrategyBuilderStore();
+  // Select stable store actions individually to avoid unnecessary rerenders
+  const updatePayload = useStrategyBuilderStore((s) => s.updatePayload);
+  const setLegAdvanceFeature = useStrategyBuilderStore(
+    (s) => s.setLegAdvanceFeature
+  );
+  const getLegAdvanceFeatures = useStrategyBuilderStore(
+    (s) => s.getLegAdvanceFeatures
+  );
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
@@ -457,6 +465,9 @@ const Leg1 = ({
   };
 
   const setPerLegFeature = (featureName, value) => {
+    const current = getPerLegFeature(featureName, undefined);
+    // Avoid redundant store updates if value is unchanged
+    if (Object.is(current, value)) return;
     setLegAdvanceFeature(activeLegIndex, featureName, value);
   };
 
@@ -576,80 +587,65 @@ const Leg1 = ({
     };
 
     const wait = existingActiveStrike.waitNTrade;
-    if (wait?.isWaitnTrade) {
-      if (!waitTradeEnabled) setWaitTradeEnabled(true);
-      const movement = Number(wait.MovementValue) || 0;
-      if (waitTradeMovement !== movement) setWaitTradeMovement(movement);
-      const label = wtMapRev[wait.typeId] || "% ↑";
-      if (waitTradeType !== label) setWaitTradeType(label);
-    }
+    // Prevent writer effects from running while hydrating Zustand per-leg features
+    hydratingRef.current = true;
+    try {
+      if (wait?.isWaitnTrade) {
+        if (!waitTradeEnabled) setWaitTradeEnabled(true);
+        const movement = Number(wait.MovementValue) || 0;
+        if (waitTradeMovement !== movement) setWaitTradeMovement(movement);
+        const label = wtMapRev[wait.typeId] || "% ↑";
+        if (waitTradeType !== label) setWaitTradeType(label);
+      }
 
-    if (existingActiveStrike.IsPriceDiffrenceConstrant) {
-      const value =
-        Number(existingActiveStrike.PriceDiffrenceConstrantValue) || 0;
-      if (!premiumDiffEnabled) setPremiumDiffEnabled(true);
-      if (premiumDiffValue !== value) setPremiumDiffValue(value);
-    }
+      if (existingActiveStrike.IsPriceDiffrenceConstrant) {
+        const value =
+          Number(existingActiveStrike.PriceDiffrenceConstrantValue) || 0;
+        if (!premiumDiffEnabled) setPremiumDiffEnabled(true);
+        if (premiumDiffValue !== value) setPremiumDiffValue(value);
+      }
 
-    if (existingActiveStrike.reEntry?.isRentry) {
-      const rentryTypeMap = {
-        REX: "ReExecute",
-        REN: "ReEntry On Close",
-        RENC: "ReEntry On Cost",
-      };
-      const exec =
-        rentryTypeMap[existingActiveStrike.reEntry.RentryType] || "ReExecute";
-      if (!reEntryEnabled) setReEntryEnabled(true);
-      if (reEntryExecutionType !== exec) setReEntryExecutionType(exec);
-      const cycles = Number(existingActiveStrike.reEntry.TradeCycle) || 1;
-      if (reEntryCycles !== cycles) setReEntryCycles(cycles);
-      const action = existingActiveStrike.reEntry.RentryActionTypeId || "IMMDT";
-      if (reEntryActionType !== action) setReEntryActionType(action);
-    }
+      if (existingActiveStrike.reEntry?.isRentry) {
+        const rentryTypeMap = {
+          REX: "ReExecute",
+          REN: "ReEntry On Close",
+          RENC: "ReEntry On Cost",
+        };
+        const exec =
+          rentryTypeMap[existingActiveStrike.reEntry.RentryType] || "ReExecute";
+        if (!reEntryEnabled) setReEntryEnabled(true);
+        if (reEntryExecutionType !== exec) setReEntryExecutionType(exec);
+        const cycles = Number(existingActiveStrike.reEntry.TradeCycle) || 1;
+        if (reEntryCycles !== cycles) setReEntryCycles(cycles);
+        const action =
+          existingActiveStrike.reEntry.RentryActionTypeId || "IMMDT";
+        if (reEntryActionType !== action) setReEntryActionType(action);
+      }
 
-    if (existingActiveStrike.isTrailSL && existingActiveStrike.TrailingSL) {
-      if (!trailSlEnabled) setTrailSlEnabled(true);
-      const typeLabel =
-        existingActiveStrike.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%";
-      if (trailSlType !== typeLabel) setTrailSlType(typeLabel);
-      const movement =
-        Number(existingActiveStrike.TrailingSL.InstrumentMovementValue) || 0;
-      if (trailSlPriceMovement !== movement) setTrailSlPriceMovement(movement);
-      const trailing =
-        Number(existingActiveStrike.TrailingSL.TrailingValue) || 0;
-      if (trailSlTrailingValue !== trailing) setTrailSlTrailingValue(trailing);
+      if (existingActiveStrike.isTrailSL && existingActiveStrike.TrailingSL) {
+        if (!trailSlEnabled) setTrailSlEnabled(true);
+        const typeLabel =
+          existingActiveStrike.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%";
+        if (trailSlType !== typeLabel) setTrailSlType(typeLabel);
+        const movement =
+          Number(existingActiveStrike.TrailingSL.InstrumentMovementValue) || 0;
+        if (trailSlPriceMovement !== movement)
+          setTrailSlPriceMovement(movement);
+        const trailing =
+          Number(existingActiveStrike.TrailingSL.TrailingValue) || 0;
+        if (trailSlTrailingValue !== trailing)
+          setTrailSlTrailingValue(trailing);
+      }
+    } finally {
+      // Release on next tick so writer effects see updated store values and won't bounce
+      setTimeout(() => {
+        hydratingRef.current = false;
+      }, 0);
     }
-  }, [
-    existingActiveStrike,
-    waitTradeEnabled,
-    waitTradeMovement,
-    waitTradeType,
-    premiumDiffEnabled,
-    premiumDiffValue,
-    reEntryEnabled,
-    reEntryExecutionType,
-    reEntryCycles,
-    reEntryActionType,
-    trailSlEnabled,
-    trailSlType,
-    trailSlPriceMovement,
-    trailSlTrailingValue,
-    setWaitTradeEnabled,
-    setWaitTradeMovement,
-    setWaitTradeType,
-    setPremiumDiffEnabled,
-    setPremiumDiffValue,
-    setReEntryEnabled,
-    setReEntryExecutionType,
-    setReEntryCycles,
-    setReEntryActionType,
-    setTrailSlEnabled,
-    setTrailSlType,
-    setTrailSlPriceMovement,
-    setTrailSlTrailingValue,
-  ]);
+  }, [existingActiveStrike, activeLegIndex]);
 
   useEffect(() => {
+    if (hydratingRef.current) return;
     const mapWaitTradeType = (label) => {
       const meta = {
         "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
@@ -729,6 +725,7 @@ const Leg1 = ({
   ]);
 
   useEffect(() => {
+    if (hydratingRef.current) return;
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
       const globalEnabled = advanceFeatures?.["Premium Difference"];
       const globalValue = advanceFeatures?.PremiumDifferenceValue;
@@ -768,6 +765,7 @@ const Leg1 = ({
   ]);
 
   useEffect(() => {
+    if (hydratingRef.current) return;
     const mapUiToCode = {
       ReExecute: "REX",
       "ReEntry On Close": "REN",
@@ -813,10 +811,12 @@ const Leg1 = ({
             prev.RentryActionTypeId ||
             "IMMDT";
 
-        if (executionType === "ReEntry On Cost") {
-          actionType = "ON_COST";
-        } else if (executionType === "ReEntry On Close") {
+        // RentryActionTypeId can only be "ON_CLOSE" or "IMMDT"
+        if (executionType === "ReEntry On Close") {
           actionType = "ON_CLOSE";
+        } else {
+          // For ReEntry On Cost and ReExecute, use IMMDT
+          actionType = "IMMDT";
         }
 
         strike.reEntry = {
@@ -840,6 +840,7 @@ const Leg1 = ({
   ]);
 
   useEffect(() => {
+    if (hydratingRef.current) return;
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
       const globalEnabled = advanceFeatures?.["Trail SL"];
 

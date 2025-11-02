@@ -13,6 +13,7 @@ import { useUserStrategies } from "../../../hooks/strategyHooks";
 import { useProfileQuery } from "../../../hooks/profileHooks";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBacktestResult } from "../../../api/backTestApi";
+import BacktestSkeleton from "./BacktestSkeleton";
 
 const timeRanges = [
   "1 Month",
@@ -611,9 +612,7 @@ const BacktestStrategyComponent = ({
           </p>
         </div>
       )}
-      {isFetchingMulti && (
-        <div className="mb-4 text-sm">Loading backtest data...</div>
-      )}
+      {isFetchingMulti && <BacktestSkeleton />}
       {aggregatedData ? (
         <>
           <BacktestReport overall={overall} equityCurve={equityCurve} />

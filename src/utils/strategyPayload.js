@@ -109,6 +109,26 @@ export function buildStrategyPayload({
         ];
     }
 
+    const normalizeTpSlType = () => {
+        const raw = values.TpSLType;
+        if (typeof raw === "number" && Number.isFinite(raw)) {
+            return raw;
+        }
+        if (typeof raw === "string") {
+            const upper = raw.toUpperCase();
+            if (upper.includes("POINT")) return 1;
+            if (upper.includes("PERCENT")) return 0;
+            const numeric = Number(raw);
+            if (!Number.isNaN(numeric)) {
+                return numeric;
+            }
+        }
+        return 0;
+    };
+
+    const strategyIdForPayload = values.StrategyId || (showBacktestComponent && createdStrategyId ? createdStrategyId : 0);
+    const tpSlTypeValue = normalizeTpSlType();
+
     const payloadBase = {
         ...values,
         StrategyType: null,
@@ -116,14 +136,16 @@ export function buildStrategyPayload({
             selectedStrategyTypes[0] === "time" ? "OPTION" : mappedSegment,
         StrategyExecutionType: executionType,
         StrategyScriptList: StrategyScriptListFinal,
-        TradeStopTime: values.TradeStopTime || values.AutoSquareOffTime,
+        TradeStopTime: values.TradeStopTime || "15:15",
+        AutoSquareOffTime: values.AutoSquareOffTime || "15:15",
         EntryRule: null,
         ExitRule: null,
         Long_ExitEquation: toNullIfEmpty(values.Long_ExitEquation),
         Short_ExitEquation: toNullIfEmpty(values.Short_ExitEquation),
-        StrategyId: showBacktestComponent && createdStrategyId ? createdStrategyId : 0,
+        StrategyId: strategyIdForPayload,
         ExitWhenTotalLoss: String(values.ExitWhenTotalLoss || 0),
         ExitWhenTotalProfit: String(values.ExitWhenTotalProfit || 0),
+        TpSLType: tpSlTypeValue,
     };
 
     if (selectedStrategyTypes[0] === "indicator") {

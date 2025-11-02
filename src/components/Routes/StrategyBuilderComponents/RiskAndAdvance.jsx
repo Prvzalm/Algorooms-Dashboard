@@ -9,11 +9,16 @@ import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 
 const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
-  const { setLegAdvanceFeature, getLegAdvanceFeatures } =
-    useStrategyBuilderStore();
-  const tradeStopTimeValue = watch("TradeStopTime");
-  const autoSquareOffTimeValue = watch("AutoSquareOffTime");
-  const noTradeAfter = tradeStopTimeValue || autoSquareOffTimeValue || "15:15";
+  // Select stable store actions individually to avoid unnecessary rerenders
+  const setLegAdvanceFeature = useStrategyBuilderStore(
+    (s) => s.setLegAdvanceFeature
+  );
+  const getLegAdvanceFeatures = useStrategyBuilderStore(
+    (s) => s.getLegAdvanceFeatures
+  );
+  const tradeStopTimeValue = watch("TradeStopTime") || "15:15";
+  const autoSquareOffTimeValue = watch("AutoSquareOffTime") || "15:15";
+  const noTradeAfter = autoSquareOffTimeValue;
 
   // Watch reactive values to avoid infinite loops
   const strategyScripts = watch("StrategyScriptList");
@@ -25,6 +30,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     getValues("StrategySegmentType") === "Equity";
 
   const targetSlTypeRaw = watch("TargetSlType");
+  const tpSlTypeRaw = watch("TpSLType");
   const targetSlType = targetSlTypeRaw || "Percentage(%)";
   const rawTargetOnEachScript = watch("TargetOnEachScript");
   const rawStopLossOnEachScript = watch("StopLossOnEachScript");
@@ -38,10 +44,21 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       : String(rawStopLossOnEachScript);
 
   useEffect(() => {
-    if (isIndicatorEquityMode && !targetSlTypeRaw) {
-      setValue("TargetSlType", "Percentage(%)", { shouldDirty: true });
+    if (!isIndicatorEquityMode) return;
+
+    const numericTpSl = Number(tpSlTypeRaw);
+
+    if (Number.isNaN(numericTpSl)) {
+      setValue("TpSLType", 0, { shouldDirty: false });
+      setValue("TargetSlType", "Percentage(%)", { shouldDirty: false });
+      return;
     }
-  }, [isIndicatorEquityMode, targetSlTypeRaw, setValue]);
+
+    const expectedLabel = numericTpSl === 1 ? "Points" : "Percentage(%)";
+    if (targetSlTypeRaw !== expectedLabel) {
+      setValue("TargetSlType", expectedLabel, { shouldDirty: false });
+    }
+  }, [isIndicatorEquityMode, targetSlTypeRaw, tpSlTypeRaw, setValue]);
 
   const trailingOptions = [
     "No Trailing",
@@ -223,6 +240,11 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         if (checked) {
           // Get existing values to populate modal - from per-leg store
           const legFeatures = getLegAdvanceFeatures(activeLegIndex);
+          const scripts = strategyScripts || [];
+          const firstScript = scripts[0] || {};
+          const longs = firstScript.LongEquationoptionStrikeList || [];
+          const currentStrike = longs[activeLegIndex] || {};
+
           const currentPremValue =
             legFeatures.premiumDiffValue ||
             currentStrike.PriceDiffrenceConstrantValue ||
@@ -425,12 +447,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       "ReEntry On Cost": "RENC",
     };
 
-    // For "ReEntry On Cost" and "ReEntry On Close", actionType should be fixed
+    // RentryActionTypeId can only be "ON_CLOSE" or "IMMDT"
+    // For ReEntry On Close, use ON_CLOSE; otherwise use IMMDT
     let finalActionType = data.actionType;
-    if (data.executionType === "ReEntry On Cost") {
-      finalActionType = "ON_COST"; // Backend value for cost-based re-entry
-    } else if (data.executionType === "ReEntry On Close") {
-      finalActionType = "ON_CLOSE"; // Backend value for close-based re-entry
+    if (data.executionType === "ReEntry On Close") {
+      finalActionType = "ON_CLOSE";
+    } else {
+      // For ReEntry On Cost and ReExecute, use IMMDT
+      finalActionType = "IMMDT";
     }
 
     updateFirstStrike((s) => {
@@ -649,11 +673,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     </label>
                     <select
                       value={targetSlType}
-                      onChange={(e) =>
-                        setValue("TargetSlType", e.target.value, {
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setValue("TargetSlType", v, { shouldDirty: true });
+                        // Map: % => 0, pts => 1
+                        setValue("TpSLType", v === "Percentage(%)" ? 0 : 1, {
                           shouldDirty: true,
-                        })
-                      }
+                        });
+                      }}
                       className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                     >
                       <option value="Percentage(%)">Percentage(%)</option>
