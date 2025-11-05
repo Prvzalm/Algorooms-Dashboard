@@ -1,13 +1,43 @@
 import React, { useState } from "react";
 import { paymentDetailsIcon } from "../../../assets";
+import { useInitiatePayment } from "../../../hooks/subscriptionHooks";
+import { toast } from "react-toastify";
 
-const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
+const PaymentDetailsModal = ({
+  isOpen,
+  onClose,
+  data,
+  onProcessPayment,
+  paymentPayload,
+}) => {
   const [agree, setAgree] = useState(false);
+  const { mutate: initiatePayment, isPending } = useInitiatePayment();
 
   if (!isOpen) return null;
 
   const handleOutsideClick = (e) => {
     if (e.target.id === "modal-overlay") onClose();
+  };
+
+  const handleProcessPayment = () => {
+    if (!agree) return;
+
+    initiatePayment(paymentPayload, {
+      onSuccess: (response) => {
+        // Response contains: paymentLink, orderId, tokenType, amount
+        if (response?.paymentLink) {
+          // Open Razorpay payment link in new tab
+          window.open(response.paymentLink, "_blank");
+          toast.success("Payment link generated successfully");
+          onProcessPayment(response);
+        } else {
+          toast.error("Failed to generate payment link");
+        }
+      },
+      onError: (error) => {
+        toast.error(error?.message || "Failed to initiate payment");
+      },
+    });
   };
 
   return (
@@ -102,15 +132,15 @@ const PaymentDetailsModal = ({ isOpen, onClose, data, onProcessPayment }) => {
         </div>
 
         <button
-          disabled={!agree}
-          onClick={onProcessPayment}
+          disabled={!agree || isPending}
+          onClick={handleProcessPayment}
           className={`w-full py-4 rounded-xl text-white text-sm font-semibold transition ${
-            agree
+            agree && !isPending
               ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
               : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
           }`}
         >
-          Process Payment
+          {isPending ? "Processing..." : "Process Payment"}
         </button>
       </div>
     </div>

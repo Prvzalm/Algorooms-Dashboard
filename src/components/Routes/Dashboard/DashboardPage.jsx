@@ -147,30 +147,27 @@ const Dashboard = () => {
   // Component-wise loading & error handling: avoid blocking the whole page
   const HeaderSkeleton = () => (
     <div className="col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
-        <div className="h-5 w-40 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-6 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
 
   const BrokerCardSkeleton = () => (
     <div className="col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] h-full">
-        <div className="h-5 w-28 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] h-full">
+        <div className="h-6 w-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
 
   const StrategiesSkeleton = () => (
-    <div className="md:col-span-3 col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
-        <div className="h-5 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        </div>
+    <div className="col-span-1">
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-6 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
@@ -184,7 +181,7 @@ const Dashboard = () => {
         </div>
 
         <div className="md:flex hidden md:flex-row md:text-lg md:font-semibold items-center justify-evenly w-full md:w-1/3 space-y-2 md:space-y-0">
-          <p className="text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white text-center">
+          <p className="text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white text-center whitespace-nowrap">
             Strategy Deployed
           </p>
 

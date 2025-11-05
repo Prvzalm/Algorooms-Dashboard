@@ -106,6 +106,119 @@ const EntryCondition = () => {
       };
       return eq;
     });
+
+    // Sync Long and Short Entry Equations with opposite comparators
+    if (key === "LongEntryEquation") {
+      syncToShortEntry(index, which, indicatorId, paramsObj);
+    } else if (key === "ShortEntryEquation") {
+      syncToLongEntry(index, which, indicatorId, paramsObj);
+    }
+  };
+
+  const getOppositeComparator = (comparerId) => {
+    const oppositeMap = {
+      1: 2, // > to <
+      2: 1, // < to >
+      3: 4, // >= to <=
+      4: 3, // <= to >=
+      5: 5, // == remains ==
+      6: 6, // != remains !=
+    };
+    return oppositeMap[comparerId] || comparerId;
+  };
+
+  const syncToShortEntry = (index, which, indicatorId, paramsObj) => {
+    const longArr = watch("LongEntryEquation") || [];
+    const longEq = longArr[index];
+    if (!longEq) return;
+
+    const shortArr = [...(watch("ShortEntryEquation") || [])];
+    // Ensure short array has enough elements
+    while (shortArr.length <= index) {
+      shortArr.push(createDefaultEquation());
+    }
+
+    const toParamList = (obj) =>
+      Object.entries(paramsObj || obj || {}).map(([pid, val]) => ({
+        ParamId: pid,
+        IndicatorParamValue: String(val ?? ""),
+      }));
+
+    const target = which === "left" ? "indicator" : "comparerIndicator";
+    const paramList = Array.isArray(paramsObj)
+      ? paramsObj
+      : toParamList(paramsObj);
+
+    // Copy indicator to short with opposite comparator
+    shortArr[index] = {
+      ...shortArr[index],
+      [target]: {
+        indicatorId: Number(indicatorId) || 0,
+        IndicatorParamList:
+          paramList && paramList.length
+            ? paramList
+            : [{ ParamId: "string", IndicatorParamValue: "string" }],
+      },
+      comparerId: getOppositeComparator(longEq.comparerId),
+      comparerName:
+        comparers.find(
+          (c) => c.ComparerId === getOppositeComparator(longEq.comparerId)
+        )?.ComparerName || longEq.comparerName,
+      OperatorId: getOppositeComparator(longEq.comparerId),
+      OperatorName:
+        comparers.find(
+          (c) => c.ComparerId === getOppositeComparator(longEq.comparerId)
+        )?.ComparerName || longEq.comparerName,
+    };
+
+    setValue("ShortEntryEquation", shortArr, { shouldDirty: true });
+  };
+
+  const syncToLongEntry = (index, which, indicatorId, paramsObj) => {
+    const shortArr = watch("ShortEntryEquation") || [];
+    const shortEq = shortArr[index];
+    if (!shortEq) return;
+
+    const longArr = [...(watch("LongEntryEquation") || [])];
+    // Ensure long array has enough elements
+    while (longArr.length <= index) {
+      longArr.push(createDefaultEquation());
+    }
+
+    const toParamList = (obj) =>
+      Object.entries(paramsObj || obj || {}).map(([pid, val]) => ({
+        ParamId: pid,
+        IndicatorParamValue: String(val ?? ""),
+      }));
+
+    const target = which === "left" ? "indicator" : "comparerIndicator";
+    const paramList = Array.isArray(paramsObj)
+      ? paramsObj
+      : toParamList(paramsObj);
+
+    // Copy indicator to long with opposite comparator
+    longArr[index] = {
+      ...longArr[index],
+      [target]: {
+        indicatorId: Number(indicatorId) || 0,
+        IndicatorParamList:
+          paramList && paramList.length
+            ? paramList
+            : [{ ParamId: "string", IndicatorParamValue: "string" }],
+      },
+      comparerId: getOppositeComparator(shortEq.comparerId),
+      comparerName:
+        comparers.find(
+          (c) => c.ComparerId === getOppositeComparator(shortEq.comparerId)
+        )?.ComparerName || shortEq.comparerName,
+      OperatorId: getOppositeComparator(shortEq.comparerId),
+      OperatorName:
+        comparers.find(
+          (c) => c.ComparerId === getOppositeComparator(shortEq.comparerId)
+        )?.ComparerName || shortEq.comparerName,
+    };
+
+    setValue("LongEntryEquation", longArr, { shouldDirty: true });
   };
 
   const setComparer = (key, index, comparerId) => {
@@ -119,6 +232,53 @@ const EntryCondition = () => {
       OperatorId: Number(comparerId) || 0,
       OperatorName: cmp?.ComparerName || "string",
     }));
+
+    // Sync comparator to opposite side with opposite value
+    if (key === "LongEntryEquation") {
+      syncComparatorToShort(index, comparerId);
+    } else if (key === "ShortEntryEquation") {
+      syncComparatorToLong(index, comparerId);
+    }
+  };
+
+  const syncComparatorToShort = (index, comparerId) => {
+    const shortArr = [...(watch("ShortEntryEquation") || [])];
+    while (shortArr.length <= index) {
+      shortArr.push(createDefaultEquation());
+    }
+
+    const oppositeId = getOppositeComparator(Number(comparerId));
+    const cmp = comparers.find((c) => Number(c.ComparerId) === oppositeId);
+
+    shortArr[index] = {
+      ...shortArr[index],
+      comparerId: oppositeId,
+      comparerName: cmp?.ComparerName || "string",
+      OperatorId: oppositeId,
+      OperatorName: cmp?.ComparerName || "string",
+    };
+
+    setValue("ShortEntryEquation", shortArr, { shouldDirty: true });
+  };
+
+  const syncComparatorToLong = (index, comparerId) => {
+    const longArr = [...(watch("LongEntryEquation") || [])];
+    while (longArr.length <= index) {
+      longArr.push(createDefaultEquation());
+    }
+
+    const oppositeId = getOppositeComparator(Number(comparerId));
+    const cmp = comparers.find((c) => Number(c.ComparerId) === oppositeId);
+
+    longArr[index] = {
+      ...longArr[index],
+      comparerId: oppositeId,
+      comparerName: cmp?.ComparerName || "string",
+      OperatorId: oppositeId,
+      OperatorName: cmp?.ComparerName || "string",
+    };
+
+    setValue("LongEntryEquation", longArr, { shouldDirty: true });
   };
 
   const addRow = (key) => {

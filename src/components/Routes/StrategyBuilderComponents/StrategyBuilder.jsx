@@ -568,14 +568,8 @@ const StrategyBuilder = () => {
       return;
     }
 
-    // If backtest component is already showing, directly create/update strategy
-    // without showing the popup again
-    if (showBacktestComponent) {
-      handleCreateStrategy(true); // Automatically backtest since component is shown
-      return;
-    }
-
-    // Show backtest confirmation modal only for first time creation
+    // Always show backtest confirmation modal for creation
+    // (whether it's first time or updating an existing backtest)
     openBacktestModal();
   };
 
@@ -641,6 +635,9 @@ const StrategyBuilder = () => {
               } else {
                 // Reset form and navigate to strategies
                 reset();
+                // Reset backtest component state so popup shows on next create
+                showBacktest(false);
+                setCreatedStrategyId(null);
                 navigate("/strategies");
               }
             } else {
@@ -655,6 +652,9 @@ const StrategyBuilder = () => {
               }
               if (!shouldBacktest) {
                 reset();
+                // Reset backtest component state
+                showBacktest(false);
+                setCreatedStrategyId(null);
                 navigate("/strategies");
               }
             }
@@ -665,6 +665,9 @@ const StrategyBuilder = () => {
             );
             if (!shouldBacktest) {
               reset();
+              // Reset backtest component state
+              showBacktest(false);
+              setCreatedStrategyId(null);
               navigate("/strategies");
             }
           }
@@ -673,6 +676,9 @@ const StrategyBuilder = () => {
         // If user chose "No, Skip" and we're updating, navigate to strategies
         if (isUpdating && !shouldBacktest) {
           reset();
+          // Reset backtest component state
+          showBacktest(false);
+          setCreatedStrategyId(null);
           navigate("/strategies");
         }
       },

@@ -60,6 +60,7 @@ export const useCreateStrategyMutation = () => {
     mutationFn: (payload) => createStrategy(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
     },
   });
 };

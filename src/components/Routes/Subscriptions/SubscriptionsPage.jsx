@@ -19,6 +19,7 @@ const SubscriptionsPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFailure, setShowFailure] = useState(false);
   const [apiKey] = useState("abc");
+  const [paymentPayload, setPaymentPayload] = useState(null);
   const { data: pricingData, isLoading } = useBrokerPlans(
     activeTab.toLowerCase(),
     apiKey
@@ -27,13 +28,16 @@ const SubscriptionsPage = () => {
   const { data: paymentData } = usePaymentDetails(payload);
 
   const handlePlanContinue = (plan) => {
-    setPayload({
+    const payload = {
       Planid: plan.planId || plan.PlanId,
       PlanType: activeTab.toLowerCase(),
       SubscriptionType: mainTab === "Plans" ? "BROKER" : "BACKTEST",
       CouponCode: "",
       BrokerClientId: "",
-    });
+    };
+
+    setPayload(payload);
+    setPaymentPayload(payload);
     setShowConfirm(false);
     setShowPayment(true);
   };
@@ -210,17 +214,24 @@ const SubscriptionsPage = () => {
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
         data={paymentData}
-        onProcessPayment={() => {
+        paymentPayload={paymentPayload}
+        onProcessPayment={(paymentResponse) => {
           setShowPayment(false);
 
-          const isSuccess = true;
-
-          if (isSuccess) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-          } else {
-            setShowFailure(true);
+          // Store payment response in localStorage
+          if (paymentResponse) {
+            localStorage.setItem(
+              "paymentLink",
+              paymentResponse.paymentLink || ""
+            );
+            localStorage.setItem("orderId", paymentResponse.orderId || "");
+            localStorage.setItem("tokenType", paymentResponse.tokenType || "");
+            localStorage.setItem("amount", paymentResponse.amount || "");
           }
+
+          // Show success modal (payment link opened in new tab)
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
         }}
       />
       <PaymentSuccessModal
