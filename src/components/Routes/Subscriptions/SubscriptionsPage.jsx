@@ -133,6 +133,9 @@ const SubscriptionsPage = () => {
                     </div>
                     <div className="text-3xl font-bold text-[#2E3A59] dark:text-white">
                       ₹{plan.Price}
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                        (+ GST)
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {plan.description}

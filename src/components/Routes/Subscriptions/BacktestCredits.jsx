@@ -36,7 +36,12 @@ const BacktestCredits = ({ onBuyCredit }) => {
           className="border border-[#E6EDF4] dark:border-[#1E2027] bg-white dark:bg-[#15171C] rounded-2xl p-6 space-y-4"
         >
           <div className="text-lg font-semibold">{plan.title}</div>
-          <div className="text-3xl font-bold">₹{plan.price}</div>
+          <div className="text-3xl font-bold">
+            ₹{plan.price}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+              (+ GST)
+            </span>
+          </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {plan.description}
           </div>
