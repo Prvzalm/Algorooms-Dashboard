@@ -125,6 +125,8 @@ const DeployStrategyModal = ({ open, onClose, strategy }) => {
 
     if (hasDetails) {
       setAutoSquareOffTime(details.AutoSquareOffTime || "");
+      setMaxProfit(details.ExitWhenTotalProfit || 0);
+      setMaxLoss(details.ExitWhenTotalLoss || 0);
     }
     if (hasBrokers) {
       setSelectedBrokerIds(brokerOptions.map((o) => o.value));
