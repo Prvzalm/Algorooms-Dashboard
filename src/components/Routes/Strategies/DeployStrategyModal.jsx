@@ -110,28 +110,31 @@ const DeployStrategyModal = ({ open, onClose, strategy }) => {
   const [selectedBrokerIds, setSelectedBrokerIds] = useState([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // Initialize defaults once per open to avoid update loops
-  const initializedRef = useRef(false);
+  // Track initialization for details/broker defaults separately per open
+  const initRef = useRef({ details: false, brokers: false });
   useEffect(() => {
     if (!open) {
-      initializedRef.current = false;
+      initRef.current = { details: false, brokers: false };
       return;
     }
-    if (initializedRef.current) return;
-    // Initialize when we have either details or brokers (or both)
-    const hasBrokers = brokerOptions.length > 0;
-    const hasDetails = !!details;
-    if (!hasBrokers && !hasDetails) return; // wait for data
 
-    if (hasDetails) {
+    const state = initRef.current;
+
+    if (!state.details && details) {
       setAutoSquareOffTime(details.AutoSquareOffTime || "");
-      setMaxProfit(details.ExitWhenTotalProfit || 0);
-      setMaxLoss(details.ExitWhenTotalLoss || 0);
+      const profit = details.ExitWhenTotalProfit;
+      const loss = details.ExitWhenTotalLoss;
+      setMaxProfit(
+        profit === undefined || profit === null ? "" : String(profit)
+      );
+      setMaxLoss(loss === undefined || loss === null ? "" : String(loss));
+      state.details = true;
     }
-    if (hasBrokers) {
+
+    if (!state.brokers && brokerOptions.length > 0) {
       setSelectedBrokerIds(brokerOptions.map((o) => o.value));
+      state.brokers = true;
     }
-    initializedRef.current = true;
   }, [open, details, brokerOptions]);
 
   if (!open) return null;
