@@ -202,3 +202,25 @@ export const deployStrategy = async (payload) => {
     throw new Error(serverMsg);
   }
 };
+
+export const removeStrategyDeployment = async (payload) => {
+  try {
+    const response = await axiosInstance.post(
+      "/strategies/RemoveStrategyDeployment",
+      payload
+    );
+    const { Status, Message, Data } = response?.data || {};
+    if (!Status || Status.toLowerCase() !== "success") {
+      throw new Error(Message || "Failed to remove strategy deployment");
+    }
+    return { Message, Data };
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data?.Message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Failed to remove strategy deployment";
+    throw new Error(serverMsg);
+  }
+};

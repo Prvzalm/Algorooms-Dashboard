@@ -49,9 +49,15 @@ const buildLiveModelFromApi = (apiData = []) => {
                     isLiveMode: d.isLiveMode,
                     maxLoss: d.MaxLoss,
                     maxProfit: d.MaxProfit,
+                    qtyMultiplier: d.QtyMultiplier,
+                    autoSquareOffTime: d.AutoSquareOffTime,
+                    maxTradeCycle: d.MaxTradeCycle,
+                    brokerClientId: d.BrokerClientId,
+                    brokerId: d.BrokerId,
                     totalPnl: d.TotalPnl ?? 0,
                     positions,
                     orders,
+                    deploymentDetail: d,
                     strategyPNL: positions.length === 0 ? d.TotalPnl ?? 0 : undefined,
                 };
 

@@ -49,7 +49,8 @@ const SubscriptionsPage = () => {
       ...plan,
       title: `${plan.planName} Plan`,
       price: plan.Price,
-      description: "Auto-fetched from API",
+      description:
+        plan.Description || plan.PlanDescription || plan.planDescription || "",
       features: [
         `${plan.allowedBacktestCount} allowed backtest credits`,
         `${plan.maxStrategyCreation} strategy creation allowed`,
@@ -137,9 +138,11 @@ const SubscriptionsPage = () => {
                         (+ GST)
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {plan.description}
-                    </div>
+                    {plan.description ? (
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {plan.description}
+                      </div>
+                    ) : null}
 
                     <button
                       onClick={() => {

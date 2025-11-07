@@ -12,6 +12,7 @@ import {
   deleteStrategy,
   getStrategyDetailsById,
   deployStrategy,
+  removeStrategyDeployment,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -177,6 +178,22 @@ export const useDeployStrategy = () => {
     },
     onError: (err) => {
       const msg = err?.response?.data?.Message || err?.message || "Failed to deploy";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useRemoveStrategyDeployment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => removeStrategyDeployment(payload),
+    onSuccess: (data) => {
+      if (data?.Message) toast.success(data.Message);
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err?.message || "Failed to remove deployment";
       toast.error(msg);
     },
   });

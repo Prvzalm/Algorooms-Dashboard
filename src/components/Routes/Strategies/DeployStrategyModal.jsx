@@ -84,7 +84,12 @@ const BrokerMultiSelect = ({ options, value, onChange }) => {
   );
 };
 
-const DeployStrategyModal = ({ open, onClose, strategy }) => {
+const DeployStrategyModal = ({
+  open,
+  onClose,
+  strategy,
+  initialDeployment = null,
+}) => {
   const navigate = useNavigate();
   const strategyId = strategy?.StrategyId;
   const { data: details, isLoading: detailsLoading } = useStrategyDetailsById(
@@ -111,40 +116,114 @@ const DeployStrategyModal = ({ open, onClose, strategy }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Track initialization for details/broker defaults separately per open
-  const initRef = useRef({ details: false, brokers: false });
+  const initRef = useRef({ details: false, brokers: false, deployment: false });
   useEffect(() => {
     if (!open) {
-      initRef.current = { details: false, brokers: false };
+      initRef.current = { details: false, brokers: false, deployment: false };
       return;
     }
 
     const state = initRef.current;
 
+    if (!state.deployment && initialDeployment) {
+      if (initialDeployment.isLiveMode !== undefined) {
+        setIsLiveMode(!!initialDeployment.isLiveMode);
+      }
+      if (initialDeployment.qtyMultiplier !== undefined) {
+        const val = initialDeployment.qtyMultiplier;
+        setQtyMultiplier(
+          val === undefined || val === null || val === "" ? "" : String(val)
+        );
+      }
+      if (initialDeployment.maxProfit !== undefined) {
+        const val = initialDeployment.maxProfit;
+        setMaxProfit(
+          val === undefined || val === null || val === "" ? "" : String(val)
+        );
+      }
+      if (initialDeployment.maxLoss !== undefined) {
+        const val = initialDeployment.maxLoss;
+        setMaxLoss(
+          val === undefined || val === null || val === "" ? "" : String(val)
+        );
+      }
+      if (initialDeployment.autoSquareOffTime !== undefined) {
+        setAutoSquareOffTime(initialDeployment.autoSquareOffTime || "");
+      }
+      if (
+        Array.isArray(initialDeployment.brokerClientIds) &&
+        initialDeployment.brokerClientIds.length > 0
+      ) {
+        setSelectedBrokerIds(initialDeployment.brokerClientIds);
+      }
+      state.deployment = true;
+    }
+
     if (!state.details && details) {
-      setAutoSquareOffTime(details.AutoSquareOffTime || "");
+      if (
+        !(
+          state.deployment &&
+          initialDeployment &&
+          initialDeployment.autoSquareOffTime !== undefined
+        )
+      ) {
+        setAutoSquareOffTime(details.AutoSquareOffTime || "");
+      }
       const profit = details.ExitWhenTotalProfit;
       const loss = details.ExitWhenTotalLoss;
-      setMaxProfit(
-        profit === undefined || profit === null ? "" : String(profit)
-      );
-      setMaxLoss(loss === undefined || loss === null ? "" : String(loss));
+      if (
+        !(
+          state.deployment &&
+          initialDeployment &&
+          initialDeployment.maxProfit !== undefined
+        )
+      ) {
+        setMaxProfit(
+          profit === undefined || profit === null ? "" : String(profit)
+        );
+      }
+      if (
+        !(
+          state.deployment &&
+          initialDeployment &&
+          initialDeployment.maxLoss !== undefined
+        )
+      ) {
+        setMaxLoss(loss === undefined || loss === null ? "" : String(loss));
+      }
       state.details = true;
     }
 
     if (!state.brokers && brokerOptions.length > 0) {
-      setSelectedBrokerIds(brokerOptions.map((o) => o.value));
-      state.brokers = true;
+      setSelectedBrokerIds((prev) => {
+        if (prev.length > 0) {
+          state.brokers = true;
+          return prev;
+        }
+        const defaults =
+          Array.isArray(initialDeployment?.brokerClientIds) &&
+          initialDeployment.brokerClientIds.length > 0
+            ? initialDeployment.brokerClientIds
+            : brokerOptions.map((o) => o.value);
+        state.brokers = true;
+        return defaults;
+      });
     }
-  }, [open, details, brokerOptions]);
+  }, [open, details, brokerOptions, initialDeployment]);
 
   if (!open) return null;
   const loading = !!detailsLoading && !!open;
 
   const submit = () => {
+    const maxTradeCycle =
+      initialDeployment?.maxTradeCycle !== undefined &&
+      initialDeployment?.maxTradeCycle !== null
+        ? Number(initialDeployment.maxTradeCycle) || 1
+        : Number(details?.MaxTrade) || 1;
     const payload = {
       StrategyId: strategyId,
       isLiveMode,
-      MaxTradeCycle: Number(details?.MaxTrade) || 1,
+      MaxTradeCycle: maxTradeCycle,
       MaxProfit: String(Number(maxProfit) || 0),
       QtyMultiplier: String(Number(qtyMultiplier) || 0),
       MaxLoss: String(Number(maxLoss) || 0),
@@ -159,6 +238,7 @@ const DeployStrategyModal = ({ open, onClose, strategy }) => {
 
     mutateDeploy(payload, {
       onSuccess: () => {
+        onClose?.();
         navigate("/strategies", {
           state: { activeTab: "Deployed Strategies" },
           replace: true,

@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 
 const AddBrokerPage = () => {
   const [brokerId, setBrokerId] = useState("");
-  const [appName, setAppName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,6 +33,10 @@ const AddBrokerPage = () => {
   const isMaster = !!selectedBroker?.IsMasterApiAvailable;
 
   const handleSubmit = async () => {
+    if (!selectedBroker) {
+      toast.error("Please select a broker");
+      return;
+    }
     try {
       const payload = isMaster
         ? {
@@ -46,7 +49,7 @@ const AddBrokerPage = () => {
             BrokerClientId: brokerId,
             APIKey: apiKey,
             APISecretKey: apiSecret,
-            APIAppId: appName,
+            APIAppId: selectedBroker.BrokerName,
             IsCustomApi: isMaster,
           };
 
@@ -217,24 +220,6 @@ const AddBrokerPage = () => {
             </div>
             {!isMaster && (
               <>
-                <div>
-                  <label
-                    htmlFor="appName"
-                    className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    App Name
-                  </label>
-                  <input
-                    id="appName"
-                    name="appName"
-                    type="text"
-                    placeholder="App Name (Any)"
-                    value={appName}
-                    onChange={(e) => setAppName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-                  />
-                </div>
-
                 <div>
                   <label
                     htmlFor="apiKey"

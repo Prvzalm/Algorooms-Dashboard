@@ -215,8 +215,16 @@ const Leg1 = ({
     existingActiveStrike?.TargetActionTypeId === "ONCLOSE"
       ? "On Close"
       : "On Price";
-  const targetValue = Number(existingActiveStrike?.Target) || 0;
-  const stopLossQty = Number(existingActiveStrike?.StopLoss) || 30;
+  const rawTargetValue = existingActiveStrike?.Target;
+  const targetValue =
+    rawTargetValue === undefined || rawTargetValue === null
+      ? ""
+      : String(rawTargetValue);
+  const rawStopLoss = existingActiveStrike?.StopLoss;
+  const stopLossQty =
+    rawStopLoss === undefined || rawStopLoss === null
+      ? ""
+      : String(rawStopLoss);
   const prePunchSL = !!existingActiveStrike?.isPrePunchSL;
 
   const longCondition = isIndicatorStrategy
@@ -1033,8 +1041,8 @@ const Leg1 = ({
 
   const handleStopLossChange = useCallback(
     (value) => {
-      const numeric = Math.max(0, Number(value) || 0);
-      const formatted = String(numeric);
+      const formatted =
+        value === "" ? "" : String(Math.max(0, Number(value) || 0));
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         longStrike.StopLoss = formatted;
         if (shortStrike) {
@@ -1073,8 +1081,8 @@ const Leg1 = ({
 
   const handleTargetChange = useCallback(
     (value) => {
-      const numeric = Math.max(0, Number(value) || 0);
-      const formatted = String(numeric);
+      const formatted =
+        value === "" ? "" : String(Math.max(0, Number(value) || 0));
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         longStrike.Target = formatted;
         if (shortStrike) {
