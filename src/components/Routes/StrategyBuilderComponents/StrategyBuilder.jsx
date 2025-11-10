@@ -354,7 +354,7 @@ const StrategyBuilder = () => {
         BuyWhen: d.BuyWhen || null,
         ShortWhen: d.ShortWhen || null,
         IsContiniousTriggerCandle: d.IsContiniousTriggerCandle || false,
-        ChartType: d.ChartType ?? 0,
+        ChartType: d.ChartType ?? 1,
         EntryDaysBeforExpiry: d.EntryDaysBeforExpiry || 0,
         ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
       };
