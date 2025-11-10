@@ -112,6 +112,37 @@ const StrategyBuilder = () => {
     setSelectedStrategyTypes([id]);
   };
 
+  useEffect(() => {
+    const defaults = getDefaultPayload();
+    reset(defaults);
+    setPayload(defaults);
+    setSelectedInstrument("");
+    setSelectedEquityInstruments([]);
+    setSelectedStrategyTypes([defaults.StrategyType]);
+  }, [
+    reset,
+    setPayload,
+    setSelectedInstrument,
+    setSelectedEquityInstruments,
+    setSelectedStrategyTypes,
+  ]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const blankPayload = getDefaultPayload();
+    reset(blankPayload);
+    setPayload(blankPayload);
+    setSelectedInstrument("");
+    setSelectedEquityInstruments([]);
+  }, [
+    editing,
+    strategyId,
+    reset,
+    setPayload,
+    setSelectedInstrument,
+    setSelectedEquityInstruments,
+  ]);
+
   // ✅ OPTIMIZED: Single effect to sync Zustand payload with form
   useEffect(() => {
     // Sync strategy type

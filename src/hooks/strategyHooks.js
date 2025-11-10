@@ -136,7 +136,7 @@ export const useStrategyDetailsForEdit = (strategyId, enabled = true) => {
     queryKey: ["strategy-details-edit", strategyId],
     queryFn: () => getStrategyDetailsForEdit(strategyId),
     enabled: !!strategyId && enabled,
-    staleTime: 1000 * 60,
+    // staleTime: 1000 * 60,
   });
 };
 
