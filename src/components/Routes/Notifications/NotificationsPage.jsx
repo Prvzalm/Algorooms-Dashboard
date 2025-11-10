@@ -5,34 +5,34 @@ const tabs = ["General", "Broadcast Received", "Broadcast Sent"];
 
 const mockNotifications = {
   General: [
-    {
-      title: "Order Placed",
-      detail: "NIFTY25500 at ₹450 Buy",
-      time: "10:25AM",
-      status: "Successful",
-    },
-    {
-      title: "Order Execute",
-      detail: "NIFTY25500 at ₹450 Buy",
-      time: "10:28AM",
-      status: "Successful",
-    },
+    // {
+    //   title: "Order Placed",
+    //   detail: "NIFTY25500 at ₹450 Buy",
+    //   time: "10:25AM",
+    //   status: "Successful",
+    // },
+    // {
+    //   title: "Order Execute",
+    //   detail: "NIFTY25500 at ₹450 Buy",
+    //   time: "10:28AM",
+    //   status: "Successful",
+    // },
   ],
   "Broadcast Received": [
-    {
-      source: "Admin",
-      message: "System maintenance scheduled at 11 PM tonight.",
-      time: "9:00AM",
-      status: "Unread",
-    },
+    // {
+    //   source: "Admin",
+    //   message: "System maintenance scheduled at 11 PM tonight.",
+    //   time: "9:00AM",
+    //   status: "Unread",
+    // },
   ],
   "Broadcast Sent": [
-    {
-      to: "All Users",
-      message: "New feature update has been deployed successfully.",
-      time: "8:45AM",
-      status: "Delivered",
-    },
+    // {
+    //   to: "All Users",
+    //   message: "New feature update has been deployed successfully.",
+    //   time: "8:45AM",
+    //   status: "Delivered",
+    // },
   ],
 };
 
