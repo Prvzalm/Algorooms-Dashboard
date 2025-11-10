@@ -113,7 +113,7 @@ export const getDefaultPayload = () => ({
     ShortWhen: null,
     IsContiniousTriggerCandle: false,
     StrategyType: "time",
-    ChartType: 0,
+    ChartType: 1,
     StrategySegmentType: "Option",
     StrategyExecutionType: "tb",
     isBtSt: false,

@@ -21,6 +21,8 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   const isBtSt = watch("isBtSt");
   const entryDays = watch("EntryDaysBeforExpiry") ?? 0;
   const exitDays = watch("ExitDaysBeforExpiry") ?? 0;
+  const strategySegmentType = watch("StrategySegmentType") || "";
+  const isEquityInstrument = strategySegmentType === "Equity";
 
   // Derive display value from form
   const productType =
@@ -84,7 +86,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           </div>
         )}
 
-        {productType === "CNC" && (
+        {productType === "CNC" && !isEquityInstrument && (
           <div className="border border-gray-200 dark:border-[#2C2F36] rounded-lg p-4 space-y-4">
             <button
               type="button"
