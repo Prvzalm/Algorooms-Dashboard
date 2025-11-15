@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import FAQs from "./FAQs";
 import BacktestCredits from "./BacktestCredits";
 import PlanChangeConfirmationModal from "./PlanChangeConfirmationModal";
@@ -54,12 +54,8 @@ const SubscriptionsPage = () => {
       features: [
         `${plan.allowedBacktestCount} allowed backtest credits`,
         `${plan.maxStrategyCreation} strategy creation allowed`,
-        `${plan.maxLiveDeployment} live deployment allowed`,
-        `${plan.maxPaperDeployment} forward deployment allowed`,
+        `${plan.maxLiveDeployment} live + ${plan.maxPaperDeployment} forward deployments allowed`,
         `${plan.maxStrategyAllowedInPhortpholio} strategy portfolio allowed`,
-        plan.isHNIMarketPlaceAccess
-          ? "Retail + HNI strategies allowed"
-          : "Retail strategies allowed",
         `${plan.allowedBrokes.join(", ")} brokers allowed`,
       ],
     }));
@@ -104,15 +100,15 @@ const SubscriptionsPage = () => {
 
         {mainTab === "Plans" ? (
           <div>
-            <div className="flex gap-6 border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
+            <div className="flex gap-3 mt-4">
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-2 px-4 py-3 rounded-lg ${
+                  className={`px-4 py-3 rounded-lg text-sm font-medium ${
                     activeTab === tab
-                      ? "text-[#0096FF] bg-blue-100 dark:bg-blue-900/30 border border-[#0096FF]"
-                      : "text-gray-500 bg-blue-50 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                      ? "bg-[#0096FF]/10 text-[#0096FF]"
+                      : "text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {tab}
@@ -170,21 +166,12 @@ const SubscriptionsPage = () => {
                           • {plan.maxStrategyCreation} strategy creation allowed
                         </li>
                         <li>
-                          • {plan.maxLiveDeployment} live deployment allowed
-                        </li>
-                        <li>
-                          • {plan.maxPaperDeployment} forward deployment allowed
+                          • {plan.maxLiveDeployment} live + forward deployments
+                          allowed
                         </li>
                         <li>
                           • {plan.maxStrategyAllowedInPhortpholio} strategy
                           portfolio allowed
-                        </li>
-                        <li>
-                          •{" "}
-                          {plan.isHNIMarketPlaceAccess
-                            ? "Retail + HNI"
-                            : "Retail only"}{" "}
-                          strategies allowed
                         </li>
                         <li>
                           • Brokers allowed: {plan.allowedBrokes.join(", ")}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { searchIcon } from "../../../assets";
 import { useSearchInstrument } from "../../../hooks/strategyHooks";
 
@@ -8,6 +9,8 @@ const segmentTypes = [
   "Future",
   // "Indices", "CDS", "MCX"
 ];
+
+const EQUITY_MULTI_LIMIT = 50;
 
 const InstrumentModal = ({
   visible,
@@ -51,6 +54,15 @@ const InstrumentModal = ({
           selectedList.filter((i) => i.InstrumentToken !== item.InstrumentToken)
         );
       } else {
+        if (
+          segmentType === "Equity" &&
+          selectedList.length >= EQUITY_MULTI_LIMIT
+        ) {
+          toast.error(
+            `You can select up to ${EQUITY_MULTI_LIMIT} equity instruments.`
+          );
+          return;
+        }
         setSelectedList([
           ...selectedList,
           { ...item, SegmentType: segmentType },

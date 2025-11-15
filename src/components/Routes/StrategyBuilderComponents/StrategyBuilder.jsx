@@ -23,6 +23,31 @@ import {
 import { buildStrategyPayload } from "../../../utils/strategyPayload";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import StrategyBuilderSkeleton from "./StrategyBuilderSkeleton";
+import { FiInfo } from "react-icons/fi";
+
+const normalizeSegmentType = (segment = "Option") => {
+  if (!segment) return "Option";
+  const upper = segment.toString().toUpperCase();
+  if (upper.includes("EQUITY") || upper === "EQ" || upper.includes("NSE")) {
+    return "Equity";
+  }
+  if (upper.includes("FUT") || upper.includes("NFO")) {
+    return "Future";
+  }
+  if (upper.includes("OPT")) {
+    return "Option";
+  }
+  if (upper.includes("INDICE")) {
+    return "Indices";
+  }
+  if (upper.includes("CDS")) {
+    return "CDS";
+  }
+  if (upper.includes("MCX")) {
+    return "MCX";
+  }
+  return segment;
+};
 
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
@@ -98,13 +123,17 @@ const StrategyBuilder = () => {
 
     // ✅ Sync with form
     const baseDefaults = initialFormValuesRef.current;
+    const currentValues = getValues();
+    const preservedName = currentValues?.StrategyName || "";
     reset({
       ...baseDefaults,
       StrategyType: id,
       StrategySegmentType: id === "time" ? "Option" : "",
       ActiveLegIndex: 0, // Reset to first leg
       AdvanceFeatures: {}, // Clear advance features
+      StrategyName: preservedName,
     });
+    updatePayload({ StrategyName: preservedName });
 
     // Clear instrument selections
     setSelectedInstrument("");
@@ -307,10 +336,7 @@ const StrategyBuilder = () => {
       const mapped = {
         StrategyName: d.StrategyName || "",
         StrategyType: detectedStrategyType,
-        StrategySegmentType:
-          d.StrategySegmentType === "OPTION"
-            ? "Option"
-            : d.StrategySegmentType || "Option",
+        StrategySegmentType: normalizeSegmentType(d.StrategySegmentType),
         ProductType: d.ProductType || 0,
         TradeStartTime: d.TradeStartTime || "09:16",
         TradeStopTime: d.TradeStopTime || "15:15",
@@ -365,26 +391,31 @@ const StrategyBuilder = () => {
       // Sync Zustand store with mapped data for edit mode
       setPayload(mapped);
 
-      // Instrument inference
-      if (mapped.StrategyScriptList?.[0]) {
+      const normalizedSegment = mapped.StrategySegmentType?.toLowerCase();
+      const isEquityMultiEdit =
+        mapped.StrategyType === "indicator" &&
+        (normalizedSegment === "equity" || normalizedSegment === "future") &&
+        Array.isArray(mapped.StrategyScriptList) &&
+        mapped.StrategyScriptList.length > 0;
+
+      if (isEquityMultiEdit) {
+        const multiSelection = mapped.StrategyScriptList.filter(
+          (script) => script?.InstrumentToken && script?.InstrumentName
+        ).map((script) => ({
+          Name: script.InstrumentName,
+          InstrumentToken: script.InstrumentToken,
+          SegmentType: normalizedSegment === "future" ? "Future" : "Equity",
+          LotSize: script.Qty || 1,
+          Exchange: script.Exchange || script.Segment || "",
+        }));
+        setSelectedInstrument("");
+        setSelectedEquityInstruments(multiSelection);
+      } else if (mapped.StrategyScriptList?.[0]) {
         const firstScript = mapped.StrategyScriptList[0];
         if (firstScript.InstrumentName && mapped.StrategySegmentType) {
-          // Set up search params to fetch instrument details including lot size
+          setSelectedEquityInstruments([]);
           setEditInstrumentSearch({
-            segmentType:
-              mapped.StrategySegmentType === "OPTION"
-                ? "Option"
-                : mapped.StrategySegmentType === "NSE"
-                ? "Equity"
-                : mapped.StrategySegmentType === "NFO-FUT"
-                ? "Future"
-                : mapped.StrategySegmentType === "INDICES"
-                ? "Indices"
-                : mapped.StrategySegmentType === "CDS-FUT"
-                ? "CDS"
-                : mapped.StrategySegmentType === "MCX"
-                ? "MCX"
-                : "Option",
+            segmentType: normalizeSegmentType(mapped.StrategySegmentType),
             instrumentName: firstScript.InstrumentName,
             shouldFetch: true,
           });
@@ -466,7 +497,11 @@ const StrategyBuilder = () => {
 
       reset();
       setSelectedEquityInstruments([]);
-      setValue("StrategyType", selectedStrategyTypes[0], { shouldDirty: true });
+      if (selectedStrategyTypes[0]) {
+        setValue("StrategyType", selectedStrategyTypes[0], {
+          shouldDirty: true,
+        });
+      }
       setValue("StrategySegmentType", inst.SegmentType, { shouldDirty: true });
       setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
 
@@ -785,9 +820,26 @@ const StrategyBuilder = () => {
 
               <div className="relative">
                 <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
-                  <h2 className="font-semibold dark:text-white">
-                    Select Instruments
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold dark:text-white">
+                      Select Instruments
+                    </h2>
+                    {selectedStrategyTypes?.[0] === "indicator" && (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          aria-label="Equity selection limit"
+                          className="w-5 h-5 rounded-full border border-gray-300 dark:border-[#2A2D35] text-[10px] text-gray-500 dark:text-gray-300 flex items-center justify-center bg-white dark:bg-[#1E2027]"
+                        >
+                          <FiInfo className="text-xs" />
+                        </button>
+                        <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 text-[10px] text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+                          Equity mode allows selecting a maximum of 50
+                          instruments.
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div
                     className={`border-dashed border border-gray-300 rounded-lg flex items-center justify-center cursor-pointer dark:border-[#1E2027] dark:bg-[#1E2027] transition-all ${
                       selectedInstrument || selectedEquityInstruments.length
@@ -890,12 +942,12 @@ const StrategyBuilder = () => {
                   )}
 
                   {selectedEquityInstruments.length > 0 && (
-                    <div className="mt-2 overflow-x-auto">
+                    <div className="mt-2 overflow-x-auto pr-10">
                       <div className="flex gap-3 pb-2">
                         {selectedEquityInstruments.map((ins, idx) => (
                           <div
                             key={ins.InstrumentToken}
-                            className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex-shrink-0 w-[280px]"
+                            className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex-shrink-0 w-[170px] sm:w-[190px] lg:w-[210px]"
                           >
                             <button
                               type="button"
