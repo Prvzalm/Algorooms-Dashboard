@@ -120,19 +120,43 @@ const DeployedStrategiesList = ({
               className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C]"
             >
               <div className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 relative">
-                <div className="flex items-center gap-3 lg:min-w-[200px]">
-                  <img
-                    src={brokerItem.broker.logo}
-                    alt="Broker Logo"
-                    className="w-8 h-8 object-contain"
-                  />
-                  <div>
-                    <p className="text-xs text-[#718EBF] dark:text-gray-400">
-                      Broker
-                    </p>
-                    <p className="text-sm font-semibold text-[#2E3A59] dark:text-white">
-                      {brokerItem.broker.name} ({brokerItem.broker.code})
-                    </p>
+                <div className="flex items-start justify-between gap-3 w-full lg:w-auto">
+                  <div className="flex items-center gap-3 lg:min-w-[200px]">
+                    <img
+                      src={brokerItem.broker.logo}
+                      alt="Broker Logo"
+                      className="w-8 h-8 object-contain"
+                    />
+                    <div>
+                      <p className="text-xs text-[#718EBF] dark:text-gray-400">
+                        Broker
+                      </p>
+                      <p className="text-sm font-semibold text-[#2E3A59] dark:text-white">
+                        {brokerItem.broker.name} ({brokerItem.broker.code})
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 lg:hidden">
+                    <button
+                      onClick={() => toggleExpand(brokerItem.broker.code)}
+                      className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
+                        expanded ? "rotate-180" : ""
+                      }`}
+                      disabled={removingBroker}
+                      aria-label="Toggle strategies"
+                    >
+                      <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                    </button>
+                    <button
+                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] flex-shrink-0"
+                      onClick={(event) =>
+                        toggleBrokerMenu(brokerItem.broker.code, event)
+                      }
+                      disabled={removingBroker}
+                      aria-label="Broker actions"
+                    >
+                      <FiMoreVertical className="text-xl text-gray-500 dark:text-gray-400" />
+                    </button>
                   </div>
                 </div>
 
@@ -165,8 +189,8 @@ const DeployedStrategiesList = ({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-4 lg:gap-6 lg:ml-auto">
-                  <div className="flex flex-col justify-center items-end">
+                <div className="flex items-center gap-4 lg:gap-6 lg:ml-auto w-full lg:w-auto justify-between lg:justify-end">
+                  <div className="flex flex-col justify-center items-end w-full lg:w-auto">
                     <span className="text-[#212121] opacity-50 dark:text-gray-400 text-xs whitespace-nowrap">
                       PnL
                     </span>
@@ -181,25 +205,28 @@ const DeployedStrategiesList = ({
                       ₹{brokerItem.brokerPNL.toFixed(2)}
                     </span>
                   </div>
-                  <button
-                    onClick={() => toggleExpand(brokerItem.broker.code)}
-                    className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
-                      expanded ? "rotate-180" : ""
-                    }`}
-                    disabled={removingBroker}
-                  >
-                    <FiChevronDown className="text-gray-500 dark:text-gray-400" />
-                  </button>
-                  <button
-                    className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] flex-shrink-0"
-                    onClick={(event) =>
-                      toggleBrokerMenu(brokerItem.broker.code, event)
-                    }
-                    disabled={removingBroker}
-                    aria-label="Broker actions"
-                  >
-                    <FiMoreVertical className="text-xl text-gray-500 dark:text-gray-400" />
-                  </button>
+                  <div className="hidden lg:flex items-center gap-4 lg:gap-6">
+                    <button
+                      onClick={() => toggleExpand(brokerItem.broker.code)}
+                      className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
+                        expanded ? "rotate-180" : ""
+                      }`}
+                      disabled={removingBroker}
+                      aria-label="Toggle strategies"
+                    >
+                      <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                    </button>
+                    <button
+                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] flex-shrink-0"
+                      onClick={(event) =>
+                        toggleBrokerMenu(brokerItem.broker.code, event)
+                      }
+                      disabled={removingBroker}
+                      aria-label="Broker actions"
+                    >
+                      <FiMoreVertical className="text-xl text-gray-500 dark:text-gray-400" />
+                    </button>
+                  </div>
                   {openBrokerMenu === brokerItem.broker.code && (
                     <div
                       className="absolute right-5 top-16 z-30 min-w-[200px] rounded-lg border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg text-xs py-2"
@@ -240,18 +267,48 @@ const DeployedStrategiesList = ({
                         <div className="flex flex-col xl:flex-row xl:items-center gap-3 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
                           {/* Strategy Name & Badge */}
                           <div className="flex items-center justify-between gap-3 xl:min-w-[280px]">
-                            <span className="text-sm font-medium truncate flex-1 min-w-0 text-[#2E3A59] dark:text-white">
-                              {s.name}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-md whitespace-nowrap flex-shrink-0 w-[60px] text-center ${
-                                s.isLiveMode
-                                  ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                  : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
-                              }`}
-                            >
-                              {s.isLiveMode ? "Live" : "Paper"}
-                            </span>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-sm font-medium truncate text-[#2E3A59] dark:text-white">
+                                {s.name}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-1 rounded-md whitespace-nowrap flex-shrink-0 w-[60px] text-center ${
+                                  s.isLiveMode
+                                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                    : "bg-gray-200 dark:bg-[#2D2F36] text-gray-500 dark:text-gray-300"
+                                }`}
+                              >
+                                {s.isLiveMode ? "Live" : "Paper"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 xl:hidden">
+                              <button
+                                onClick={() =>
+                                  toggleStrategyExpand(compositeKey)
+                                }
+                                className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
+                                  strategyExpanded ? "rotate-180" : ""
+                                }`}
+                                aria-label={
+                                  strategyExpanded
+                                    ? "Collapse positions"
+                                    : "Expand positions"
+                                }
+                                disabled={removingDeployment}
+                              >
+                                <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                              </button>
+                              <button
+                                onClick={(event) =>
+                                  toggleStrategyMenu(compositeKey, event)
+                                }
+                                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0"
+                                aria-label="Strategy actions"
+                                disabled={removingDeployment}
+                              >
+                                <FiMoreVertical className="text-gray-500 dark:text-gray-400" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Max Profit/Loss */}
@@ -386,30 +443,34 @@ const DeployedStrategiesList = ({
                             </div>
 
                             {/* Expand/Collapse Positions */}
-                            <button
-                              onClick={() => toggleStrategyExpand(compositeKey)}
-                              className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
-                                strategyExpanded ? "rotate-180" : ""
-                              }`}
-                              aria-label={
-                                strategyExpanded
-                                  ? "Collapse positions"
-                                  : "Expand positions"
-                              }
-                              disabled={removingDeployment}
-                            >
-                              <FiChevronDown className="text-gray-500 dark:text-gray-400" />
-                            </button>
-                            <button
-                              onClick={(event) =>
-                                toggleStrategyMenu(compositeKey, event)
-                              }
-                              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0"
-                              aria-label="Strategy actions"
-                              disabled={removingDeployment}
-                            >
-                              <FiMoreVertical className="text-gray-500 dark:text-gray-400" />
-                            </button>
+                            <div className="hidden xl:flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  toggleStrategyExpand(compositeKey)
+                                }
+                                className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
+                                  strategyExpanded ? "rotate-180" : ""
+                                }`}
+                                aria-label={
+                                  strategyExpanded
+                                    ? "Collapse positions"
+                                    : "Expand positions"
+                                }
+                                disabled={removingDeployment}
+                              >
+                                <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                              </button>
+                              <button
+                                onClick={(event) =>
+                                  toggleStrategyMenu(compositeKey, event)
+                                }
+                                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0"
+                                aria-label="Strategy actions"
+                                disabled={removingDeployment}
+                              >
+                                <FiMoreVertical className="text-gray-500 dark:text-gray-400" />
+                              </button>
+                            </div>
                             {openStrategyMenu === compositeKey && (
                               <div
                                 className="absolute right-0 top-full mt-2 z-30 min-w-[180px] rounded-lg border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg text-xs py-2"

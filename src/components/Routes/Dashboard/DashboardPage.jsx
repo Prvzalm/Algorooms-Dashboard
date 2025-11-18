@@ -291,7 +291,7 @@ const Dashboard = () => {
 
       <StrategyTemplates />
 
-      <div className="grid grid-cols-1 gap-4">
+      {/* <div className="grid grid-cols-1 gap-4">
         <div className="rounded-xl text-black dark:text-white">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-xl md:text-2xl text-[#343C6A] dark:text-white">
@@ -307,7 +307,7 @@ const Dashboard = () => {
 
           <RaAlgosPage algos={yourAlgoData} dashboard={true} />
         </div>
-      </div>
+      </div> */}
       <JoinAndSupport />
     </>
   );

@@ -317,6 +317,13 @@ export default function Auth() {
     scope: "openid email profile",
   });
 
+  const handleEnterKey = (e) => {
+    if (e.key === "Enter" && mode === "login") {
+      e.preventDefault();
+      handleLogin(email, password);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-[#F5F7FB]">
       <div className="w-3/5 hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-white to-[#E8F0FF] text-black">
@@ -340,7 +347,7 @@ export default function Auth() {
           </h2>
 
           <p className="text-sm text-center text-gray-500">
-            It was popularised in the 1960s with the release of Letraset...
+            Login into your account to start adding strategies to your trades!
           </p>
 
           <button
@@ -363,6 +370,7 @@ export default function Auth() {
               placeholder="Email Id / Client Id"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleEnterKey}
               className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
             />
           )}
@@ -374,6 +382,7 @@ export default function Auth() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleEnterKey}
                 className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
               />
               <div

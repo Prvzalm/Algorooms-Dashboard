@@ -316,7 +316,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                 </div>
 
                 <button
-                  className="mt-4 w-1/2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-2 rounded-lg text-sm transition"
+                  className="mt-4 w-1/2 mx-auto bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-2 rounded-lg text-sm transition"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy

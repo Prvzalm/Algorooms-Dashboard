@@ -557,7 +557,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                   Risk Management
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Lorem Ipsum donor
+                  Control your trading outcomes by setting global limits on
+                  losses and profits on the strategy, and automating how gains
+                  are protected (trailing).
                 </p>
               </div>
             </div>
@@ -1010,7 +1012,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                       Advance Features <img src={infoIcon} alt="" />
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Lorem Ipsum donor
+                      Utilize advanced execution controls for dynamic stop-loss
+                      movement, conditional entry/re-entry, and strategy-wide
+                      exit synchronization.
                     </p>
                   </div>
                 </div>

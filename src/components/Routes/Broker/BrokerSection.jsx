@@ -200,39 +200,41 @@ const BrokerSection = () => {
                       </p>
                     </div>
                   )}
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={broker.brokerLogoUrl}
-                      alt={`${broker.BrokerName} logo`}
-                      className="w-12 h-12 sm:w-16 sm:h-16"
-                    />
-                    <div>
-                      <p className="font-semibold text-[#2E3A59] dark:text-white">
-                        {broker.BrokerName}
-                      </p>
-                      <p className="text-[11px] text-[#718EBF]">
-                        {broker.BrokerClientId}
-                      </p>
-                      <p className="mt-1 text-[11px]">
-                        <span className="text-[#718EBF] dark:text-[#A0AEC0]">
-                          Login:
-                        </span>{" "}
-                        <span
-                          className={
-                            broker.BrokerLoginStatus
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-500"
-                          }
-                        >
-                          {broker.BrokerLoginStatus
-                            ? "Connected"
-                            : "Not Connected"}
-                        </span>
-                      </p>
+                  <div className="flex items-start gap-4 w-full sm:w-auto">
+                    <div className="flex items-center gap-4 flex-1">
+                      <img
+                        src={broker.brokerLogoUrl}
+                        alt={`${broker.BrokerName} logo`}
+                        className="w-12 h-12 sm:w-16 sm:h-16"
+                      />
+                      <div>
+                        <p className="font-semibold text-[#2E3A59] dark:text-white">
+                          {broker.BrokerName}
+                        </p>
+                        <p className="text-[11px] text-[#718EBF]">
+                          {broker.BrokerClientId}
+                        </p>
+                        <p className="mt-1 text-[11px]">
+                          <span className="text-[#718EBF] dark:text-[#A0AEC0]">
+                            Login:
+                          </span>{" "}
+                          <span
+                            className={
+                              broker.BrokerLoginStatus
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-500"
+                            }
+                          >
+                            {broker.BrokerLoginStatus
+                              ? "Connected"
+                              : "Not Connected"}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                     {/* Kebab menu */}
                     <div
-                      className="ml-2 relative"
+                      className="ml-auto sm:ml-2 relative"
                       id={`broker-menu-${broker.BrokerClientId}`}
                     >
                       <button
@@ -252,7 +254,7 @@ const BrokerSection = () => {
                         <FiMoreVertical className="text-gray-600 dark:text-gray-300" />
                       </button>
                       {openMenuId === broker.BrokerClientId && (
-                        <div className="absolute z-20 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg">
+                        <div className="absolute right-0 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg">
                           <button
                             className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
                             onClick={(e) => {
@@ -289,7 +291,7 @@ const BrokerSection = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                     <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
                       Terminal
                     </p>
@@ -320,7 +322,7 @@ const BrokerSection = () => {
                     </label>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                     <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
                       Trading Engine
                     </p>

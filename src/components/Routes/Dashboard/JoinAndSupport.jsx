@@ -11,7 +11,7 @@ const JoinAndSupport = () => {
     {
       name: "Telegram Channel",
       icon: FaTelegram,
-      link: "https://t.me/algorooms",
+      link: "https://t.me/+j5LrPUOb6BE1M2Zl",
       bgColor: "bg-blue-500",
     },
     {
@@ -23,7 +23,7 @@ const JoinAndSupport = () => {
     {
       name: "Instagram",
       icon: FaInstagram,
-      link: "https://instagram.com/algorooms",
+      link: "https://www.instagram.com/algorooms_official/",
       bgColor: "bg-pink-500",
     },
   ];
@@ -89,20 +89,20 @@ const JoinAndSupport = () => {
 
             <div className="flex flex-wrap gap-3">
               <a
-                href="https://wa.me/1234567890"
+                href="https://wa.me/+917042132888"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
               >
                 <FaWhatsapp className="text-lg" />
-                <span className="text-sm">Whatsapp</span>
+                <span className="text-sm">WhatsApp</span>
               </a>
               <a
-                href="tel:+911234567890"
+                href="tel:+917042132888"
                 className="flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/30 text-white rounded-lg font-medium hover:bg-white/20 transition-colors"
               >
                 <FaPhone className="text-sm" />
-                <span className="text-sm">Call</span>
+                <span className="text-sm">Call Us</span>
               </a>
             </div>
           </div>
