@@ -107,7 +107,7 @@ const SubscriptionsPage = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 py-3 rounded-lg text-sm font-medium ${
                     activeTab === tab
-                      ? "bg-[#0096FF]/10 text-[#0096FF]"
+                      ? "bg-[#1B44FE] text-white"
                       : "text-gray-500 dark:text-gray-400"
                   }`}
                 >
@@ -147,7 +147,7 @@ const SubscriptionsPage = () => {
                       }}
                       className={`w-full py-4 rounded-xl text-sm font-semibold ${
                         plan.planName.toLowerCase() === "unlimited"
-                          ? "bg-[#0096FF] text-white"
+                          ? "bg-[#1B44FE] text-white"
                           : "border border-[#D5DAE1] dark:border-gray-700 text-[#2E3A59] dark:text-white"
                       }`}
                     >

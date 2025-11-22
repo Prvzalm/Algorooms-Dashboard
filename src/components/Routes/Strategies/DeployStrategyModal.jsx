@@ -384,7 +384,7 @@ const DeployStrategyModal = ({
               href="https://algorooms.com/privacy-policy.html"
               target="_blank"
               rel="noreferrer noopener"
-              className="text-[#0096FF] hover:underline"
+              className="text-[#1B44FE] hover:underline"
             >
               terms & conditions
             </a>

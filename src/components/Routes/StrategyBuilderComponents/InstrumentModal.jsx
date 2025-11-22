@@ -173,10 +173,10 @@ const InstrumentModal = ({
                   type="button"
                   key={item.InstrumentToken}
                   onClick={() => toggleSelect(item)}
-                  className={`border rounded-lg py-2 text-sm font-medium ${
+                  className={`border rounded-lg py-2 text-sm font-medium transition ${
                     isActive
-                      ? "bg-blue-100 text-[#0096FF] dark:bg-[#2A2D34] dark:text-blue-400"
-                      : "text-gray-700 hover:bg-blue-50 dark:text-white dark:hover:bg-[#2A2D34]"
+                      ? "bg-[#E8EDFF] text-[#1B44FE] dark:bg-[#2A2D34] dark:text-blue-300 border-[#1B44FE]/40"
+                      : "text-gray-700 hover:bg-[#E8EDFF] dark:text-white dark:hover:bg-[#2A2D34]"
                   } dark:border-[#1E2027]`}
                 >
                   {item.Name}

@@ -397,7 +397,7 @@ const StrategiesPage = () => {
             onClick={() => setActiveTab(tab)}
             className={`px-4 pb-2 font-medium md:text-base text-sm flex-shrink-0 ${
               activeTab === tab
-                ? "text-[#0096FF] border-b-2 border-[#0096FF]"
+                ? "text-[#1B44FE] border-b-2 border-[#1B44FE]"
                 : "text-[#718EBF] dark:text-gray-400"
             }`}
           >

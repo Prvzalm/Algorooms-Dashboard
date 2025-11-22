@@ -30,9 +30,9 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
           Trail Stop loss
         </h3>
 
-        <div className="bg-blue-50 dark:bg-[#1E2027] p-4 rounded-lg">
+        <div className="bg-[#E8EDFF] dark:bg-[#1E2027] p-4 rounded-lg">
           <div className="flex items-start gap-2">
-            <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs mt-0.5">
+            <div className="w-5 h-5 rounded-full bg-[#1B44FE] text-white flex items-center justify-center text-xs mt-0.5">
               i
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -52,7 +52,7 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               onClick={() => setTrailingType("%")}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 trailingType === "%"
-                  ? "bg-[#0096FF] text-white"
+                  ? "bg-[#1B44FE] text-white"
                   : "bg-gray-100 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300"
               }`}
             >
@@ -63,7 +63,7 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               onClick={() => setTrailingType("Pt")}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 trailingType === "Pt"
-                  ? "bg-[#0096FF] text-white"
+                  ? "bg-[#1B44FE] text-white"
                   : "bg-gray-100 dark:bg-[#1E2027] text-gray-700 dark:text-gray-300"
               }`}
             >

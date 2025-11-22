@@ -119,10 +119,10 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
-            className={`px-4 py-3 rounded-lg text-sm font-medium ${
+            className={`px-4 py-3 rounded-lg text-sm font-medium transition ${
               activeSubTab === tab
-                ? "bg-blue-100 text-[#0096FF] border border-[#0096FF]"
-                : "bg-gray-200 dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white"
+                ? "bg-[#1B44FE] text-white border border-transparent"
+                : "bg-gray-100 dark:bg-[#2D2F36] text-[#2E3A59] dark:text-white border border-transparent"
             }`}
           >
             {tab}
@@ -209,7 +209,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                     </p>
                   </div>
                   <button
-                    className="text-gray-400 dark:text-gray-500 text-xl px-2 py-1 hover:text-[#0096FF]"
+                    className="text-gray-400 dark:text-gray-500 text-xl px-2 py-1 hover:text-[#1B44FE]"
                     onClick={(e) => {
                       e.stopPropagation();
                       setActionMenuOpenId((prev) =>
