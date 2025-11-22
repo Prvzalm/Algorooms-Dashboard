@@ -6,6 +6,7 @@ import { useMasterBrokerData } from "../../../hooks/brokerHooks";
 import { toast } from "react-toastify";
 import { useAddBroker } from "../../../hooks/brokerHooks";
 import { useNavigate } from "react-router-dom";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const AddBrokerPage = () => {
   const [brokerId, setBrokerId] = useState("");
@@ -86,7 +87,8 @@ const AddBrokerPage = () => {
             Add Your Broker
           </h2>
           <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">
-            Lorem Ipsum donor
+            Browse the partner list and pick the broker you want to connect with
+            Algorooms.
           </p>
 
           <div className="relative mb-6">
@@ -161,7 +163,8 @@ const AddBrokerPage = () => {
             Add Your Broker Detail
           </h2>
           <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">
-            Lorem Ipsum donor
+            Enter the login information or tokens required by your broker so we
+            can finish the setup.
           </p>
 
           {isLoading ? (
@@ -261,7 +264,23 @@ const AddBrokerPage = () => {
 
           <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
             Redirect Url:
-            <img width={14} height={14} src={infoIcon} alt="info" />
+            <span className="relative group inline-flex">
+              <button
+                type="button"
+                className="w-4 h-4 flex items-center justify-center"
+                aria-label="Redirect URL information"
+              >
+                <img width={14} height={14} src={infoIcon} alt="info" />
+              </button>
+              <span
+                className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                role="tooltip"
+              >
+                Copy this callback URL into your broker developer console.
+                Tokens will only be issued if the redirect exactly matches the
+                value configured here.
+              </span>
+            </span>
           </div>
           <a
             href={selectedBroker?.ApiRedirectUrl}
@@ -272,13 +291,13 @@ const AddBrokerPage = () => {
             {selectedBroker?.ApiRedirectUrl || "-"}
           </a>
 
-          <button
-            className="w-full py-3 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-medium transition"
+          <PrimaryButton
+            className="w-full py-3"
             onClick={handleSubmit}
             disabled={adding}
           >
             {adding ? "Submitting..." : "Submit"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

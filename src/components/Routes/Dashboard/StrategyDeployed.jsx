@@ -7,6 +7,7 @@ import {
 } from "../../../assets";
 import { FiChevronDown } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const icons = [strategy1, strategy2, strategy3];
 
@@ -134,8 +135,11 @@ const StrategyDeployed = ({
                   </div>
 
                   <div className="flex flex-row items-center justify-between w-full">
-                    <div className="space-y-1">
-                      <p className="font-medium text-gray-800 dark:text-white">
+                    <div className="space-y-1 min-w-0">
+                      <p
+                        className="font-medium text-gray-800 dark:text-white truncate"
+                        title={s.strategyName}
+                      >
                         {s.strategyName}
                       </p>
                       <p className="text-xs flex flex-wrap items-center gap-1">
@@ -188,12 +192,12 @@ const StrategyDeployed = ({
             </p>
           </div>
 
-          <button
+          <PrimaryButton
             onClick={() => navigate("/strategies")}
-            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-medium text-sm px-5 py-2 rounded-md transition"
+            className="text-sm px-5 py-2"
           >
             Create Strategy
-          </button>
+          </PrimaryButton>
         </div>
       )}
     </>

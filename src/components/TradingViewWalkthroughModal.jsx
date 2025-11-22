@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiX, FiCopy, FiCheck } from "react-icons/fi";
 import { toast } from "react-toastify";
+import PrimaryButton from "./common/PrimaryButton";
 import {
   useTradingViewSettings,
   useSaveTradingViewSettings,
@@ -463,16 +464,16 @@ const TradingViewWalkthroughModal = ({
           >
             Cancel
           </button>
-          <button
+          <PrimaryButton
             onClick={handleSave}
             disabled={!selectedAlertType || loading || deleting}
-            className="px-6 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 rounded-xl font-semibold text-sm gap-2"
           >
             {loading && (
               <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
             )}
             {loading ? "Saving..." : "✓ Save & Connect Alert"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

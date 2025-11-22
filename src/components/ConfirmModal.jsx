@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import PrimaryButton from "./common/PrimaryButton";
 
 const ConfirmModal = ({
   open,
@@ -46,13 +47,13 @@ const ConfirmModal = ({
           >
             {cancelLabel}
           </button>
-          <button
-            className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white disabled:opacity-60 transition"
+          <PrimaryButton
             onClick={onConfirm}
             disabled={loading}
+            className="px-4 py-2"
           >
             {loading ? "Please wait..." : confirmLabel}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>,

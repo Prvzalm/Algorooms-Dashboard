@@ -5,6 +5,7 @@ import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import { useDuplicateStrategy } from "../../../hooks/strategyHooks";
 import MiniCumulativeChart from "../../Charts/MiniCumulativeChart";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
   const [page, setPage] = useState(1);
@@ -315,12 +316,12 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                   </div>
                 </div>
 
-                <button
-                  className="mt-4 w-1/2 mx-auto bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-2 rounded-lg text-sm transition"
+                <PrimaryButton
+                  className="mt-4 w-1/2 mx-auto py-2 text-sm"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy
-                </button>
+                </PrimaryButton>
               </div>
             ))}
       </div>

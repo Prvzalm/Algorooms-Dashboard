@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { sebiModal } from "../assets";
+import PrimaryButton from "./common/PrimaryButton";
 
 const NoticeModal = ({ onClose }) => {
   const [accepted, setAccepted] = useState(false);
@@ -60,17 +61,13 @@ const NoticeModal = ({ onClose }) => {
           </span>
         </label>
 
-        <button
+        <PrimaryButton
           disabled={!accepted}
           onClick={onClose}
-          className={`w-full py-3 rounded-md text-white font-semibold transition ${
-            accepted
-              ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
-              : "bg-blue-300 cursor-not-allowed"
-          }`}
+          className="w-full py-3 font-semibold"
         >
           I Understand
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

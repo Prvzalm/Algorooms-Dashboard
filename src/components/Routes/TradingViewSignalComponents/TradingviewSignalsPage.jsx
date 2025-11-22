@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import PrimaryButton from "../../common/PrimaryButton";
 import Leg1 from "../StrategyBuilderComponents/Leg1";
 import OrderType from "../StrategyBuilderComponents/OrderType";
 import RiskAndAdvance from "../StrategyBuilderComponents/RiskAndAdvance";
@@ -207,24 +208,24 @@ const TradingviewSignalsPage = () => {
 
         {/* Mobile view: fixed button at bottom */}
         <div className="md:hidden mobile-buttons-container">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs transition"
+            className="px-8 py-3 rounded-lg text-sm font-medium w-full max-w-xs"
           >
             {isPending ? "Creating..." : "Create Signal Strategy"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Desktop view: normal button placement */}
         <div className="flex justify-end">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="ml-auto bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block transition"
+            className="ml-auto md:px-8 px-4 py-3 rounded-lg text-sm font-medium hidden md:block"
           >
             {isPending ? "Creating..." : "Create Signal Strategy"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Spacer for mobile view to prevent content from being hidden behind fixed button */}

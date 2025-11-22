@@ -13,6 +13,7 @@ import BacktestSummaryCard from "../../Routes/BackTest/BacktestSummaryCard";
 import MaxProfitLossChart from "../../Routes/BackTest/MaxProfitLossChart";
 import DaywiseBreakdown from "../../Routes/BackTest/DaywiseBreakdown";
 import TransactionDetails from "../../Routes/BackTest/TransactionDetails";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const timeRanges = [
   "1 Month",
@@ -530,12 +531,8 @@ const MyPortfolioTab = () => {
               </div>
             )}
           </div>
-          <button
-            className={`text-sm px-4 py-2 rounded-md text-white transition ${
-              isFetchingMulti
-                ? "bg-gray-400"
-                : "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
-            }`}
+          <PrimaryButton
+            className="text-sm px-4 py-2 rounded-md disabled:bg-gray-400"
             disabled={
               isFetchingMulti ||
               !selectedStrategies.length ||
@@ -552,7 +549,7 @@ const MyPortfolioTab = () => {
             }
           >
             {isFetchingMulti ? "Running..." : "Run Backtest"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 

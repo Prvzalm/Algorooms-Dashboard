@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { searchIcon } from "../../../assets";
 import { useSearchInstrument } from "../../../hooks/strategyHooks";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const segmentTypes = [
   "Option",
@@ -185,13 +186,13 @@ const InstrumentModal = ({
           )}
         </div>
 
-        <button
+        <PrimaryButton
           type="button"
           onClick={onClose}
-          className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white py-3 rounded-lg font-semibold sticky bottom-0 transition"
+          className="w-full py-3 rounded-lg font-semibold sticky bottom-0"
         >
           Save
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

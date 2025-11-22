@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const IndicatorSelectorModal = ({
   visible,
@@ -149,14 +150,14 @@ const IndicatorSelectorModal = ({
           >
             Cancel
           </button>
-          <button
+          <PrimaryButton
             type="button"
             disabled={!selectedId}
             onClick={handleOk}
-            className="px-6 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm disabled:opacity-50 transition"
+            className="px-6 py-2 rounded-lg text-sm"
           >
             Ok
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

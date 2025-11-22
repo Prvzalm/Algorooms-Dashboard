@@ -14,6 +14,7 @@ import { useSubscriptionQuery } from "../../../hooks/subscriptionHooks";
 import { useWalletQuery } from "../../../hooks/walletHooks";
 import { useBackTestCounterDetails } from "../../../hooks/backTestHooks";
 import Avatar from "../../common/Avatar";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -307,13 +308,13 @@ const ProfilePage = () => {
                 className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
-            <button
-              className="mt-4 py-2 px-4 w-1/2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
+            <PrimaryButton
+              className="mt-4 py-2 px-4 w-1/2 text-sm"
               onClick={handleChangePassword}
               disabled={changePasswordUser.isLoading}
             >
               {changePasswordUser.isLoading ? "Changing..." : "Change"}
-            </button>
+            </PrimaryButton>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { FiTrash, FiInfo } from "react-icons/fi";
 import { useIndicatorMaster } from "../../../hooks/strategyHooks";
 import IndicatorSelectorModal from "./IndicatorSelectorModal";
+import PrimaryButton from "../../common/PrimaryButton";
 
 // Helpers to create default equation structures compatible with payload
 const createDefaultIndicatorObj = () => ({
@@ -28,6 +29,11 @@ const EntryCondition = () => {
   const longExit = watch("Long_ExitEquation") || [];
   const shortExit = watch("Short_ExitEquation") || [];
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
+  const strategySegmentType = (watch("StrategySegmentType") || "")
+    .toString()
+    .toLowerCase();
+  const isCombinedChartDisabled =
+    strategySegmentType === "equity" || strategySegmentType === "future";
 
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
@@ -53,6 +59,16 @@ const EntryCondition = () => {
     if (hasExit !== exitEnabled) setExitEnabled(hasExit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [longExit?.length, shortExit?.length]);
+
+  useEffect(() => {
+    if (isCombinedChartDisabled && isChartOnOptionStrike) {
+      setValue("IsChartOnOptionStrike", false, { shouldDirty: true });
+    }
+  }, [isCombinedChartDisabled, isChartOnOptionStrike, setValue]);
+
+  const combinedChartTooltip = isCombinedChartDisabled
+    ? "Combined chart is available only for option strikes. Equity and futures selections render their own price feeds."
+    : "Displays entry indicators and selected option strikes on a single chart so you can validate timing without switching between legs.";
 
   // Utilities
   const findIndicatorMeta = (id) =>
@@ -422,13 +438,13 @@ const EntryCondition = () => {
       ))}
 
       <div className="mt-2 text-right">
-        <button
+        <PrimaryButton
           type="button"
           onClick={() => addRow(key)}
-          className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-xs px-3 py-2 rounded-lg transition"
+          className="text-xs px-3 py-2 rounded-lg"
         >
           + Add Condition
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );
@@ -439,17 +455,37 @@ const EntryCondition = () => {
         <h2 className="font-semibold text-lg text-black dark:text-white">
           Entry Conditions
         </h2>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+        <label
+          className={`flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 ${
+            isCombinedChartDisabled ? "opacity-60 cursor-not-allowed" : ""
+          }`}
+        >
           <input
             type="checkbox"
             checked={!!isChartOnOptionStrike}
+            disabled={isCombinedChartDisabled}
             onChange={(e) =>
               setValue("IsChartOnOptionStrike", !!e.target.checked, {
                 shouldDirty: true,
               })
             }
           />
-          Use Combined Chart <FiInfo className="text-gray-400" />
+          Use Combined Chart
+          <span className="relative group inline-flex">
+            <button
+              type="button"
+              className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[10px] bg-white dark:bg-[#1E2027] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1B44FE]"
+              aria-label="Combined chart information"
+            >
+              <FiInfo className="text-xs" />
+            </button>
+            <span
+              className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+              role="tooltip"
+            >
+              {combinedChartTooltip}
+            </span>
+          </span>
         </label>
       </div>
 

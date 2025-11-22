@@ -79,12 +79,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       icon: tradingIcon,
       selectedIcon: selectedTradingIcon,
-      name: "Trading",
-      isParent: true,
-      children: [
-        { name: "Strategy Builder", path: "/trading/strategy-builder" },
-        // { name: "Tradingview Signals Trading", path: "/trading/signals" },
-      ],
+      name: "Strategy Builder",
+      // isParent: true,
+      path: "/trading/strategy-builder",
+      // children: [
+      //   { name: "Strategy Builder", path: "/trading/strategy-builder" },
+      //   { name: "Tradingview Signals Trading", path: "/trading/signals" },
+      // ],
     },
     {
       icon: strategiesIcon,
@@ -206,7 +207,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                       <button
                         className={`flex items-center w-full ml-2 space-x-3 py-3 px-3 rounded-lg transition-all focus:outline-none relative group ${
                           isParentActive
-                            ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] text-white font-semibold shadow-md"
+                            ? "bg-[#1B44FE] text-white font-semibold shadow-md"
                             : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`}
                         onClick={() =>
@@ -272,7 +273,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                       className={({ isActive }) =>
                         `flex items-center space-x-3 ml-2 py-3 px-3 rounded-lg transition-all group ${
                           isActive
-                            ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] text-white font-semibold shadow-md"
+                            ? "bg-[#1B44FE] text-white font-semibold shadow-md"
                             : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`
                       }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
   const [trailingType, setTrailingType] = useState(
@@ -124,13 +125,9 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
           >
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
-          >
+          <PrimaryButton onClick={handleSave} className="px-4 py-2 text-sm">
             Save
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

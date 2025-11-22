@@ -10,6 +10,7 @@ import DonutChart from "./ui/DonutChart";
 import Heatmap from "./ui/Heatmap";
 import StrategyCard from "./ui/StrategyCard";
 import ReportsSkeleton from "./ReportsSkeleton";
+import PrimaryButton from "../common/PrimaryButton";
 
 const Reports = () => {
   const [selectedStrategy, setSelectedStrategy] = useState(null);
@@ -306,13 +307,13 @@ const Reports = () => {
                 Forward
               </button>
             </div>
-            <button
+            <PrimaryButton
               onClick={() => refetch()}
               disabled={isLoading}
-              className="h-8 px-5 rounded-md bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold disabled:opacity-60 transition"
+              className="h-8 px-5 text-sm"
             >
               {isLoading ? "Loading..." : "Get Reports"}
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       )}

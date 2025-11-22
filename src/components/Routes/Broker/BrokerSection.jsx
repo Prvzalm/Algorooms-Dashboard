@@ -9,6 +9,7 @@ import {
 import { emptyDeployedStrategy } from "../../../assets";
 import ConfirmModal from "../../ConfirmModal";
 import { FiMoreVertical } from "react-icons/fi";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const BrokerSection = () => {
   // Local UI override states (so UI feels instant after mutation)
@@ -112,12 +113,12 @@ const BrokerSection = () => {
               Manage your connected brokers
             </p>
           </div>
-          <button
+          <PrimaryButton
             onClick={() => navigate("/add-broker")}
-            className="px-4 py-3 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white rounded-lg text-sm font-medium w-full sm:w-auto transition"
+            className="px-4 py-3 text-sm w-full sm:w-auto"
           >
             + Add Broker
-          </button>
+          </PrimaryButton>
         </div>
 
         {isLoading ? (
@@ -187,10 +188,13 @@ const BrokerSection = () => {
               const tradeEngineStatus = getEffectiveTradeEngineStatus(broker);
               const rowPending =
                 pendingBrokerId === broker.BrokerClientId && isPending;
+              const isMenuOpen = openMenuId === broker.BrokerClientId;
               return (
                 <div
                   key={index}
-                  className="relative border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                  className={`relative border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
+                    isMenuOpen ? "z-20" : ""
+                  }`}
                 >
                   {rowPending && (
                     <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center bg-white/70 dark:bg-black/40 backdrop-blur-sm z-10">
@@ -253,8 +257,8 @@ const BrokerSection = () => {
                       >
                         <FiMoreVertical className="text-gray-600 dark:text-gray-300" />
                       </button>
-                      {openMenuId === broker.BrokerClientId && (
-                        <div className="absolute right-0 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg">
+                      {isMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg z-30">
                           <button
                             className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
                             onClick={(e) => {

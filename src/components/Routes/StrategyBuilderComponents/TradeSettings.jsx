@@ -89,7 +89,22 @@ const TradeSettings = () => {
             <label className="text-gray-500 dark:text-gray-400 block text-xs">
               Transaction Type
             </label>
-            <FiInfo className="text-gray-400 text-xs" />
+            <span className="relative group inline-flex">
+              <button
+                type="button"
+                className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[10px] bg-white dark:bg-[#1E2027] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1B44FE]"
+                aria-label="Transaction type information"
+              >
+                <FiInfo className="text-[10px]" />
+              </button>
+              <span
+                className="pointer-events-none absolute right-0 top-full mt-2 w-48 max-w-xs text-[10px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                role="tooltip"
+              >
+                Choose whether the strategy can place both long and short legs
+                or restrict execution to a single direction.
+              </span>
+            </span>
           </div>
           <div className="flex space-x-2 overflow-x-auto">
             {transactionOptions.map((option) => (

@@ -24,6 +24,7 @@ import { buildStrategyPayload } from "../../../utils/strategyPayload";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import StrategyBuilderSkeleton from "./StrategyBuilderSkeleton";
 import { FiInfo } from "react-icons/fi";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const normalizeSegmentType = (segment = "Option") => {
   if (!segment) return "Option";
@@ -1092,10 +1093,10 @@ const StrategyBuilder = () => {
 
         {/* Mobile view: fixed button at bottom */}
         <div className="md:hidden mobile-buttons-container">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs transition"
+            className="px-8 py-3 text-sm w-full max-w-xs"
           >
             {isPending
               ? editing
@@ -1104,15 +1105,15 @@ const StrategyBuilder = () => {
               : editing
               ? "Save"
               : "Create"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Desktop view: normal button placement */}
         <div className="flex justify-end">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="ml-auto bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block transition"
+            className="ml-auto md:px-8 px-4 py-3 text-sm hidden md:block"
           >
             {isPending
               ? editing
@@ -1121,7 +1122,7 @@ const StrategyBuilder = () => {
               : editing
               ? "Save"
               : "Create"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Spacer for mobile view to prevent content from being hidden behind fixed button */}
@@ -1145,13 +1146,13 @@ const StrategyBuilder = () => {
                   Do you want to backtest this strategy after creating it?
                 </p>
                 <div className="flex gap-3">
-                  <button
+                  <PrimaryButton
                     onClick={() => handleCreateStrategy(true)}
                     disabled={isPending}
-                    className="flex-1 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition"
+                    className="flex-1 px-4 py-2 text-sm"
                   >
                     {isPending ? "Creating..." : "Yes, Backtest"}
-                  </button>
+                  </PrimaryButton>
                   <button
                     onClick={() => handleCreateStrategy(false)}
                     disabled={isPending}

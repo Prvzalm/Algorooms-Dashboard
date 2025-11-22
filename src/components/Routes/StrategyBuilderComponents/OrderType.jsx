@@ -79,12 +79,12 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           ))}
         </div>
 
-        {(productType === "CNC" || productType === "BTST") && (
+        {/* {(productType === "CNC" || productType === "BTST") && (
           <div className="text-xs text-orange-500 bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200 dark:border-orange-800">
             CNC & BTST features are not available in live market, but you can
             use them for backtest
           </div>
-        )}
+        )} */}
 
         {productType === "CNC" && !isEquityInstrument && (
           <div className="border border-gray-200 dark:border-[#2C2F36] rounded-lg p-4 space-y-4">
@@ -191,7 +191,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           </div>
           <div>
             <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
-              Square Off
+              Next Day Square Off
             </label>
             <input
               type="time"

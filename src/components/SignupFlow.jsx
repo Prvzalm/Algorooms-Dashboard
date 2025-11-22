@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
+import PrimaryButton from "./common/PrimaryButton";
 import {
   useRegisterMutation,
   useRequestEmailOtpMutation,
@@ -134,12 +135,12 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
-          <button
-            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg transition"
+          <PrimaryButton
+            className="w-full py-4 rounded-lg font-semibold"
             onClick={handleRequestOtp}
           >
             Send OTP to Email
-          </button>
+          </PrimaryButton>
         </>
       )}
 
@@ -159,12 +160,12 @@ export default function SignupFlow({ email, setEmail, setMode }) {
               />
             ))}
           </div>
-          <button
+          <PrimaryButton
             onClick={handleVerifyOtp}
-            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg mt-4 transition"
+            className="w-full py-4 rounded-lg font-semibold mt-4"
           >
             Verify OTP
-          </button>
+          </PrimaryButton>
         </>
       )}
 
@@ -191,12 +192,12 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             onChange={(e) => setSignupPassword(e.target.value)}
             className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
-          <button
+          <PrimaryButton
             onClick={handleRegister}
-            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg transition"
+            className="w-full py-4 rounded-lg font-semibold"
           >
             Register
-          </button>
+          </PrimaryButton>
         </>
       )}
     </>

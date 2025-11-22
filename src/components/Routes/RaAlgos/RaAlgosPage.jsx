@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { man } from "../../../assets";
 import RaAlgosData from "../Dashboard/RaAlgosData";
+import PrimaryButton from "../../common/PrimaryButton";
 
 // Single author mock (as per screenshot showing one profile and strategy cards)
 const author = {
@@ -19,7 +20,7 @@ const RaAlgosPage = ({ dashboard = false }) => {
     name: "Sensex Weekly Expiry",
     saves: 11,
     description:
-      "Lorem ipsum dolor sit amet consectetur. Tellus varius pellentesque eget amet pretium aliquet quam commodo egestas.",
+      "Rule-based weekly expiry setup that follows index momentum with disciplined entries, exits, and position sizing.",
     margin: "₹3,00,000",
   }));
 
@@ -112,9 +113,9 @@ const RaAlgosPage = ({ dashboard = false }) => {
                         {st?.margin}
                       </p>
                     </div>
-                    <button className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-xs font-medium px-6 py-2 rounded-md transition">
+                    <PrimaryButton className="text-xs font-medium px-6 py-2 rounded-md">
                       Deploy
-                    </button>
+                    </PrimaryButton>
                   </div>
                 </div>
               ))}

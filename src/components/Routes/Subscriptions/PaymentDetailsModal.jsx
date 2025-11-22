@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { paymentDetailsIcon } from "../../../assets";
 import { useInitiatePayment } from "../../../hooks/subscriptionHooks";
 import { toast } from "react-toastify";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const PaymentDetailsModal = ({
   isOpen,
@@ -131,17 +132,13 @@ const PaymentDetailsModal = ({
           </label>
         </div>
 
-        <button
+        <PrimaryButton
           disabled={!agree || isPending}
           onClick={handleProcessPayment}
-          className={`w-full py-4 rounded-xl text-white text-sm font-semibold transition ${
-            agree && !isPending
-              ? "bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)]"
-              : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-          }`}
+          className="w-full py-4 rounded-xl text-sm font-semibold"
         >
           {isPending ? "Processing..." : "Process Payment"}
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

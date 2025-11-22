@@ -7,6 +7,7 @@ import {
   createDefaultStrike,
 } from "../../../stores/strategyBuilderStore";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const Leg1 = ({
   selectedStrategyTypes,
@@ -60,7 +61,7 @@ const Leg1 = ({
   const isIndicatorStrategy = strategyType === "indicator";
 
   // available options (unchanged)
-  const expiryOptions = ["WEEKLY", "MONTHLY"];
+  const expiryOptions = ["WEEKLY", "NEXTWEEKLY", "MONTHLY"];
   const slOptions = ["SL%", "SL pt"];
   const tpOptions = ["TP%", "TP pt"];
   const onPriceOptions = ["On Price", "On Close"];
@@ -1439,13 +1440,13 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          <button
+          <PrimaryButton
             type="button"
-            className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white px-5 py-2 rounded-lg text-sm font-medium transition"
             onClick={handleAddLeg}
+            className="px-5 py-2 text-sm"
           >
             + Add Leg
-          </button>
+          </PrimaryButton>
         </div>
 
         <div className="space-y-3">

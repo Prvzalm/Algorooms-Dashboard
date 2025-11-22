@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiCheck } from "react-icons/fi";
 import { sebiModal } from "../../../assets";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const CreateStrategyPopup = ({ onClose }) => {
   const popupRef = useRef(null);
@@ -40,12 +41,12 @@ const CreateStrategyPopup = ({ onClose }) => {
             {
               key: "builder",
               title: "Strategy Builder",
-              desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
+              desc: "Design multi-leg option strategies with visual controls, advanced risk management, and deployment-ready automation.",
             },
             // {
             //   key: "signals",
             //   title: "Tradingview Signals Trading",
-            //   desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
+            //   desc: "Pipe TradingView alerts directly into Algorooms executions with managed risk and audit trails.",
             // },
           ].map((item) => (
             <div
@@ -74,12 +75,12 @@ const CreateStrategyPopup = ({ onClose }) => {
         </div>
 
         <div className="pt-2">
-          <button
+          <PrimaryButton
             onClick={handleCreate}
-            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white py-3 rounded-lg font-medium transition"
+            className="w-full py-3 rounded-lg font-medium"
           >
             Create Strategy
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

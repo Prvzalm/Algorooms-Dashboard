@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { confirmPaymentIcon } from "../../../assets";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const PlanChangeConfirmationModal = ({ isOpen, onClose, onContinue }) => {
   if (!isOpen) return null;
@@ -24,12 +25,12 @@ const PlanChangeConfirmationModal = ({ isOpen, onClose, onContinue }) => {
           If you change plan type then your existing plan will be deleted, and
           changed to the new plan. No refund will be entertained in this case.
         </p>
-        <button
+        <PrimaryButton
           onClick={onContinue}
-          className="w-full py-4 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-semibold rounded-xl transition"
+          className="w-full py-4 text-sm font-semibold rounded-xl"
         >
           Continue
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

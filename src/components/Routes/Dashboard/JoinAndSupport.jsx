@@ -5,6 +5,7 @@ import {
   FaWhatsapp,
   FaPhone,
 } from "react-icons/fa";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const JoinAndSupport = () => {
   const socialLinks = [
@@ -51,14 +52,15 @@ const JoinAndSupport = () => {
                   {social.name}
                 </span>
               </div>
-              <a
+              <PrimaryButton
+                as="a"
                 href={social.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-2 bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm font-medium rounded-lg transition-all"
+                className="px-6 py-2 text-sm"
               >
                 Join
-              </a>
+              </PrimaryButton>
             </div>
           ))}
         </div>

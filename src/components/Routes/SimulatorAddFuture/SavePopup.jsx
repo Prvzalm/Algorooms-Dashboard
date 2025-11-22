@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { savePopupIcon } from "../../../assets";
+import PrimaryButton from "../../common/PrimaryButton";
 
 export default function SavePopup({ onClose }) {
   const [category, setCategory] = useState("Running Trades");
@@ -58,14 +59,14 @@ export default function SavePopup({ onClose }) {
         </div>
 
         <div className="space-y-2">
-          <button
+          <PrimaryButton
             onClick={() => {
               onClose?.();
             }}
-            className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-medium py-4 rounded-lg transition"
+            className="w-full py-4 rounded-lg font-medium"
           >
             Save
-          </button>
+          </PrimaryButton>
           <p className="text-center text-xs text-gray-500 dark:text-gray-400">
             See Top Right corner for Saved Straties Button.
           </p>

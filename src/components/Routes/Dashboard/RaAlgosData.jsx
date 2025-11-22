@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import PrimaryButton from "../../common/PrimaryButton";
 
 // Common component supporting two variants:
 // 1. dashboard (default): list of authors each with horizontally scrollable strategy chips
@@ -43,9 +44,9 @@ const RaAlgosData = ({
                 </p>
                 <p className="font-semibold text-[#00A261]">{st?.margin}</p>
               </div>
-              <button className="bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-xs font-medium px-6 py-2 rounded-md transition">
+              <PrimaryButton className="text-xs px-6 py-2">
                 Deploy
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         ))}

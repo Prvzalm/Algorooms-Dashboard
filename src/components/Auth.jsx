@@ -3,9 +3,8 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 import { authBg, googleIcon } from "../assets";
-import { jwtDecode } from "jwt-decode";
-import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import {
   useForgotPasswordMutation,
   useGoogleLoginMutation,
@@ -17,6 +16,8 @@ import {
 } from "../hooks/loginHooks";
 import SignupFlow from "./SignupFlow";
 import { useAuth } from "../context/AuthContext";
+import PrimaryButton from "./common/PrimaryButton";
+import { auth, googleProvider } from "../firebase";
 
 export default function Auth() {
   const { login } = useAuth();
@@ -28,6 +29,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [resetTicket, setResetTicket] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const otpRefs = useRef([]);
 
   const { mutate: googleLoginUser } = useGoogleLoginMutation();
@@ -273,49 +275,54 @@ export default function Auth() {
     );
   };
 
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const userInfo = await fetch(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          }
-        ).then((r) => r.json());
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const oauthToken = credential?.accessToken;
+      const idToken = await result.user.getIdToken();
 
-        const { email: gEmail, name: gName, picture: gPicture } = userInfo;
+      const gEmail = result.user.email;
+      const gName = result.user.displayName;
+      const gPicture = result.user.photoURL;
 
-        googleLoginUser(
-          {
-            EmailID: gEmail,
-            Token: tokenResponse.access_token,
-            AvtarUrl: gPicture,
-            CreatedBy: gName,
-            ApiKey: "abc",
-          },
-          {
-            onSuccess: (res) => {
-              if (res.data.Status === "Success") {
-                localStorage.setItem("token", res.data.Data.AccessToken);
-                axiosInstance.defaults.headers.common[
-                  "Authorization"
-                ] = `Bearer ${res.data.Data.AccessToken}`;
-                toast.success("Logged in with Google");
-                navigate("/");
-              } else {
-                toast.error(res.data.Message || "Google login failed");
-              }
-            },
-            onError: () => toast.error("Google login error"),
-          }
-        );
-      } catch (err) {
-        toast.error("Invalid Google credentials");
+      if (!gEmail) {
+        toast.error("Unable to retrieve Google account email");
+        setGoogleLoading(false);
+        return;
       }
-    },
-    onError: () => toast.error("Google login error"),
-    scope: "openid email profile",
-  });
+
+      googleLoginUser(
+        {
+          EmailID: gEmail,
+          Token: oauthToken || idToken,
+          AvtarUrl: gPicture,
+          CreatedBy: gName,
+          ApiKey: "abc",
+        },
+        {
+          onSuccess: (res) => {
+            if (res.data.Status === "Success") {
+              localStorage.setItem("token", res.data.Data.AccessToken);
+              axiosInstance.defaults.headers.common[
+                "Authorization"
+              ] = `Bearer ${res.data.Data.AccessToken}`;
+              toast.success("Logged in with Google");
+              navigate("/");
+            } else {
+              toast.error(res.data.Message || "Google login failed");
+            }
+          },
+          onError: () => toast.error("Google login error"),
+          onSettled: () => setGoogleLoading(false),
+        }
+      );
+    } catch (error) {
+      toast.error(error?.message || "Google login cancelled");
+      setGoogleLoading(false);
+    }
+  };
 
   const handleEnterKey = (e) => {
     if (e.key === "Enter" && mode === "login") {
@@ -351,11 +358,15 @@ export default function Auth() {
           </p>
 
           <button
-            onClick={() => handleGoogleLogin()}
-            className="w-full py-4 rounded-lg bg-gray-100 text-left flex items-center px-4"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            className={`w-full py-4 rounded-lg bg-gray-100 text-left flex items-center px-4 transition ${
+              googleLoading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
             <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
-            Continue with Google
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
           </button>
 
           <div className="flex items-center my-4">
@@ -437,8 +448,8 @@ export default function Auth() {
           )}
 
           {mode !== "signup" && (
-            <button
-              className="w-full bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white font-semibold py-4 rounded-lg transition"
+            <PrimaryButton
+              className="w-full py-4 font-semibold"
               disabled={loading}
               onClick={() => {
                 if (mode === "login") handleLogin(email, password);
@@ -458,7 +469,7 @@ export default function Auth() {
                 : mode === "verify"
                 ? "Verify"
                 : "Reset Password"}
-            </button>
+            </PrimaryButton>
           )}
 
           <div className="text-center text-xs text-gray-500">

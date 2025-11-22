@@ -6,6 +6,7 @@ import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
 import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
@@ -850,7 +851,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                       Risk Management
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Lorem Ipsum donor
+                      Control your trading outcomes by setting global limits on
+                      losses and profits on the strategy, and automating how
+                      gains are protected (trailing).
                     </p>
                   </div>
                 </div>
@@ -1009,7 +1012,25 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="flex gap-2 items-center font-semibold text-lg text-black dark:text-white">
-                      Advance Features <img src={infoIcon} alt="" />
+                      Advance Features
+                      <span className="relative group inline-flex">
+                        <button
+                          type="button"
+                          className="w-5 h-5 flex items-center justify-center"
+                          aria-label="Advanced feature information"
+                        >
+                          <img src={infoIcon} alt="info" className="w-4 h-4" />
+                        </button>
+                        <span
+                          className="pointer-events-none absolute right-0 top-full mt-2 w-64 max-w-sm text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                          role="tooltip"
+                        >
+                          Toggle features like trailing SL, re-entry/execute
+                          logic, and global exit sync. Options that conflict
+                          with your current strategy type are disabled
+                          automatically.
+                        </span>
+                      </span>
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Utilize advanced execution controls for dynamic stop-loss
@@ -1119,13 +1140,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                 >
                   Cancel
                 </button>
-                <button
+                <PrimaryButton
                   type="button"
                   onClick={savePremiumDifference}
-                  className="px-4 py-2 rounded-lg bg-[radial-gradient(circle,_#1B44FE_0%,_#5375FE_100%)] hover:bg-[radial-gradient(circle,_#1534E0_0%,_#4365E8_100%)] text-white text-sm transition"
+                  className="px-4 py-2 text-sm"
                 >
                   Save
-                </button>
+                </PrimaryButton>
               </div>
             </div>
           </div>
