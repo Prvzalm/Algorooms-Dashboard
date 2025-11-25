@@ -14,7 +14,7 @@ const createDefaultEquation = () => ({
   comparerId: 0,
   comparerName: "string",
   OperatorId: 0,
-  OperatorName: "string",
+  OperatorName: "End",
   indicator: createDefaultIndicatorObj(),
   comparerIndicator: createDefaultIndicatorObj(),
 });
@@ -224,11 +224,6 @@ const EntryCondition = () => {
         comparers.find(
           (c) => c.ComparerId === getOppositeComparator(shortEq.comparerId)
         )?.ComparerName || shortEq.comparerName,
-      OperatorId: getOppositeComparator(shortEq.comparerId),
-      OperatorName:
-        comparers.find(
-          (c) => c.ComparerId === getOppositeComparator(shortEq.comparerId)
-        )?.ComparerName || shortEq.comparerName,
     };
 
     setValue("LongEntryEquation", longArr, { shouldDirty: true });
@@ -242,8 +237,6 @@ const EntryCondition = () => {
       ...eq,
       comparerId: Number(comparerId) || 0,
       comparerName: cmp?.ComparerName || "string",
-      OperatorId: Number(comparerId) || 0,
-      OperatorName: cmp?.ComparerName || "string",
     }));
 
     // Sync comparator to opposite side with opposite value
@@ -267,8 +260,6 @@ const EntryCondition = () => {
       ...shortArr[index],
       comparerId: oppositeId,
       comparerName: cmp?.ComparerName || "string",
-      OperatorId: oppositeId,
-      OperatorName: cmp?.ComparerName || "string",
     };
 
     setValue("ShortEntryEquation", shortArr, { shouldDirty: true });
@@ -287,8 +278,6 @@ const EntryCondition = () => {
       ...longArr[index],
       comparerId: oppositeId,
       comparerName: cmp?.ComparerName || "string",
-      OperatorId: oppositeId,
-      OperatorName: cmp?.ComparerName || "string",
     };
 
     setValue("LongEntryEquation", longArr, { shouldDirty: true });
@@ -297,12 +286,119 @@ const EntryCondition = () => {
   const addRow = (key) => {
     const arr = [...(watch(key) || [])];
     arr.push(createDefaultEquation());
+    if (arr.length > 1) {
+      arr[arr.length - 2] = {
+        ...arr[arr.length - 2],
+        OperatorId: 0,
+        OperatorName: "AND",
+      };
+    }
     setValue(key, arr, { shouldDirty: true });
   };
   const removeRow = (key, index) => {
     const arr = [...(watch(key) || [])];
     arr.splice(index, 1);
+    if (arr.length > 0) {
+      arr[arr.length - 1] = {
+        ...arr[arr.length - 1],
+        OperatorId: 0,
+        OperatorName: "End",
+      };
+    }
     setValue(key, arr, { shouldDirty: true });
+  };
+
+  const setOperator = (key, index, operatorId) => {
+    const operatorName = operatorId == 0 ? "AND" : "OR";
+    updateEq(key, index, (eq) => ({
+      ...eq,
+      OperatorId: Number(operatorId),
+      OperatorName,
+    }));
+  };
+
+  const addPair = () => {
+    const longArr = [...(watch("LongEntryEquation") || [])];
+    const shortArr = [...(watch("ShortEntryEquation") || [])];
+    longArr.push(createDefaultEquation());
+    shortArr.push(createDefaultEquation());
+    if (longArr.length > 1) {
+      longArr[longArr.length - 2] = {
+        ...longArr[longArr.length - 2],
+        OperatorId: 0,
+        OperatorName: "AND",
+      };
+      shortArr[shortArr.length - 2] = {
+        ...shortArr[shortArr.length - 2],
+        OperatorId: 0,
+        OperatorName: "AND",
+      };
+    }
+    setValue("LongEntryEquation", longArr, { shouldDirty: true });
+    setValue("ShortEntryEquation", shortArr, { shouldDirty: true });
+  };
+
+  const removePair = (index) => {
+    const longArr = [...(watch("LongEntryEquation") || [])];
+    const shortArr = [...(watch("ShortEntryEquation") || [])];
+    longArr.splice(index, 1);
+    shortArr.splice(index, 1);
+    if (longArr.length > 0) {
+      longArr[longArr.length - 1] = {
+        ...longArr[longArr.length - 1],
+        OperatorId: 0,
+        OperatorName: "End",
+      };
+      shortArr[shortArr.length - 1] = {
+        ...shortArr[shortArr.length - 1],
+        OperatorId: 0,
+        OperatorName: "End",
+      };
+    }
+    setValue("LongEntryEquation", longArr, { shouldDirty: true });
+    setValue("ShortEntryEquation", shortArr, { shouldDirty: true });
+  };
+
+  const addExitPair = () => {
+    const longArr = [...(watch("Long_ExitEquation") || [])];
+    const shortArr = [...(watch("Short_ExitEquation") || [])];
+    longArr.push(createDefaultEquation());
+    shortArr.push(createDefaultEquation());
+    if (longArr.length > 1) {
+      longArr[longArr.length - 2] = {
+        ...longArr[longArr.length - 2],
+        OperatorId: 0,
+        OperatorName: "AND",
+      };
+      shortArr[shortArr.length - 2] = {
+        ...shortArr[shortArr.length - 2],
+        OperatorId: 0,
+        OperatorName: "AND",
+      };
+    }
+    setValue("Long_ExitEquation", longArr, { shouldDirty: true });
+    setValue("Short_ExitEquation", shortArr, { shouldDirty: true });
+  };
+
+  const removeExitPair = (index) => {
+    const longArr = [...(watch("Long_ExitEquation") || [])];
+    const shortArr = [...(watch("Short_ExitEquation") || [])];
+    longArr.splice(index, 1);
+    shortArr.splice(index, 1);
+    if (longArr.length > 0) {
+      longArr[longArr.length - 1] = {
+        ...longArr[longArr.length - 1],
+        OperatorId: 0,
+        OperatorName: "End",
+      };
+      shortArr[shortArr.length - 1] = {
+        ...shortArr[shortArr.length - 1],
+        OperatorId: 0,
+        OperatorName: "End",
+      };
+    }
+    setValue("Long_ExitEquation", longArr, { shouldDirty: true });
+    setValue("Short_ExitEquation", shortArr, { shouldDirty: true });
   };
 
   // Indicator modal state
@@ -374,64 +470,94 @@ const EntryCondition = () => {
         </button>
       )}
       {(arr || []).map((eq, idx) => (
-        <div key={idx} className="mb-4 last:mb-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-            <button
-              type="button"
-              onClick={() => openModal(key, idx, "left")}
-              className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-            >
-              {eq?.indicator?.indicatorId
-                ? findIndicatorMeta(eq.indicator.indicatorId)?.IndicatorName ||
-                  "Select Indicator"
-                : "Select Indicator"}
-            </button>
-            <select
-              className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-              value={eq?.comparerId || 0}
-              onChange={(e) => setComparer(key, idx, e.target.value)}
-            >
-              <option value={0}>Select Comparator</option>
-              {comparers.map((c) => (
-                <option key={c.ComparerId} value={c.ComparerId}>
-                  {c.ComparerName}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => openModal(key, idx, "right")}
-              className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-            >
-              {eq?.comparerIndicator?.indicatorId
-                ? findIndicatorMeta(eq.comparerIndicator.indicatorId)
-                    ?.IndicatorName || "Select Indicator"
-                : "Select Indicator"}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              {paramSummary(eq?.indicator)}
-            </p>
-            <div />
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              {paramSummary(eq?.comparerIndicator)}
-            </p>
-          </div>
-
-          {arr.length > 1 && (
-            <div className="flex justify-end mt-2">
+        <>
+          <div key={idx} className="mb-4 last:mb-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
               <button
                 type="button"
-                onClick={() => removeRow(key, idx)}
-                className="text-red-500 hover:text-red-600 text-xs inline-flex items-center gap-1"
+                onClick={() => openModal(key, idx, "left")}
+                className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
               >
-                <FiTrash /> Remove
+                {eq?.indicator?.indicatorId
+                  ? findIndicatorMeta(eq.indicator.indicatorId)
+                      ?.IndicatorName || "Select Indicator"
+                  : "Select Indicator"}
+              </button>
+              <select
+                className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                value={eq?.comparerId || 0}
+                onChange={(e) => setComparer(key, idx, e.target.value)}
+              >
+                <option value={0}>Select Comparator</option>
+                {comparers.map((c) => (
+                  <option key={c.ComparerId} value={c.ComparerId}>
+                    {c.ComparerName}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => openModal(key, idx, "right")}
+                className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+              >
+                {eq?.comparerIndicator?.indicatorId
+                  ? findIndicatorMeta(eq.comparerIndicator.indicatorId)
+                      ?.IndicatorName || "Select Indicator"
+                  : "Select Indicator"}
               </button>
             </div>
-          )}
-        </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {paramSummary(eq?.indicator)}
+              </p>
+              <div />
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {paramSummary(eq?.comparerIndicator)}
+              </p>
+            </div>
+
+            {arr.length > 1 && (
+              <div className="flex justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => removeRow(key, idx)}
+                  className="text-red-500 hover:text-red-600 text-xs inline-flex items-center gap-1"
+                >
+                  <FiTrash /> Remove
+                </button>
+              </div>
+            )}
+          </div>
+          {idx < arr.length - 1 ? (
+            <div className="flex justify-center my-2">
+              <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setOperator(key, idx, 0)}
+                  className={`px-3 py-1 text-sm rounded-l-md ${
+                    (eq.OperatorId || 0) === 0
+                      ? "bg-blue-500 text-white"
+                      : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                  } border-r border-gray-300 dark:border-gray-600`}
+                >
+                  AND
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOperator(key, idx, 1)}
+                  className={`px-3 py-1 text-sm rounded-r-md ${
+                    (eq.OperatorId || 0) === 1
+                      ? "bg-blue-500 text-white"
+                      : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  OR
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </>
       ))}
 
       <div className="mt-2 text-right">
@@ -445,6 +571,368 @@ const EntryCondition = () => {
       </div>
     </div>
   );
+
+  const renderPairedEntryRows = () => {
+    const longArr = watch("LongEntryEquation") || [];
+    const shortArr = watch("ShortEntryEquation") || [];
+    const maxLen = Math.max(longArr.length, shortArr.length);
+
+    return (
+      <div className="border border-dashed border-gray-200 rounded-xl p-4 mb-4">
+        {maxLen === 0 && (
+          <button
+            type="button"
+            onClick={addPair}
+            className="text-xs text-blue-600 underline"
+          >
+            + Add first condition pair
+          </button>
+        )}
+        {Array.from({ length: maxLen }, (_, idx) => {
+          const longEq = longArr[idx] || createDefaultEquation();
+          const shortEq = shortArr[idx] || createDefaultEquation();
+          return (
+            <React.Fragment key={idx}>
+              {/* Long Entry */}
+              <div className="mb-2">
+                <p className="text-green-600 text-sm font-medium mb-1">
+                  Long Entry
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <button
+                    type="button"
+                    onClick={() => openModal("LongEntryEquation", idx, "left")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {longEq?.indicator?.indicatorId
+                      ? findIndicatorMeta(longEq.indicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                  <select
+                    className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                    value={longEq?.comparerId || 0}
+                    onChange={(e) =>
+                      setComparer("LongEntryEquation", idx, e.target.value)
+                    }
+                  >
+                    <option value={0}>Select Comparator</option>
+                    {comparers.map((c) => (
+                      <option key={c.ComparerId} value={c.ComparerId}>
+                        {c.ComparerName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => openModal("LongEntryEquation", idx, "right")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {longEq?.comparerIndicator?.indicatorId
+                      ? findIndicatorMeta(longEq.comparerIndicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(longEq?.indicator)}
+                  </p>
+                  <div />
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(longEq?.comparerIndicator)}
+                  </p>
+                </div>
+              </div>
+              {/* Short Entry */}
+              <div className="mb-2">
+                <p className="text-red-500 text-sm font-medium mb-1">
+                  Short Entry
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <button
+                    type="button"
+                    onClick={() => openModal("ShortEntryEquation", idx, "left")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {shortEq?.indicator?.indicatorId
+                      ? findIndicatorMeta(shortEq.indicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                  <select
+                    className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                    value={shortEq?.comparerId || 0}
+                    onChange={(e) =>
+                      setComparer("ShortEntryEquation", idx, e.target.value)
+                    }
+                  >
+                    <option value={0}>Select Comparator</option>
+                    {comparers.map((c) => (
+                      <option key={c.ComparerId} value={c.ComparerId}>
+                        {c.ComparerName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openModal("ShortEntryEquation", idx, "right")
+                    }
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {shortEq?.comparerIndicator?.indicatorId
+                      ? findIndicatorMeta(shortEq.comparerIndicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(shortEq?.indicator)}
+                  </p>
+                  <div />
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(shortEq?.comparerIndicator)}
+                  </p>
+                </div>
+              </div>
+              {/* Remove */}
+              {maxLen > 1 && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => removePair(idx)}
+                    className="text-red-500 hover:text-red-600 text-xs inline-flex items-center gap-1"
+                  >
+                    <FiTrash /> Remove Pair
+                  </button>
+                </div>
+              )}
+              {idx < maxLen - 1 && (
+                <div className="flex justify-center my-2">
+                  <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setOperator("LongEntryEquation", idx, 0)}
+                      className={`px-3 py-1 text-sm rounded-l-md ${
+                        (longArr[idx]?.OperatorId || 0) === 0
+                          ? "bg-blue-500 text-white"
+                          : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                      } border-r border-gray-300 dark:border-gray-600`}
+                    >
+                      AND
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOperator("LongEntryEquation", idx, 1)}
+                      className={`px-3 py-1 text-sm rounded-r-md ${
+                        (longArr[idx]?.OperatorId || 0) === 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      OR
+                    </button>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+        <div className="mt-2 text-right">
+          <PrimaryButton
+            type="button"
+            onClick={addPair}
+            className="text-xs px-3 py-2 rounded-lg"
+          >
+            + Add Condition Pair
+          </PrimaryButton>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPairedExitRows = () => {
+    const longArr = watch("Long_ExitEquation") || [];
+    const shortArr = watch("Short_ExitEquation") || [];
+    const maxLen = Math.max(longArr.length, shortArr.length);
+
+    return (
+      <div className="border border-dashed border-gray-200 rounded-xl p-4 mb-4">
+        {maxLen === 0 && (
+          <button
+            type="button"
+            onClick={addExitPair}
+            className="text-xs text-blue-600 underline"
+          >
+            + Add first exit condition pair
+          </button>
+        )}
+        {Array.from({ length: maxLen }, (_, idx) => {
+          const longEq = longArr[idx] || createDefaultEquation();
+          const shortEq = shortArr[idx] || createDefaultEquation();
+          return (
+            <React.Fragment key={idx}>
+              {/* Long Exit */}
+              <div className="mb-2">
+                <p className="text-green-600 text-sm font-medium mb-1">
+                  Long Exit
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <button
+                    type="button"
+                    onClick={() => openModal("Long_ExitEquation", idx, "left")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {longEq?.indicator?.indicatorId
+                      ? findIndicatorMeta(longEq.indicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                  <select
+                    className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                    value={longEq?.comparerId || 0}
+                    onChange={(e) =>
+                      setComparer("Long_ExitEquation", idx, e.target.value)
+                    }
+                  >
+                    <option value={0}>Select Comparator</option>
+                    {comparers.map((c) => (
+                      <option key={c.ComparerId} value={c.ComparerId}>
+                        {c.ComparerName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => openModal("Long_ExitEquation", idx, "right")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {longEq?.comparerIndicator?.indicatorId
+                      ? findIndicatorMeta(longEq.comparerIndicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(longEq?.indicator)}
+                  </p>
+                  <div />
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(longEq?.comparerIndicator)}
+                  </p>
+                </div>
+              </div>
+              {/* Short Exit */}
+              <div className="mb-2">
+                <p className="text-red-500 text-sm font-medium mb-1">
+                  Short Exit
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <button
+                    type="button"
+                    onClick={() => openModal("Short_ExitEquation", idx, "left")}
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {shortEq?.indicator?.indicatorId
+                      ? findIndicatorMeta(shortEq.indicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                  <select
+                    className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                    value={shortEq?.comparerId || 0}
+                    onChange={(e) =>
+                      setComparer("Short_ExitEquation", idx, e.target.value)
+                    }
+                  >
+                    <option value={0}>Select Comparator</option>
+                    {comparers.map((c) => (
+                      <option key={c.ComparerId} value={c.ComparerId}>
+                        {c.ComparerName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openModal("Short_ExitEquation", idx, "right")
+                    }
+                    className="border rounded px-3 py-2 text-left text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                  >
+                    {shortEq?.comparerIndicator?.indicatorId
+                      ? findIndicatorMeta(shortEq.comparerIndicator.indicatorId)
+                          ?.IndicatorName || "Select Indicator"
+                      : "Select Indicator"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(shortEq?.indicator)}
+                  </p>
+                  <div />
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {paramSummary(shortEq?.comparerIndicator)}
+                  </p>
+                </div>
+              </div>
+              {/* Remove */}
+              {maxLen > 1 && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => removeExitPair(idx)}
+                    className="text-red-500 hover:text-red-600 text-xs inline-flex items-center gap-1"
+                  >
+                    <FiTrash /> Remove Pair
+                  </button>
+                </div>
+              )}
+              {idx < maxLen - 1 && (
+                <div className="flex justify-center my-2">
+                  <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setOperator("Long_ExitEquation", idx, 0)}
+                      className={`px-3 py-1 text-sm rounded-l-md ${
+                        (longArr[idx]?.OperatorId || 0) === 0
+                          ? "bg-blue-500 text-white"
+                          : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                      } border-r border-gray-300 dark:border-gray-600`}
+                    >
+                      AND
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOperator("Long_ExitEquation", idx, 1)}
+                      className={`px-3 py-1 text-sm rounded-r-md ${
+                        (longArr[idx]?.OperatorId || 0) === 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      OR
+                    </button>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+        <div className="mt-2 text-right">
+          <PrimaryButton
+            type="button"
+            onClick={addExitPair}
+            className="text-xs px-3 py-2 rounded-lg"
+          >
+            + Add Exit Condition Pair
+          </PrimaryButton>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 border rounded-xl bg-white dark:bg-[#15171C]">
@@ -514,21 +1002,27 @@ const EntryCondition = () => {
         </p>
       )}
 
-      {(transactionType === 0 || transactionType === 1) &&
-        renderRows(
-          "Long Entry Conditions",
-          "LongEntryEquation",
-          longEntry,
-          "text-green-600"
-        )}
+      {transactionType === 0 ? (
+        renderPairedEntryRows()
+      ) : (
+        <>
+          {(transactionType === 0 || transactionType === 1) &&
+            renderRows(
+              "Long Entry Conditions",
+              "LongEntryEquation",
+              longEntry,
+              "text-green-600"
+            )}
 
-      {(transactionType === 0 || transactionType === 2) &&
-        renderRows(
-          "Short Entry Conditions",
-          "ShortEntryEquation",
-          shortEntry,
-          "text-red-500"
-        )}
+          {(transactionType === 0 || transactionType === 2) &&
+            renderRows(
+              "Short Entry Conditions",
+              "ShortEntryEquation",
+              shortEntry,
+              "text-red-500"
+            )}
+        </>
+      )}
 
       {/* Exit toggle */}
       <label className="flex items-center gap-2 text-sm text-gray-500 mt-2">
@@ -559,20 +1053,26 @@ const EntryCondition = () => {
 
       {exitEnabled && (
         <div className="mt-3">
-          {(transactionType === 0 || transactionType === 1) &&
-            renderRows(
-              "Long Exit Conditions",
-              "Long_ExitEquation",
-              longExit,
-              "text-green-600"
-            )}
-          {(transactionType === 0 || transactionType === 2) &&
-            renderRows(
-              "Short Exit Conditions",
-              "Short_ExitEquation",
-              shortExit,
-              "text-red-500"
-            )}
+          {transactionType === 0 ? (
+            renderPairedExitRows()
+          ) : (
+            <>
+              {(transactionType === 0 || transactionType === 1) &&
+                renderRows(
+                  "Long Exit Conditions",
+                  "Long_ExitEquation",
+                  longExit,
+                  "text-green-600"
+                )}
+              {(transactionType === 0 || transactionType === 2) &&
+                renderRows(
+                  "Short Exit Conditions",
+                  "Short_ExitEquation",
+                  shortExit,
+                  "text-red-500"
+                )}
+            </>
+          )}
         </div>
       )}
 
