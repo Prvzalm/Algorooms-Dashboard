@@ -94,6 +94,42 @@ const Leg1 = ({
     }
   }, [productType, setValue, getValues]);
 
+  // When combined chart is enabled, keep only one leg
+  useEffect(() => {
+    if (isChartOnOptionStrike) {
+      const scripts = getValues("StrategyScriptList") || [];
+      if (scripts.length > 0) {
+        const firstScript = scripts[0];
+        const longStrikes = firstScript.LongEquationoptionStrikeList || [];
+        const shortStrikes = firstScript.ShortEquationoptionStrikeList || [];
+        // Keep only the active leg's strike
+        const keepIndex = activeLegIndex;
+        const newLong = longStrikes[keepIndex] ? [longStrikes[keepIndex]] : [];
+        const newShort = shortStrikes[keepIndex]
+          ? [shortStrikes[keepIndex]]
+          : [];
+        const updatedScript = {
+          ...firstScript,
+          LongEquationoptionStrikeList: newLong,
+          ShortEquationoptionStrikeList: newShort,
+        };
+        const updatedScripts = [updatedScript];
+        setValue("StrategyScriptList", updatedScripts, { shouldDirty: true });
+        updatePayload({ StrategyScriptList: updatedScripts });
+        // Update legs state
+        setLegs(["L1"]);
+        setSelectedLeg("L1");
+        setValue("ActiveLegIndex", 0, { shouldDirty: true });
+      }
+    }
+  }, [
+    isChartOnOptionStrike,
+    activeLegIndex,
+    setValue,
+    updatePayload,
+    getValues,
+  ]);
+
   const buyWhen = rawBuyWhen || "Low Break";
   const shortWhen = rawShortWhen || "Low Break";
 
@@ -1238,10 +1274,6 @@ const Leg1 = ({
     setValue("ActiveLegIndex", index, { shouldDirty: true });
   }, [selectedLeg, legs, setValue]);
 
-  // ✅ REMOVED: No longer need to persist advance features to global AdvanceFeatures
-  // The per-leg store now handles this independently for each leg
-
-  // derive lot size & exchange for display
   const exchange =
     selectedInstrument?.Exchange || selectedInstrument?.Segment || "";
 
@@ -1252,13 +1284,8 @@ const Leg1 = ({
   const featureReEntryActive =
     reEntryEnabled || advanceFeatures?.["Re Entry/Execute"];
   const featureTrailSlActive = trailSlEnabled || advanceFeatures?.["Trail SL"];
+  const showTrailSlForIndicator = selectedStrategyTypes?.[0] === "indicator";
 
-  // ✅ REMOVED: No longer need stable premium value from global
-
-  // ✅ REMOVED: No longer need stable premium value from global
-  // Each leg has its own independent premium value in per-leg store
-
-  // ✅ Add leg handler (moved from OrderType)
   const handleAddLeg = () => {
     try {
       const idx = legs.length;
@@ -1867,11 +1894,14 @@ const Leg1 = ({
                     {(featureWaitTradeActive ||
                       featurePremiumActive ||
                       featureReEntryActive ||
-                      featureTrailSlActive) && (
+                      featureTrailSlActive ||
+                      showTrailSlForIndicator) && (
                       <div className="mt-2 space-y-3">
-                        <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
-                          --- Advance Features ---
-                        </div>
+                        {!showTrailSlForIndicator && (
+                          <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">
+                            --- Advance Features ---
+                          </div>
+                        )}
                         <div className="grid grid-cols-3 gap-3 text-xs">
                           {featureWaitTradeActive && (
                             <>
@@ -1991,7 +2021,8 @@ const Leg1 = ({
                               </div>
                             </>
                           )}
-                          {featureTrailSlActive && (
+                          {(featureTrailSlActive ||
+                            showTrailSlForIndicator) && (
                             <>
                               <div>
                                 <label className="block mb-1 text-gray-600 dark:text-gray-400">
