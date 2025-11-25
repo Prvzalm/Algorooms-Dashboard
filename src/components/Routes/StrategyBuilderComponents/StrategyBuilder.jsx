@@ -338,7 +338,7 @@ const StrategyBuilder = () => {
         StrategyName: d.StrategyName || "",
         StrategyType: detectedStrategyType,
         StrategySegmentType: normalizeSegmentType(d.StrategySegmentType),
-        ProductType: d.ProductType || 0,
+        ProductType: Number(d.ProductType) || Number(d.OrderType) || 0,
         TradeStartTime: d.TradeStartTime || "09:16",
         TradeStopTime: d.TradeStopTime || "15:15",
         AutoSquareOffTime: d.AutoSquareOffTime || "15:15",

@@ -111,7 +111,7 @@ const StrategyDeployed = ({
       </div>
 
       {uniqueBrokers.length !== 0 ? (
-        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-[227px] overflow-y-auto text-black dark:text-white">
+        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-[227px] overflow-y-auto overflow-x-hidden text-black dark:text-white">
           {deployedStrategies.map((s, i) => {
             const Icon = icons[i % icons.length];
             const isNegative = s.totalPnl < 0;
@@ -134,8 +134,8 @@ const StrategyDeployed = ({
                     />
                   </div>
 
-                  <div className="flex flex-row items-center justify-between w-full">
-                    <div className="space-y-1 min-w-0">
+                  <div className="flex flex-row items-center justify-between w-full overflow-x-hidden">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <p
                         className="font-medium text-gray-800 dark:text-white truncate"
                         title={s.strategyName}

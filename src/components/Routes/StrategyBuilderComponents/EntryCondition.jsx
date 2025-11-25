@@ -38,10 +38,7 @@ const EntryCondition = () => {
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
   const allIndicators = useMemo(
-    () =>
-      (indicatorData?.Indicators || []).concat(
-        indicatorData?.PriceActionIndicators || []
-      ),
+    () => indicatorData?.Indicators || [],
     [indicatorData]
   );
   const comparers = indicatorData?.Comparers || [];
@@ -455,38 +452,35 @@ const EntryCondition = () => {
         <h2 className="font-semibold text-lg text-black dark:text-white">
           Entry Conditions
         </h2>
-        <label
-          className={`flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 ${
-            isCombinedChartDisabled ? "opacity-60 cursor-not-allowed" : ""
-          }`}
-        >
-          <input
-            type="checkbox"
-            checked={!!isChartOnOptionStrike}
-            disabled={isCombinedChartDisabled}
-            onChange={(e) =>
-              setValue("IsChartOnOptionStrike", !!e.target.checked, {
-                shouldDirty: true,
-              })
-            }
-          />
-          Use Combined Chart
-          <span className="relative group inline-flex">
-            <button
-              type="button"
-              className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[10px] bg-white dark:bg-[#1E2027] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1B44FE]"
-              aria-label="Combined chart information"
-            >
-              <FiInfo className="text-xs" />
-            </button>
-            <span
-              className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
-              role="tooltip"
-            >
-              {combinedChartTooltip}
+        {!isCombinedChartDisabled && (
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={!!isChartOnOptionStrike}
+              onChange={(e) =>
+                setValue("IsChartOnOptionStrike", !!e.target.checked, {
+                  shouldDirty: true,
+                })
+              }
+            />
+            Use Combined Chart
+            <span className="relative group inline-flex">
+              <button
+                type="button"
+                className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[10px] bg-white dark:bg-[#1E2027] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1B44FE]"
+                aria-label="Combined chart information"
+              >
+                <FiInfo className="text-xs" />
+              </button>
+              <span
+                className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                role="tooltip"
+              >
+                {combinedChartTooltip}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        )}
       </div>
 
       {isLoading && (

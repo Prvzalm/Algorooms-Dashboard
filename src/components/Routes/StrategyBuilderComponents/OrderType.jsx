@@ -17,8 +17,8 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   const startTime = watch("TradeStartTime") || "09:16";
   const tradeStopTime = watch("TradeStopTime") || "15:15";
   const squareOffTime = watch("AutoSquareOffTime") || "15:15";
-  const productTypeNum = watch("ProductType");
-  const isBtSt = watch("isBtSt");
+  const productTypeNum = Number(watch("ProductType")) || 0;
+  const isBtSt = watch("isBtSt") || false;
   const entryDays = watch("EntryDaysBeforExpiry") ?? 0;
   const exitDays = watch("ExitDaysBeforExpiry") ?? 0;
   const strategySegmentType = watch("StrategySegmentType") || "";
@@ -51,6 +51,10 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
     const productTypeMap = { MIS: 0, CNC: 1, BTST: 1 };
     setValue("ProductType", productTypeMap[type], { shouldDirty: true });
     setValue("isBtSt", type === "BTST", { shouldDirty: true });
+    if (type === "CNC") {
+      setValue("EntryDaysBeforExpiry", 0, { shouldDirty: true });
+      setValue("ExitDaysBeforExpiry", 0, { shouldDirty: true });
+    }
   };
 
   return (
@@ -191,7 +195,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           </div>
           <div>
             <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
-              Next Day Square Off
+              {productType === "BTST" ? "Next Day Square Off" : "Square Off"}
             </label>
             <input
               type="time"
@@ -210,8 +214,8 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
         </div>
 
         <div className="flex items-center text-sm">
-          <div className="overflow-x-auto w-full">
-            <div className="flex space-x-1 min-w-max">
+          <div className="w-full">
+            <div className="flex flex-wrap gap-1 min-w-0">
               {days.map((day) => (
                 <button
                   type="button"

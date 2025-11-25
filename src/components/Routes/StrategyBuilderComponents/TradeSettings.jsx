@@ -21,6 +21,19 @@ const TradeSettings = () => {
   const formTransactionType = watch("TransactionType") ?? 0;
   const formChartType = watch("ChartType") ?? 1;
   const formInterval = watch("Interval") ?? 1;
+  const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
+
+  // When Combined Chart is enabled, switch from Both Side to Only Long if currently Both Side
+  React.useEffect(() => {
+    if (isChartOnOptionStrike && formTransactionType === 0) {
+      setValue("TransactionType", 1, { shouldDirty: true });
+    }
+  }, [isChartOnOptionStrike, formTransactionType, setValue]);
+
+  // Filter transaction options based on Combined Chart
+  const availableTransactionOptions = isChartOnOptionStrike
+    ? transactionOptions.filter((opt) => opt !== "Both Side")
+    : transactionOptions;
 
   // Mapping helpers
   const transactionMap = {
@@ -82,8 +95,8 @@ const TradeSettings = () => {
     "px-3 py-2 rounded border text-xs transition whitespace-nowrap";
 
   return (
-    <div className="sbg-white dark:bg-[#1E2027] rounded-xl w-full space-y-6">
-      <div className="flex items-center overflow-x-auto w-full space-x-8">
+    <div className="bg-white dark:bg-[#1E2027] rounded-xl w-full space-y-6">
+      <div className="flex items-center flex-wrap gap-8 w-full">
         <div>
           <div className="flex items-center gap-1 mb-1">
             <label className="text-gray-500 dark:text-gray-400 block text-xs">
@@ -106,8 +119,8 @@ const TradeSettings = () => {
               </span>
             </span>
           </div>
-          <div className="flex space-x-2 overflow-x-auto">
-            {transactionOptions.map((option) => (
+          <div className="flex flex-wrap gap-2">
+            {availableTransactionOptions.map((option) => (
               <button
                 type="button"
                 key={option}
@@ -128,7 +141,7 @@ const TradeSettings = () => {
           <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
             Chart Type
           </label>
-          <div className="flex space-x-2 overflow-x-auto">
+          <div className="flex flex-wrap gap-2">
             {chartTypes.map((type) => (
               <button
                 type="button"
@@ -151,7 +164,7 @@ const TradeSettings = () => {
         <label className="text-gray-500 dark:text-gray-400 block text-xs mb-1">
           Interval
         </label>
-        <div className="flex gap-2 overflow-x-auto w-full">
+        <div className="flex gap-2 flex-wrap w-full">
           {intervals.map((intvl) => (
             <button
               type="button"

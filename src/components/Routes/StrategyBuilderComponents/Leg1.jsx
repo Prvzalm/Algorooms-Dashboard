@@ -33,6 +33,20 @@ const Leg1 = ({
   const rawShortWhen = watch("ShortWhen");
   const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
   const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
+  const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
+  const transactionType = watch("TransactionType") ?? 0;
+  const productTypeNum = Number(watch("ProductType")) || 0;
+  const isBtSt = watch("isBtSt") || false;
+
+  // Derive productType
+  const productType =
+    productTypeNum === 0
+      ? "MIS"
+      : productTypeNum === 1 && isBtSt
+      ? "BTST"
+      : productTypeNum === 1 && !isBtSt
+      ? "CNC"
+      : "MIS";
 
   // ✅ Legs management state (moved from OrderType)
   const [legs, setLegs] = useState(["L1"]);
@@ -52,6 +66,33 @@ const Leg1 = ({
       setSignalCandleCondition(true);
     }
   }, [tradeOnTriggerCandle, rawBuyWhen, rawShortWhen, ofContinuousCandle]);
+
+  // Force ExpiryType to WEEKLY for CNC and BTST
+  useEffect(() => {
+    if (productType === "CNC" || productType === "BTST") {
+      const scripts = getValues("StrategyScriptList") || [];
+      const updatedScripts = scripts.map((script) => {
+        const updatedLong = (script.LongEquationoptionStrikeList || []).map(
+          (strike) => ({
+            ...strike,
+            ExpiryType: "WEEKLY",
+          })
+        );
+        const updatedShort = (script.ShortEquationoptionStrikeList || []).map(
+          (strike) => ({
+            ...strike,
+            ExpiryType: "WEEKLY",
+          })
+        );
+        return {
+          ...script,
+          LongEquationoptionStrikeList: updatedLong,
+          ShortEquationoptionStrikeList: updatedShort,
+        };
+      });
+      setValue("StrategyScriptList", updatedScripts, { shouldDirty: true });
+    }
+  }, [productType, setValue, getValues]);
 
   const buyWhen = rawBuyWhen || "Low Break";
   const shortWhen = rawShortWhen || "Low Break";
@@ -204,7 +245,10 @@ const Leg1 = ({
       : existingActiveLong || existingActiveShort;
 
   const position = existingActiveStrike?.TransactionType || "BUY";
-  const expiryType = existingActiveStrike?.ExpiryType || "WEEKLY";
+  const expiryType =
+    productType === "CNC" || productType === "BTST"
+      ? "WEEKLY"
+      : existingActiveStrike?.ExpiryType || "WEEKLY";
   const slTypeSel = existingActiveStrike?.SLType === "slpt" ? "SL pt" : "SL%";
   const tpTypeSel =
     existingActiveStrike?.TargetType === "tgpt" ? "TP pt" : "TP%";
@@ -1202,21 +1246,12 @@ const Leg1 = ({
     selectedInstrument?.Exchange || selectedInstrument?.Segment || "";
 
   const featureWaitTradeActive =
-    advanceFeatures?.["Wait & Trade"] ||
-    waitTradeEnabled ||
-    existingActiveStrike?.waitNTrade?.isWaitnTrade;
+    waitTradeEnabled || advanceFeatures?.["Wait & Trade"];
   const featurePremiumActive =
-    advanceFeatures?.["Premium Difference"] ||
-    premiumDiffEnabled ||
-    existingActiveStrike?.IsPriceDiffrenceConstrant;
+    premiumDiffEnabled || advanceFeatures?.["Premium Difference"];
   const featureReEntryActive =
-    advanceFeatures?.["Re Entry/Execute"] ||
-    reEntryEnabled ||
-    existingActiveStrike?.reEntry?.isRentry;
-  const featureTrailSlActive =
-    advanceFeatures?.["Trail SL"] ||
-    trailSlEnabled ||
-    existingActiveStrike?.isTrailSL;
+    reEntryEnabled || advanceFeatures?.["Re Entry/Execute"];
+  const featureTrailSlActive = trailSlEnabled || advanceFeatures?.["Trail SL"];
 
   // ✅ REMOVED: No longer need stable premium value from global
 
@@ -1440,13 +1475,15 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          <PrimaryButton
-            type="button"
-            onClick={handleAddLeg}
-            className="px-5 py-2 text-sm"
-          >
-            + Add Leg
-          </PrimaryButton>
+          {!isChartOnOptionStrike && (
+            <PrimaryButton
+              type="button"
+              onClick={handleAddLeg}
+              className="px-5 py-2 text-sm"
+            >
+              + Add Leg
+            </PrimaryButton>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -1514,42 +1551,46 @@ const Leg1 = ({
                   <div className="px-4 pb-4 pt-3 space-y-4 border-t border-dashed border-gray-200 dark:border-[#2C2F36]">
                     {selectedStrategyTypes?.[0] === "indicator" && (
                       <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <label className="block mb-1 text-green-600 font-medium">
-                            When Long Condition
-                          </label>
-                          <select
-                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                            disabled={isDisabled}
-                            value={longCondition}
-                            onChange={(e) =>
-                              handleIndicatorConditionChange(e.target.value)
-                            }
-                          >
-                            {conditionOptions.map((opt) => (
-                              <option key={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block mb-1 text-red-500 font-medium">
-                            When Short Condition
-                          </label>
-                          <select
-                            className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                            disabled={isDisabled}
-                            value={shortCondition}
-                            onChange={(e) =>
-                              handleIndicatorConditionChange(
-                                e.target.value === "CE" ? "PE" : "CE"
-                              )
-                            }
-                          >
-                            {conditionOptions.map((opt) => (
-                              <option key={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        </div>
+                        {(transactionType === 0 || transactionType === 1) && (
+                          <div>
+                            <label className="block mb-1 text-green-600 font-medium">
+                              When Long Condition
+                            </label>
+                            <select
+                              className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                              disabled={isDisabled}
+                              value={longCondition}
+                              onChange={(e) =>
+                                handleIndicatorConditionChange(e.target.value)
+                              }
+                            >
+                              {conditionOptions.map((opt) => (
+                                <option key={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        {(transactionType === 0 || transactionType === 2) && (
+                          <div>
+                            <label className="block mb-1 text-red-500 font-medium">
+                              When Short Condition
+                            </label>
+                            <select
+                              className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                              disabled={isDisabled}
+                              value={shortCondition}
+                              onChange={(e) =>
+                                handleIndicatorConditionChange(
+                                  e.target.value === "CE" ? "PE" : "CE"
+                                )
+                              }
+                            >
+                              {conditionOptions.map((opt) => (
+                                <option key={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1654,8 +1695,16 @@ const Leg1 = ({
                         </label>
                         <select
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                          disabled={isDisabled}
-                          value={expiryType}
+                          disabled={
+                            isDisabled ||
+                            productType === "CNC" ||
+                            productType === "BTST"
+                          }
+                          value={
+                            productType === "CNC" || productType === "BTST"
+                              ? "WEEKLY"
+                              : expiryType
+                          }
                           onChange={(e) => handleExpiryChange(e.target.value)}
                         >
                           {expiryOptions.map((opt) => (
@@ -1739,7 +1788,7 @@ const Leg1 = ({
                       </div>
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          Partially Qty Booked
+                          Qty Booked
                         </label>
                         <input
                           type="number"
@@ -1786,7 +1835,7 @@ const Leg1 = ({
                       </div>
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          Partially Qty Booked
+                          Qty Booked
                         </label>
                         <input
                           type="number"

@@ -413,10 +413,12 @@ const BacktestStrategyComponent = ({
         </div>
       ) : (
         <>
-          <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
+          <h2 className="text-lg font-semibold">
+            Choose Strategies to Backtest
+          </h2>
           <p className="text-sm text-gray-400 mb-6">
-            Pick one of your strategies, select a time range, and run a backtest
-            to view performance.
+            Pick one or more than one of your strategies, select a time range,
+            and run a backtest to view performance.
           </p>
         </>
       )}

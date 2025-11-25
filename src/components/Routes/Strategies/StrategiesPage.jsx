@@ -6,7 +6,10 @@ import {
   useSquareOffStrategyMutation,
   useRemoveStrategyDeployment,
 } from "../../../hooks/strategyHooks";
-import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
+import {
+  useBrokerwiseStrategies,
+  useUserBrokerData,
+} from "../../../hooks/dashboardHooks";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
 import MyStrategiesList from "./MyStrategiesList";
 import DeployedStrategiesList from "./DeployedStrategiesList";
@@ -39,6 +42,9 @@ const StrategiesPage = () => {
     isError: deployedError,
     isFetching: deployedFetching,
   } = useBrokerwiseStrategies("Date");
+
+  const { data: userBrokers = [], isFetching: userBrokersFetching } =
+    useUserBrokerData();
 
   const [expandedBrokerIds, setExpandedBrokerIds] = useState([]);
 
@@ -76,11 +82,26 @@ const StrategiesPage = () => {
   };
 
   // Convert store data to format expected by DeployedStrategiesList
+  const userBrokerMap = userBrokers.reduce((acc, broker) => {
+    acc[broker.BrokerClientId] = broker;
+    return acc;
+  }, {});
+
   const live = {
-    brokers: storeBrokers.map((b) => ({
-      ...b,
-      totalPnl: b.brokerPNL, // Add for backwards compatibility
-    })),
+    brokers: storeBrokers.map((b) => {
+      const userBroker = userBrokerMap[b.broker.code];
+      return {
+        ...b,
+        broker: {
+          ...b.broker,
+          tradeEngineStatus:
+            userBroker?.TradeEngineStatus ||
+            b.broker.tradeEngineStatus ||
+            "Stopped",
+        },
+        totalPnl: b.brokerPNL, // Add for backwards compatibility
+      };
+    }),
     grandTotalPnl,
   };
 
@@ -303,11 +324,10 @@ const StrategiesPage = () => {
       },
       {
         onSuccess: () => {
-          setEngineStatusOverrides((prev) => ({
-            ...prev,
-            [brokerItem.broker.code]:
-              nextAction === "Start" ? "Running" : "Stopped",
-          }));
+          // No optimistic update
+        },
+        onError: () => {
+          // No revert
         },
         onSettled: () => {
           mutatingRef.current = false;
@@ -438,6 +458,7 @@ const StrategiesPage = () => {
           onRemoveBroker={handleRequestRemoveBroker}
           removingBrokerIds={removingBrokerIds}
           refreshing={deployedRefreshing}
+          userBrokersFetching={userBrokersFetching}
         />
       )}
       {activeTab === "Strategy Templates" && (

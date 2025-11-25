@@ -42,17 +42,6 @@ const BrokerCard = ({ brokers = [] }) => {
         ConnectOptions: nextAction,
       },
       {
-        onSuccess: () => {
-          setSelectedBroker((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  tradeEngineStatus:
-                    nextAction === "Start" ? "Running" : "Stopped",
-                }
-              : prev
-          );
-        },
         onSettled: () => {
           mutatingRef.current = false;
         },

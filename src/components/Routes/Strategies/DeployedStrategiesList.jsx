@@ -34,6 +34,7 @@ const DeployedStrategiesList = ({
   onRemoveBroker,
   removingBrokerIds,
   refreshing,
+  userBrokersFetching,
 }) => {
   const { brokers: deployedStrategies } = live || { brokers: [] };
   const [expandedStrategyKeys, setExpandedStrategyKeys] = useState(new Set());
@@ -169,7 +170,9 @@ const DeployedStrategiesList = ({
                   </div>
                   <button
                     onClick={() => handleToggleTradeEngine(brokerItem)}
-                    disabled={rowPending || removingBroker}
+                    disabled={
+                      rowPending || removingBroker || userBrokersFetching
+                    }
                     className={`px-4 py-1.5 text-xs font-medium rounded-md border transition flex items-center gap-2 whitespace-nowrap ${
                       tradeEngineStatus === "Running"
                         ? "bg-green-50 border-green-500 text-green-600 dark:bg-green-900/20 dark:border-green-600"
@@ -180,7 +183,7 @@ const DeployedStrategiesList = ({
                         : "hover:brightness-105"
                     }`}
                   >
-                    {(rowPending || removingBroker) && (
+                    {(rowPending || removingBroker || userBrokersFetching) && (
                       <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
                     )}
                     {tradeEngineStatus === "Running"

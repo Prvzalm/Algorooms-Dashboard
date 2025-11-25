@@ -367,12 +367,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     <NavLink to="/profile" className="block hover:underline">
                       My Profile
                     </NavLink>
-                    <NavLink
-                      to="/subscriptions"
-                      className="block hover:underline"
-                    >
-                      My Subscription
-                    </NavLink>
                     <button
                       onClick={handleSignOut}
                       className="block hover:underline text-left w-full"

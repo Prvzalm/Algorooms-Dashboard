@@ -219,9 +219,6 @@ const BrokerSection = () => {
                           {broker.BrokerClientId}
                         </p>
                         <p className="mt-1 text-[11px]">
-                          <span className="text-[#718EBF] dark:text-[#A0AEC0]">
-                            Login:
-                          </span>{" "}
                           <span
                             className={
                               broker.BrokerLoginStatus

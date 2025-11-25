@@ -281,16 +281,16 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
               >
                 <div>
                   <p className="font-semibold mb-2">{item.StrategyName}</p>
-                  <div className="flex text-xs gap-x-6">
+                  {/* <div className="flex text-xs gap-x-6">
                     <p>
                       Margin:{" "}
                       <span className="text-green-500">
                         ₹{item.MinimumCapital ?? "N/A"}
                       </span>
                     </p>
-                  </div>
+                  </div> */}
 
-                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                  {/* <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
                     <MiniCumulativeChart
                       data={
                         item?.BackTestResultData?.StrategyScriptList?.[0]
@@ -313,7 +313,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                         ).toLocaleString()}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <PrimaryButton
