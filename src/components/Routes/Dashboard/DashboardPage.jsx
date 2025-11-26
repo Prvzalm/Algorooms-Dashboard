@@ -39,7 +39,11 @@ const Dashboard = () => {
   } = useBrokerwiseStrategies();
 
   // Use custom hook for centralized PNL management
-  useLivePnlData(brokerStrategiesData, isStrategyLoading, isStrategyError);
+  const { brokers: pnlBrokers, grandTotalPnl } = useLivePnlData(
+    brokerStrategiesData,
+    isStrategyLoading,
+    isStrategyError
+  );
 
   const strategies = brokerStrategiesData || [];
 
@@ -253,9 +257,9 @@ const Dashboard = () => {
             </div>
           ) : (
             <HeaderCard
-              totalPnl={selectedBrokerPnl.toFixed(2)}
-              topGainer={topGainer?.name || "N/A"}
-              topLoser={topLoser?.name || "N/A"}
+              totalPnl={grandTotalPnl.toFixed(2)}
+              topGainer={topGainer?.name || "-"}
+              topLoser={topLoser?.name || "-"}
               accountImg={upStoxJas}
               brokers={brokers}
             />

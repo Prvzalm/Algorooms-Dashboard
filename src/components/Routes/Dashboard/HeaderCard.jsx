@@ -17,16 +17,16 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
                 <span className="text-gray-300 text-xs mb-0.5">
                   Top Gainer Strategy
                 </span>
-                <strong className="truncate block" title={topGainer}>
-                  {topGainer}
+                <strong className="truncate block" title={topGainer || "-"}>
+                  {topGainer || "-"}
                 </strong>
               </div>
               <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <span className="text-gray-300 text-xs mb-0.5">
                   Top Loss Strategy
                 </span>
-                <strong className="truncate block" title={topLoser}>
-                  {topLoser}
+                <strong className="truncate block" title={topLoser || "-"}>
+                  {topLoser || "-"}
                 </strong>
               </div>
             </div>

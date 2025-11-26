@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiEdit2 } from "react-icons/fi";
+import { FiEdit2, FiEye, FiEyeOff, FiCopy } from "react-icons/fi";
 import {
   profileActivePlanIcon,
   profileBacktestIcon,
@@ -28,11 +28,12 @@ const ProfilePage = () => {
   const [form, setForm] = useState({
     Name: "",
     EmailAddress: "",
-    Mobile_Number: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   if (isLoading || !profile) return <div>Loading...</div>;
 
@@ -41,7 +42,6 @@ const ProfilePage = () => {
     setForm({
       Name: profile?.Name,
       EmailAddress: profile?.EmailAddress,
-      Mobile_Number: profile?.Mobile_Number,
     });
   };
 
@@ -50,7 +50,7 @@ const ProfilePage = () => {
       {
         Name: form.Name || profile?.Name,
         EmailAddress: form.EmailAddress,
-        Mobile_Number: form.Mobile_Number,
+        Mobile_Number: profile?.Mobile_Number,
         Address: profile?.Address,
         ProfileDescription: profile?.ProfileDescription,
       },
@@ -87,6 +87,15 @@ const ProfilePage = () => {
         onError: () => toast.error("Error changing password"),
       }
     );
+  };
+
+  const handleCopyReferralLink = async () => {
+    try {
+      await navigator.clipboard.writeText(profile?.referralLink);
+      toast.success("Referral link copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy referral link");
+    }
   };
 
   const subscription = subscriptionData?.[0];
@@ -147,36 +156,10 @@ const ProfilePage = () => {
             </div>
 
             <div>
-              {isEditing ? (
-                <>
-                  <label
-                    htmlFor="mobileNumber"
-                    className="text-xs text-gray-500 dark:text-gray-400 block mb-1"
-                  >
-                    Mobile Number
-                  </label>
-                  <input
-                    id="mobileNumber"
-                    name="Mobile_Number"
-                    type="text"
-                    className="bg-[#F5F9FF] dark:bg-[#1E2027] rounded px-2 py-2"
-                    value={form.Mobile_Number}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        Mobile_Number: e.target.value,
-                      }))
-                    }
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Mobile Number
-                  </div>
-                  <div className="font-semibold">{profile?.Mobile_Number}</div>
-                </>
-              )}
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Mobile Number
+              </div>
+              <div className="font-semibold">{profile?.Mobile_Number}</div>
             </div>
 
             {isEditing ? (
@@ -260,15 +243,24 @@ const ProfilePage = () => {
           </div>
 
           <div className="pt-4 border-t border-gray-200 dark:border-[#1E2027] flex flex-wrap justify-between text-xs">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="text-[#718EBF]">Referral Link:</div>
-              <a
-                target="_blank"
-                href={profile?.referralLink}
-                className="text-[#2E3A59] dark:text-white break-all underline"
-              >
-                {profile?.referralLink}
-              </a>
+              <div className="flex items-center gap-2 mt-1">
+                <a
+                  target="_blank"
+                  href={profile?.referralLink}
+                  className="text-[#2E3A59] dark:text-white break-all underline"
+                >
+                  {profile?.referralLink}
+                </a>
+                <button
+                  onClick={handleCopyReferralLink}
+                  className="flex-shrink-0 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-[#2A2A2E] transition-colors"
+                  title="Copy referral link"
+                >
+                  <FiCopy className="w-4 h-4 text-[#718EBF] dark:text-gray-400" />
+                </button>
+              </div>
             </div>
             <div className="text-right">
               <div className="text-gray-500 dark:text-gray-400">Joined on</div>
@@ -288,25 +280,51 @@ const ProfilePage = () => {
               <label className="text-sm font-medium text-[#718EBF] dark:text-gray-400">
                 Old Password
               </label>
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
+              <div className="relative">
+                <input
+                  type={showOldPassword ? "text" : "password"}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  {showOldPassword ? (
+                    <FiEyeOff size={20} />
+                  ) : (
+                    <FiEye size={20} />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-[#718EBF] dark:text-gray-400">
                 New Password
               </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter your new password"
-                className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter your new password"
+                  className="w-full p-4 bg-[#F5F9FF] dark:bg-[#1E2027] text-gray-700 dark:text-white placeholder-gray-400 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  {showNewPassword ? (
+                    <FiEyeOff size={20} />
+                  ) : (
+                    <FiEye size={20} />
+                  )}
+                </button>
+              </div>
             </div>
             <PrimaryButton
               className="mt-4 py-2 px-4 w-1/2 text-sm"

@@ -116,6 +116,10 @@ const DeployStrategyModal = ({
   const [selectedBrokerIds, setSelectedBrokerIds] = useState([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Store original values from strategy details
+  const [originalMaxProfit, setOriginalMaxProfit] = useState(0);
+  const [originalMaxLoss, setOriginalMaxLoss] = useState(0);
+
   // Track initialization for details/broker defaults separately per open
   const initRef = useRef({ details: false, brokers: false, deployment: false });
   useEffect(() => {
@@ -172,6 +176,15 @@ const DeployStrategyModal = ({
       }
       const profit = details.ExitWhenTotalProfit;
       const loss = details.ExitWhenTotalLoss;
+
+      // Store original values
+      const originalProfit =
+        profit === undefined || profit === null ? 0 : Number(profit);
+      const originalLoss =
+        loss === undefined || loss === null ? 0 : Number(loss);
+      setOriginalMaxProfit(originalProfit);
+      setOriginalMaxLoss(originalLoss);
+
       if (
         !(
           state.deployment &&
@@ -179,9 +192,7 @@ const DeployStrategyModal = ({
           initialDeployment.maxProfit !== undefined
         )
       ) {
-        setMaxProfit(
-          profit === undefined || profit === null ? "" : String(profit)
-        );
+        setMaxProfit(String(originalProfit));
       }
       if (
         !(
@@ -190,7 +201,7 @@ const DeployStrategyModal = ({
           initialDeployment.maxLoss !== undefined
         )
       ) {
-        setMaxLoss(loss === undefined || loss === null ? "" : String(loss));
+        setMaxLoss(String(originalLoss));
       }
       state.details = true;
     }
@@ -211,6 +222,17 @@ const DeployStrategyModal = ({
       });
     }
   }, [open, details, brokerOptions, initialDeployment]);
+
+  // Update displayed values when quantity multiplier changes
+  useEffect(() => {
+    const multiplier = Number(qtyMultiplier) || 1;
+    if (originalMaxProfit > 0) {
+      setMaxProfit(String(originalMaxProfit * multiplier));
+    }
+    if (originalMaxLoss > 0) {
+      setMaxLoss(String(originalMaxLoss * multiplier));
+    }
+  }, [qtyMultiplier, originalMaxProfit, originalMaxLoss]);
 
   if (!open) return null;
   const loading = !!detailsLoading && !!open;
@@ -318,7 +340,10 @@ const DeployStrategyModal = ({
 
             <div>
               <label className="block text-xs font-medium mb-1">
-                Max Profit (optional)
+                Max Profit (optional){" "}
+                {Number(qtyMultiplier) > 1 && (
+                  <span className="text-[#1B44FE]">×{qtyMultiplier}</span>
+                )}
               </label>
               <input
                 type="number"
@@ -332,7 +357,10 @@ const DeployStrategyModal = ({
 
             <div>
               <label className="block text-xs font-medium mb-1">
-                Max Loss (optional)
+                Max Loss (optional){" "}
+                {Number(qtyMultiplier) > 1 && (
+                  <span className="text-[#1B44FE]">×{qtyMultiplier}</span>
+                )}
               </label>
               <input
                 type="number"

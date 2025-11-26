@@ -275,6 +275,16 @@ export const useTopGainerLoser = (brokerCode) => {
             return { topGainer: null, topLoser: null };
         }
 
+        if (strategies.length === 1) {
+            const strategy = strategies[0];
+            // If only one strategy, show it in appropriate section based on PNL
+            if (strategy.strategyPNL >= 0) {
+                return { topGainer: strategy, topLoser: null };
+            } else {
+                return { topGainer: null, topLoser: strategy };
+            }
+        }
+
         const topGainer = strategies.reduce((max, s) =>
             (s.strategyPNL > max.strategyPNL ? s : max),
             strategies[0]

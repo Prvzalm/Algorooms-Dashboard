@@ -369,16 +369,24 @@ const StrategyReportDetails = ({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-[#1E2027]">
-                  <th className="text-left px-5 py-2 font-medium">Date</th>
+                  <th className="text-left px-5 py-2 font-medium">
+                    Date & Time
+                  </th>
                   <th className="text-left px-5 py-2 font-medium">Type</th>
                   <th className="text-left px-5 py-2 font-medium">Symbol</th>
                   <th className="text-left px-5 py-2 font-medium">Quantity</th>
                   <th className="text-left px-5 py-2 font-medium">
-                    Trade Status
+                    Entry Price
                   </th>
-                  <th className="text-left px-5 py-2 font-medium">Entry</th>
+                  <th className="text-left px-5 py-2 font-medium">
+                    Exit Price
+                  </th>
                   <th className="text-left px-5 py-2 font-medium">Exit Type</th>
-                  <th className="text-left px-5 py-2 font-medium">Status</th>
+                  <th className="text-left px-5 py-2 font-medium">
+                    Broker Client ID
+                  </th>
+                  <th className="text-left px-5 py-2 font-medium">Order ID</th>
+                  <th className="text-left px-5 py-2 font-medium">Exit Time</th>
                   <th className="text-left px-5 py-2 font-medium">P&L</th>
                 </tr>
               </thead>
@@ -391,19 +399,30 @@ const StrategyReportDetails = ({
                       className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       <td className="px-5 py-2">
-                        {new Date(t.TimeStamp).toLocaleDateString("en-GB")}
+                        {new Date(t.TimeStamp).toLocaleString("en-GB", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </td>
-                      <td className="px-5 py-2 text-[#0096FF]">
-                        {t.TransactionType}
+                      <td className="px-5 py-2">
+                        <span
+                          className={`font-medium ${
+                            t.TransactionType === "BUY"
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {t.TransactionType}
+                        </span>
                       </td>
                       <td className="px-5 py-2">{t.TradingSymbol}</td>
                       <td className="px-5 py-2">{t.Quantity}</td>
-                      <td className="px-5 py-2">
-                        <span className="px-2 py-0.5 rounded-full bg-[#0096FF]/10 text-[#0096FF] font-medium dark:bg-[#0096FF]/20">
-                          {t.OrderStatus}
-                        </span>
-                      </td>
                       <td className="px-5 py-2">{t.EntryPrice}</td>
+                      <td className="px-5 py-2">{t.ExitPrice}</td>
                       <td className="px-5 py-2">
                         <span
                           className={`px-2 py-0.5 rounded-full font-medium ${
@@ -415,10 +434,19 @@ const StrategyReportDetails = ({
                           {t.OrderExitType || "N/A"}
                         </span>
                       </td>
+                      <td className="px-5 py-2">{t.Brokerclientid}</td>
+                      <td className="px-5 py-2 text-xs">{t.OrderId}</td>
                       <td className="px-5 py-2">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium dark:bg-emerald-500/20 dark:text-emerald-400">
-                          Completed
-                        </span>
+                        {t.ExitTimeStamp
+                          ? new Date(t.ExitTimeStamp).toLocaleString("en-GB", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })
+                          : "N/A"}
                       </td>
                       <td className="px-5 py-2 font-medium">
                         <span
@@ -436,7 +464,7 @@ const StrategyReportDetails = ({
                 ) : (
                   <tr>
                     <td
-                      colSpan="9"
+                      colSpan="12"
                       className="px-5 py-4 text-center text-slate-500 dark:text-slate-400"
                     >
                       No transactions found

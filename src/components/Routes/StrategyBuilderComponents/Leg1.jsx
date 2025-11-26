@@ -1853,7 +1853,7 @@ const Leg1 = ({
                     <div className="grid grid-cols-3 gap-3 text-xs">
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          Stop Loss
+                          SL Type
                         </label>
                         <select
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
@@ -1868,7 +1868,7 @@ const Leg1 = ({
                       </div>
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          Qty Booked
+                          SL
                         </label>
                         <input
                           type="number"
@@ -1900,7 +1900,7 @@ const Leg1 = ({
                     <div className="grid grid-cols-3 gap-3 text-xs">
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          TP
+                          TP Type
                         </label>
                         <select
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
@@ -1915,7 +1915,7 @@ const Leg1 = ({
                       </div>
                       <div>
                         <label className="block mb-1 text-gray-600 dark:text-gray-400">
-                          Qty Booked
+                          TP
                         </label>
                         <input
                           type="number"

@@ -192,7 +192,7 @@ const BrokerSection = () => {
               return (
                 <div
                   key={index}
-                  className={`relative border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
+                  className={`relative border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24] flex flex-col sm:flex-row sm:items-center gap-4 ${
                     isMenuOpen ? "z-20" : ""
                   }`}
                 >
@@ -204,15 +204,159 @@ const BrokerSection = () => {
                       </p>
                     </div>
                   )}
-                  <div className="flex items-start gap-4 w-full sm:w-auto">
-                    <div className="flex items-center gap-4 flex-1">
+                  {/* Mobile Layout */}
+                  <div className="flex flex-col gap-4 sm:hidden">
+                    <div className="flex items-center gap-4">
                       <img
                         src={broker.brokerLogoUrl}
                         alt={`${broker.BrokerName} logo`}
-                        className="w-12 h-12 sm:w-16 sm:h-16"
+                        className="w-12 h-12 flex-shrink-0"
                       />
-                      <div>
-                        <p className="font-semibold text-[#2E3A59] dark:text-white">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-[#2E3A59] dark:text-white truncate">
+                          {broker.BrokerName}
+                        </p>
+                        <p className="text-[11px] text-[#718EBF]">
+                          {broker.BrokerClientId}
+                        </p>
+                        <p className="mt-1 text-[11px]">
+                          <span
+                            className={
+                              broker.BrokerLoginStatus
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-500"
+                            }
+                          >
+                            {broker.BrokerLoginStatus
+                              ? "Connected"
+                              : "Not Connected"}
+                          </span>
+                        </p>
+                      </div>
+                      {/* Kebab menu for mobile */}
+                      <div
+                        className="flex-shrink-0 relative"
+                        id={`broker-menu-${broker.BrokerClientId}`}
+                      >
+                        <button
+                          type="button"
+                          aria-label="Actions"
+                          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId((prev) =>
+                              prev === broker.BrokerClientId
+                                ? null
+                                : broker.BrokerClientId
+                            );
+                          }}
+                          disabled={rowPending || deletingBroker || squaringOff}
+                        >
+                          <FiMoreVertical className="text-gray-600 dark:text-gray-300" />
+                        </button>
+                        {isMenuOpen && (
+                          <div className="absolute right-0 mt-2 w-44 rounded-md border border-gray-200 dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg z-30">
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(null);
+                                setConfirmSquareId(broker.BrokerClientId);
+                              }}
+                              disabled={rowPending || squaringOff}
+                            >
+                              Square Off
+                            </button>
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-[#2A2A2E]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(null);
+                                setConfirmDeleteId(broker.BrokerClientId);
+                              }}
+                              disabled={rowPending || deletingBroker}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col items-center">
+                        <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                          Terminal
+                        </p>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            onChange={() => handleTerminalLogin(broker)}
+                            checked={!!broker.BrokerLoginStatus}
+                            readOnly
+                            disabled={rowPending}
+                          />
+                          <div
+                            className={`w-11 h-6 relative rounded-full transition-colors ${
+                              broker.BrokerLoginStatus
+                                ? "bg-[#0096FF]"
+                                : "bg-gray-200 dark:bg-[#2D2F36]"
+                            } ${rowPending ? "opacity-60" : ""}`}
+                          >
+                            <span
+                              className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                                broker.BrokerLoginStatus
+                                  ? "translate-x-full"
+                                  : ""
+                              }`}
+                            />
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="flex flex-col items-center">
+                        <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                          Trading Engine
+                        </p>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={tradeEngineStatus === "Running"}
+                            onChange={() => handleToggleTradeEngine(broker)}
+                            disabled={rowPending}
+                          />
+                          <div
+                            className={`w-11 h-6 relative rounded-full transition-colors ${
+                              tradeEngineStatus === "Running"
+                                ? "bg-green-600"
+                                : "bg-gray-200 dark:bg-[#2D2F36]"
+                            } ${rowPending ? "opacity-60" : ""}`}
+                          >
+                            <span
+                              className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                                tradeEngineStatus === "Running"
+                                  ? "translate-x-full"
+                                  : ""
+                              }`}
+                            />
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden sm:flex items-center gap-6 flex-1">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <img
+                        src={broker.brokerLogoUrl}
+                        alt={`${broker.BrokerName} logo`}
+                        className="w-16 h-16 flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#2E3A59] dark:text-white truncate">
                           {broker.BrokerName}
                         </p>
                         <p className="text-[11px] text-[#718EBF]">
@@ -233,9 +377,82 @@ const BrokerSection = () => {
                         </p>
                       </div>
                     </div>
-                    {/* Kebab menu */}
+
+                    <div className="flex flex-col items-center flex-1">
+                      <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                        Strategy Performance
+                      </p>
+                      <p className="font-semibold text-[#2E3A59] dark:text-white">
+                        0.00
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="flex flex-col items-center">
+                        <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                          Terminal
+                        </p>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            onChange={() => handleTerminalLogin(broker)}
+                            checked={!!broker.BrokerLoginStatus}
+                            readOnly
+                            disabled={rowPending}
+                          />
+                          <div
+                            className={`w-11 h-6 relative rounded-full transition-colors ${
+                              broker.BrokerLoginStatus
+                                ? "bg-[#0096FF]"
+                                : "bg-gray-200 dark:bg-[#2D2F36]"
+                            } ${rowPending ? "opacity-60" : ""}`}
+                          >
+                            <span
+                              className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                                broker.BrokerLoginStatus
+                                  ? "translate-x-full"
+                                  : ""
+                              }`}
+                            />
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="flex flex-col items-center">
+                        <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                          Trading Engine
+                        </p>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={tradeEngineStatus === "Running"}
+                            onChange={() => handleToggleTradeEngine(broker)}
+                            disabled={rowPending}
+                          />
+                          <div
+                            className={`w-11 h-6 relative rounded-full transition-colors ${
+                              tradeEngineStatus === "Running"
+                                ? "bg-green-600"
+                                : "bg-gray-200 dark:bg-[#2D2F36]"
+                            } ${rowPending ? "opacity-60" : ""}`}
+                          >
+                            <span
+                              className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
+                                tradeEngineStatus === "Running"
+                                  ? "translate-x-full"
+                                  : ""
+                              }`}
+                            />
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Kebab menu for desktop */}
                     <div
-                      className="ml-auto sm:ml-2 relative"
+                      className="flex-shrink-0 relative"
                       id={`broker-menu-${broker.BrokerClientId}`}
                     >
                       <button
@@ -281,76 +498,6 @@ const BrokerSection = () => {
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  <div className="text-center sm:text-left hidden sm:block">
-                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                      Strategy Performance
-                    </p>
-                    <p className="font-semibold text-[#2E3A59] dark:text-white">
-                      0.00
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                      Terminal
-                    </p>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        onChange={() => handleTerminalLogin(broker)}
-                        // Reflect login status visually (checked if logged in)
-                        checked={!!broker.BrokerLoginStatus}
-                        // Prevent direct toggle of checked state (managed by server refresh)
-                        readOnly
-                        disabled={rowPending}
-                      />
-                      <div
-                        className={`w-11 h-6 relative rounded-full transition-colors ${
-                          broker.BrokerLoginStatus
-                            ? "bg-[#0096FF]"
-                            : "bg-gray-200 dark:bg-[#2D2F36]"
-                        } ${rowPending ? "opacity-60" : ""}`}
-                      >
-                        <span
-                          className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
-                            broker.BrokerLoginStatus ? "translate-x-full" : ""
-                          }`}
-                        />
-                      </div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                    <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                      Trading Engine
-                    </p>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={tradeEngineStatus === "Running"}
-                        onChange={() => handleToggleTradeEngine(broker)}
-                        disabled={rowPending}
-                      />
-                      <div
-                        className={`w-11 h-6 relative rounded-full transition-colors ${
-                          tradeEngineStatus === "Running"
-                            ? "bg-green-600"
-                            : "bg-gray-200 dark:bg-[#2D2F36]"
-                        } ${rowPending ? "opacity-60" : ""}`}
-                      >
-                        <span
-                          className={`absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 transition-transform ${
-                            tradeEngineStatus === "Running"
-                              ? "translate-x-full"
-                              : ""
-                          }`}
-                        />
-                      </div>
-                    </label>
                   </div>
                 </div>
               );
