@@ -62,13 +62,12 @@ export function buildStrategyPayload({
                 typeId: "wtpr_+",
                 MovementValue: 0,
             },
-        strikeTypeobj:
-            item?.strikeTypeobj ?? {
-                type: "ATM",
-                RangeFrom: 0,
-                RangeTo: 0,
-                StrikeValue: 0,
-            },
+        strikeTypeobj: {
+            type: item?.strikeTypeobj?.type ?? "ATM",
+            StrikeValue: Number(item?.strikeTypeobj?.StrikeValue) || 0,
+            RangeFrom: item?.strikeTypeobj?.RangeFrom ?? 0,
+            RangeTo: item?.strikeTypeobj?.RangeTo ?? 0,
+        },
         isExitAll: item?.isExitAll ?? false,
         isTrailSL: item?.isTrailSL ?? false,
         TrailingSL:

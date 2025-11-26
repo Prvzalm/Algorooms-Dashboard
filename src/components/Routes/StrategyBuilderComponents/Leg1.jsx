@@ -346,7 +346,9 @@ const Leg1 = ({
   const strikeTypeSelectValue = isATMMode
     ? formatATMSelection(strikeValueNumeric, selectedStrikeCriteria)
     : "ATM";
-  const strikeTypeNumber = !isATMMode ? Math.max(0, strikeValueNumeric) : 0;
+  const strikeTypeNumber = !isATMMode
+    ? existingActiveStrike?.strikeTypeobj?.StrikeValue || ""
+    : "";
 
   const lotSizeBase = selectedInstrument?.LotSize || 0;
   const effectiveLotSize =
@@ -1052,7 +1054,7 @@ const Leg1 = ({
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         const strikeObj = {
           type: strikeCriteriaToType(criteria),
-          StrikeValue: 0,
+          StrikeValue: criteria === "CP" ? "" : 0,
           RangeFrom: 0,
           RangeTo: 0,
         };
@@ -1085,11 +1087,12 @@ const Leg1 = ({
 
   const handleStrikeNumberChange = useCallback(
     (value) => {
-      const numeric = Math.max(0, Number(value) || 0);
+      const formatted =
+        value === "" ? "" : String(Math.max(0, Number(value) || 0));
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         const strikeObj = {
           type: strikeCriteriaToType(selectedStrikeCriteria),
-          StrikeValue: numeric,
+          StrikeValue: formatted,
           RangeFrom: 0,
           RangeTo: 0,
         };
