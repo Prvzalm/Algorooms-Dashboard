@@ -34,6 +34,7 @@ const Leg1 = ({
   const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
   const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
+  const chartType = watch("chartType");
   const transactionType = watch("TransactionType") ?? 0;
   const productTypeNum = Number(watch("ProductType")) || 0;
   const isBtSt = watch("isBtSt") || false;
@@ -94,9 +95,9 @@ const Leg1 = ({
     }
   }, [productType, setValue, getValues]);
 
-  // When combined chart is enabled, keep only one leg
+  // When options chart is enabled for indicator strategy, keep only one leg
   useEffect(() => {
-    if (isChartOnOptionStrike) {
+    if (chartType === "options" && isIndicatorStrategy) {
       const scripts = getValues("StrategyScriptList") || [];
       if (scripts.length > 0) {
         const firstScript = scripts[0];
@@ -123,7 +124,7 @@ const Leg1 = ({
       }
     }
   }, [
-    isChartOnOptionStrike,
+    chartType,
     activeLegIndex,
     setValue,
     updatePayload,
@@ -1333,10 +1334,61 @@ const Leg1 = ({
     }
   };
 
+  // When combined chart is enabled for indicator strategy, ensure at least 2 legs
+  useEffect(() => {
+    if (isChartOnOptionStrike && isIndicatorStrategy && legs.length < 2) {
+      try {
+        const idx = legs.length;
+        const nextLegName = `L${idx + 1}`;
+
+        const updateFormState = () => {
+          setLegs((prevLegs) => [...prevLegs, nextLegName]);
+          setSelectedLeg(nextLegName);
+
+          const scripts = getValues("StrategyScriptList") || [];
+          const base = { ...(scripts[0] || {}) };
+
+          const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+            ? [...base.LongEquationoptionStrikeList]
+            : [];
+
+          const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+            ? [...base.ShortEquationoptionStrikeList]
+            : [];
+
+          const newStrike = createDefaultStrike();
+
+          const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+          longArr.push(newStrike);
+
+          if (isIndicator) {
+            shortArr.push({ ...newStrike });
+          }
+
+          base.LongEquationoptionStrikeList = longArr;
+          if (isIndicator) {
+            base.ShortEquationoptionStrikeList = shortArr;
+          }
+
+          const updated = [base];
+          setValue("StrategyScriptList", updated, { shouldDirty: true });
+          setValue("ActiveLegIndex", idx, { shouldDirty: true });
+
+          updatePayload({ StrategyScriptList: updated });
+        };
+
+        setTimeout(updateFormState, 0);
+      } catch (err) {
+        console.error("Add leg error", err);
+      }
+    }
+  }, [isChartOnOptionStrike, legs.length, selectedStrategyTypes, getValues, setValue, updatePayload]);
+
   // ✅ Remove leg handler (moved from OrderType)
   const handleRemoveLeg = (removeIndex) => {
     try {
-      if (legs.length <= 1) return; // Keep at least one leg
+      const minLegs = (isChartOnOptionStrike && isIndicatorStrategy) ? 2 : 1;
+      if (legs.length <= minLegs) return; // Keep at least minLegs legs
 
       const updateFormState = () => {
         const scripts = getValues("StrategyScriptList") || [];
@@ -1502,7 +1554,7 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          {!isChartOnOptionStrike && (
+          {chartType !== "options" && (
             <PrimaryButton
               type="button"
               onClick={handleAddLeg}

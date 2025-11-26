@@ -22,16 +22,19 @@ const TradeSettings = () => {
   const formChartType = watch("ChartType") ?? 1;
   const formInterval = watch("Interval") ?? 1;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
+  const selectedStrategyTypes = watch("selectedStrategyTypes") || [];
+  const strategyType = selectedStrategyTypes?.[0] ?? "time";
+  const isIndicatorStrategy = strategyType === "indicator";
 
-  // When Combined Chart is enabled, switch from Both Side to Only Long if currently Both Side
+  // When indicator strategy is selected, switch from Both Side to Only Long if currently Both Side
   React.useEffect(() => {
-    if (isChartOnOptionStrike && formTransactionType === 0) {
+    if (isIndicatorStrategy && formTransactionType === 0) {
       setValue("TransactionType", 1, { shouldDirty: true });
     }
-  }, [isChartOnOptionStrike, formTransactionType, setValue]);
+  }, [isIndicatorStrategy, formTransactionType, setValue]);
 
-  // Filter transaction options based on Combined Chart
-  const availableTransactionOptions = isChartOnOptionStrike
+  // Filter transaction options: hide "Both Side" for indicator strategies
+  const availableTransactionOptions = isIndicatorStrategy
     ? transactionOptions.filter((opt) => opt !== "Both Side")
     : transactionOptions;
 

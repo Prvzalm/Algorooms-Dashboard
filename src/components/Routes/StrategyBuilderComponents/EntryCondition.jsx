@@ -19,7 +19,7 @@ const createDefaultEquation = () => ({
   comparerIndicator: createDefaultIndicatorObj(),
 });
 
-const EntryCondition = () => {
+const EntryCondition = ({ selectedStrategyTypes }) => {
   const { watch, setValue } = useFormContext();
 
   // Form bindings
@@ -32,8 +32,13 @@ const EntryCondition = () => {
   const strategySegmentType = (watch("StrategySegmentType") || "")
     .toString()
     .toLowerCase();
+  const selectedStrategyTypesForm = watch("selectedStrategyTypes") || [];
+  const strategyType = selectedStrategyTypes?.[0] ?? "time";
+  const isIndicatorStrategy = strategyType === "indicator";
   const isCombinedChartDisabled =
     strategySegmentType === "equity" || strategySegmentType === "future";
+
+  const chartType = watch("chartType");
 
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
@@ -58,10 +63,24 @@ const EntryCondition = () => {
   }, [longExit?.length, shortExit?.length]);
 
   useEffect(() => {
-    if (isCombinedChartDisabled && isChartOnOptionStrike) {
-      setValue("IsChartOnOptionStrike", false, { shouldDirty: true });
+    if (isCombinedChartDisabled && chartType === "combined") {
+      setValue("chartType", "options", { shouldDirty: true });
     }
-  }, [isCombinedChartDisabled, isChartOnOptionStrike, setValue]);
+  }, [isCombinedChartDisabled, chartType, setValue]);
+
+  useEffect(() => {
+    setValue("IsChartOnOptionStrike", chartType === "combined", {
+      shouldDirty: true,
+    });
+    setValue("useCombinedChart", chartType === "combined", {
+      shouldDirty: true,
+    });
+  }, [chartType, setValue]);
+
+  useEffect(() => {
+    const initialChartType = null;
+    setValue("chartType", initialChartType);
+  }, []);
 
   const combinedChartTooltip = isCombinedChartDisabled
     ? "Combined chart is available only for option strikes. Equity and futures selections render their own price feeds."
@@ -940,39 +959,39 @@ const EntryCondition = () => {
         <h2 className="font-semibold text-lg text-black dark:text-white">
           Entry Conditions
         </h2>
-        {!isCombinedChartDisabled && (
+        {!isCombinedChartDisabled && isIndicatorStrategy && (
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
-                type="radio"
-                name="chartType"
-                checked={!isChartOnOptionStrike}
+                type="checkbox"
+                checked={chartType === "combined"}
                 onChange={() => {
-                  setValue("IsChartOnOptionStrike", false, {
-                    shouldDirty: true,
-                  });
-                  setValue("useCombinedChart", false, {
-                    shouldDirty: true,
-                  });
-                }}
-              />
-              Use Options Chart
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              <input
-                type="radio"
-                name="chartType"
-                checked={!!isChartOnOptionStrike}
-                onChange={() => {
-                  setValue("IsChartOnOptionStrike", true, {
-                    shouldDirty: true,
-                  });
-                  setValue("useCombinedChart", true, {
-                    shouldDirty: true,
-                  });
+                  setValue(
+                    "chartType",
+                    chartType === "combined" ? null : "combined",
+                    {
+                      shouldDirty: true,
+                    }
+                  );
                 }}
               />
               Use Combined Chart
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={chartType === "options"}
+                onChange={() => {
+                  setValue(
+                    "chartType",
+                    chartType === "options" ? null : "options",
+                    {
+                      shouldDirty: true,
+                    }
+                  );
+                }}
+              />
+              Use Options Chart
               <span className="relative group inline-flex">
                 <button
                   type="button"
