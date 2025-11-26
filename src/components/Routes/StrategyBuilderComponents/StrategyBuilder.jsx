@@ -1082,7 +1082,9 @@ const StrategyBuilder = () => {
           </div>
         </div>
 
-        {selectedStrategyTypes[0] === "indicator" && <EntryCondition selectedStrategyTypes={selectedStrategyTypes} />}
+        {selectedStrategyTypes[0] === "indicator" && (
+          <EntryCondition selectedStrategyTypes={selectedStrategyTypes} />
+        )}
 
         <div className="overflow-x-hidden">
           <RiskAndAdvance

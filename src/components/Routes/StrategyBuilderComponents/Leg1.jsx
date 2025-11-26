@@ -123,13 +123,7 @@ const Leg1 = ({
         setValue("ActiveLegIndex", 0, { shouldDirty: true });
       }
     }
-  }, [
-    chartType,
-    activeLegIndex,
-    setValue,
-    updatePayload,
-    getValues,
-  ]);
+  }, [chartType, activeLegIndex, setValue, updatePayload, getValues]);
 
   const buyWhen = rawBuyWhen || "Low Break";
   const shortWhen = rawShortWhen || "Low Break";
@@ -1382,12 +1376,19 @@ const Leg1 = ({
         console.error("Add leg error", err);
       }
     }
-  }, [isChartOnOptionStrike, legs.length, selectedStrategyTypes, getValues, setValue, updatePayload]);
+  }, [
+    isChartOnOptionStrike,
+    legs.length,
+    selectedStrategyTypes,
+    getValues,
+    setValue,
+    updatePayload,
+  ]);
 
   // ✅ Remove leg handler (moved from OrderType)
   const handleRemoveLeg = (removeIndex) => {
     try {
-      const minLegs = (isChartOnOptionStrike && isIndicatorStrategy) ? 2 : 1;
+      const minLegs = isChartOnOptionStrike && isIndicatorStrategy ? 2 : 1;
       if (legs.length <= minLegs) return; // Keep at least minLegs legs
 
       const updateFormState = () => {
