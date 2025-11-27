@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
 import ConfirmModal from "../../ConfirmModal";
+import StopTradeEngineModal from "../../StopTradeEngineModal";
 
 const BrokerCard = ({ brokers = [] }) => {
   const [selectedBroker, setSelectedBroker] = useState(null);
@@ -10,6 +11,7 @@ const BrokerCard = ({ brokers = [] }) => {
   const { mutate, isPending } = useStartStopTradeEngine();
   const mutatingRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (brokers.length > 0) {
@@ -59,7 +61,8 @@ const BrokerCard = ({ brokers = [] }) => {
       setConfirmOpen(true);
       return;
     }
-    performToggleTradeEngine(nextAction);
+    // For stop, show stop modal
+    setStopConfirmOpen(true);
   };
 
   return (
@@ -77,6 +80,24 @@ const BrokerCard = ({ brokers = [] }) => {
         onConfirm={() => {
           setConfirmOpen(false);
           performToggleTradeEngine("Start");
+        }}
+      />
+      <StopTradeEngineModal
+        open={stopConfirmOpen}
+        title="Stop Trade Engine?"
+        message="Choose how to stop the trade engine."
+        cancelLabel="Cancel"
+        stopLabel="Stop"
+        stopSquareOffLabel="Stop & Square Off"
+        loading={isPending}
+        onCancel={() => setStopConfirmOpen(false)}
+        onStop={() => {
+          setStopConfirmOpen(false);
+          performToggleTradeEngine("Stop");
+        }}
+        onStopSquareOff={() => {
+          setStopConfirmOpen(false);
+          performToggleTradeEngine("StopNSquareOff");
         }}
       />
       {isPending && (

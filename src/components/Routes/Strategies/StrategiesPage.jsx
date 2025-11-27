@@ -15,6 +15,7 @@ import MyStrategiesList from "./MyStrategiesList";
 import DeployedStrategiesList from "./DeployedStrategiesList";
 import { useLivePnlData } from "../../../hooks/useLivePnlData";
 import ConfirmModal from "../../ConfirmModal";
+import StopTradeEngineModal from "../../StopTradeEngineModal";
 import DeployStrategyModal from "./DeployStrategyModal";
 
 const mainTabs = ["My Strategies", "Deployed Strategies", "Strategy Templates"];
@@ -59,6 +60,8 @@ const StrategiesPage = () => {
   const [engineStatusOverrides, setEngineStatusOverrides] = useState({}); // BrokerClientId -> "Running"|"Stopped"
   const [pendingBrokerId, setPendingBrokerId] = useState(null);
   const [confirmForBrokerId, setConfirmForBrokerId] = useState(null);
+  const [stopConfirmForBrokerItem, setStopConfirmForBrokerItem] =
+    useState(null);
   const mutatingRef = useRef(false);
   const { mutate: mutateTradeEngine, isPending: enginePending } =
     useStartStopTradeEngine();
@@ -98,6 +101,10 @@ const StrategiesPage = () => {
             userBroker?.TradeEngineStatus ||
             b.broker.tradeEngineStatus ||
             "Stopped",
+          tradeEngineName:
+            userBroker?.TradeEngineName ||
+            userBroker?.TradeEngine ||
+            b.broker.tradeEngineName,
         },
         totalPnl: b.brokerPNL, // Add for backwards compatibility
       };
@@ -134,28 +141,50 @@ const StrategiesPage = () => {
     // Keep live mode as-is (do not force) so running toggle only affects running state.
     const effective = getStrategyEffective(brokerItem, strategy);
     const actionType = nextRunning ? "Start" : "Stop";
+    const originalRunning = strategy.running;
     updateStrategyOverride(brokerItem, strategy, { running: nextRunning });
-    mutateStrategyMode({
-      StrategyId: String(strategy.id),
-      BrokerClientId: brokerItem.broker.code,
-      BrokerId: brokerItem.raw?.BrokerId,
-      isLiveMode: effective.isLiveMode, // send current live mode
-      ActionType: actionType,
-    });
+    mutateStrategyMode(
+      {
+        StrategyId: String(strategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: brokerItem.raw?.BrokerId,
+        isLiveMode: effective.isLiveMode, // send current live mode
+        ActionType: actionType,
+      },
+      {
+        onError: () => {
+          // Revert optimistic update on error
+          updateStrategyOverride(brokerItem, strategy, {
+            running: originalRunning,
+          });
+        },
+      }
+    );
   };
 
   const handleStrategyToggleLiveForward = (brokerItem, strategy, toLive) => {
     const actionType = toLive ? "Live" : "Paper";
+    const originalIsLiveMode = strategy.isLiveMode;
     updateStrategyOverride(brokerItem, strategy, { isLiveMode: toLive });
     const effective = getStrategyEffective(brokerItem, strategy);
-    mutateStrategyMode({
-      StrategyId: String(strategy.id),
-      BrokerClientId: brokerItem.broker.code,
-      BrokerId: brokerItem.raw?.BrokerId,
-      isLiveMode: toLive,
-      ActionType: actionType,
-      // running state remains whatever it was
-    });
+    mutateStrategyMode(
+      {
+        StrategyId: String(strategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: brokerItem.raw?.BrokerId,
+        isLiveMode: toLive,
+        ActionType: actionType,
+        // running state remains whatever it was
+      },
+      {
+        onError: () => {
+          // Revert optimistic update on error
+          updateStrategyOverride(brokerItem, strategy, {
+            isLiveMode: originalIsLiveMode,
+          });
+        },
+      }
+    );
   };
 
   const handleStrategySquareOff = (brokerItem, strategy) => {
@@ -346,7 +375,8 @@ const StrategiesPage = () => {
       setConfirmForBrokerId(brokerItem.broker.code);
       return;
     }
-    performToggleTradeEngine(brokerItem, nextAction);
+    // For stop, show stop modal
+    setStopConfirmForBrokerItem(brokerItem);
   };
 
   // Render helpers moved to extracted components
@@ -501,6 +531,44 @@ const StrategiesPage = () => {
           initialDeployment={editInitialDeployment}
         />
       ) : null}
+
+      <ConfirmModal
+        open={!!confirmForBrokerId}
+        title="Start Trade Engine?"
+        message={
+          "This will start executing live trades for the selected broker.\nMake sure your strategies and margins are configured."
+        }
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={enginePending}
+        onCancel={() => setConfirmForBrokerId(null)}
+        onConfirm={() => {
+          const brokerItem = live.brokers.find(
+            (b) => b.broker.code === confirmForBrokerId
+          );
+          setConfirmForBrokerId(null);
+          if (brokerItem) performToggleTradeEngine(brokerItem, "Start");
+        }}
+      />
+
+      <StopTradeEngineModal
+        open={!!stopConfirmForBrokerItem}
+        title="Stop Trade Engine?"
+        message="Choose how to stop the trade engine."
+        cancelLabel="Cancel"
+        stopLabel="Stop"
+        stopSquareOffLabel="Stop & Square Off"
+        loading={enginePending}
+        onCancel={() => setStopConfirmForBrokerItem(null)}
+        onStop={() => {
+          setStopConfirmForBrokerItem(null);
+          performToggleTradeEngine(stopConfirmForBrokerItem, "Stop");
+        }}
+        onStopSquareOff={() => {
+          setStopConfirmForBrokerItem(null);
+          performToggleTradeEngine(stopConfirmForBrokerItem, "StopNSquareOff");
+        }}
+      />
     </div>
   );
 };

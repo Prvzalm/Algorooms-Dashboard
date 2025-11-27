@@ -8,6 +8,7 @@ import {
 } from "../../../hooks/brokerHooks";
 import { emptyDeployedStrategy } from "../../../assets";
 import ConfirmModal from "../../ConfirmModal";
+import StopTradeEngineModal from "../../StopTradeEngineModal";
 import { FiMoreVertical } from "react-icons/fi";
 import PrimaryButton from "../../common/PrimaryButton";
 
@@ -17,6 +18,7 @@ const BrokerSection = () => {
   const [pendingBrokerId, setPendingBrokerId] = useState(null); // track which broker row is mutating
   const mutatingRef = useRef(false);
   const [confirmForBrokerId, setConfirmForBrokerId] = useState(null); // BrokerClientId awaiting start confirmation
+  const [stopConfirmForBroker, setStopConfirmForBroker] = useState(null); // Broker awaiting stop confirmation
   const navigate = useNavigate();
 
   const { data: brokers = [], isLoading, isError } = useUserBrokerData();
@@ -80,7 +82,8 @@ const BrokerSection = () => {
       setConfirmForBrokerId(broker.BrokerClientId);
       return;
     }
-    performToggleTradeEngine(broker, nextAction);
+    // For stop, show stop modal
+    setStopConfirmForBroker(broker);
   };
 
   // Kebab menu state: which broker menu is open
@@ -170,7 +173,7 @@ const BrokerSection = () => {
               open={!!confirmForBrokerId}
               title="Start Trade Engine?"
               message={
-                "This will begin live trading for the selected broker.\nEnsure strategies & margins are configured."
+                "This will start executing live trades for the selected broker.\nMake sure your strategies and margins are configured."
               }
               confirmLabel="OK"
               cancelLabel="Cancel"
@@ -182,6 +185,27 @@ const BrokerSection = () => {
                 );
                 setConfirmForBrokerId(null);
                 if (broker) performToggleTradeEngine(broker, "Start");
+              }}
+            />
+            <StopTradeEngineModal
+              open={!!stopConfirmForBroker}
+              title="Stop Trade Engine?"
+              message="Choose how to stop the trade engine."
+              cancelLabel="Cancel"
+              stopLabel="Stop"
+              stopSquareOffLabel="Stop & Square Off"
+              loading={isPending}
+              onCancel={() => setStopConfirmForBroker(null)}
+              onStop={() => {
+                setStopConfirmForBroker(null);
+                performToggleTradeEngine(stopConfirmForBroker, "Stop");
+              }}
+              onStopSquareOff={() => {
+                setStopConfirmForBroker(null);
+                performToggleTradeEngine(
+                  stopConfirmForBroker,
+                  "StopNSquareOff"
+                );
               }}
             />
             {brokers.map((broker, index) => {

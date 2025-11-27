@@ -86,7 +86,9 @@ export const useChangeDeployedStrategyTradeMode = () => {
       } else {
         toast.error(data?.Message || "Update failed");
       }
-      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      // Removed query invalidation to prevent full section reload
+      // UI is updated optimistically via strategyOverrides
+      // qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
     },
     onError: (err) => {
       const msg = err?.response?.data?.Message || err.message || "Request failed";
@@ -106,7 +108,8 @@ export const useSquareOffStrategyMutation = () => {
       } else {
         toast.error(data?.Message || "Square off failed");
       }
-      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      // Removed query invalidation to prevent full section reload
+      // qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
     },
     onError: (err) => {
       const msg = err?.response?.data?.Message || err.message || "Request failed";

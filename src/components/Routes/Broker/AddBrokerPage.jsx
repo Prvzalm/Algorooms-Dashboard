@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { infoIcon, searchIcon } from "../../../assets";
 import { FaYoutube } from "react-icons/fa";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiCopy } from "react-icons/fi";
 import { useMasterBrokerData } from "../../../hooks/brokerHooks";
 import { toast } from "react-toastify";
 import { useAddBroker } from "../../../hooks/brokerHooks";
@@ -32,6 +32,16 @@ const AddBrokerPage = () => {
 
   // Master API brokers should only require Broker ID in the UI and payload
   const isMaster = !!selectedBroker?.IsMasterApiAvailable;
+
+  const handleCopyUrl = async () => {
+    if (!selectedBroker?.ApiRedirectUrl) return;
+    try {
+      await navigator.clipboard.writeText(selectedBroker.ApiRedirectUrl);
+      toast.success("URL copied to clipboard!");
+    } catch (error) {
+      toast.error("Failed to copy URL");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedBroker) {
@@ -282,14 +292,26 @@ const AddBrokerPage = () => {
               </span>
             </span>
           </div>
-          <a
-            href={selectedBroker?.ApiRedirectUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-500 mb-4 block break-all"
-          >
-            {selectedBroker?.ApiRedirectUrl || "-"}
-          </a>
+          <div className="flex items-center gap-2 mb-4">
+            <a
+              href={selectedBroker?.ApiRedirectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-500 block break-all flex-1"
+            >
+              {selectedBroker?.ApiRedirectUrl || "-"}
+            </a>
+            {selectedBroker?.ApiRedirectUrl && (
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#2D2F36] transition-colors"
+                aria-label="Copy redirect URL"
+              >
+                <FiCopy className="w-4 h-4 text-[#718EBF] dark:text-[#A0AEC0]" />
+              </button>
+            )}
+          </div>
 
           <PrimaryButton
             className="w-full py-3"
