@@ -21,8 +21,12 @@ const BrokerSection = () => {
   const [stopConfirmForBroker, setStopConfirmForBroker] = useState(null); // Broker awaiting stop confirmation
   const navigate = useNavigate();
 
-  const { data: brokers = [], isLoading, isError, isFetching } =
-    useUserBrokerData();
+  const {
+    data: brokers = [],
+    isLoading,
+    isError,
+    isFetching,
+  } = useUserBrokerData();
   const { mutate: mutateTradeEngine, isPending } = useStartStopTradeEngine();
   const { mutate: mutateDeleteBroker, isPending: deletingBroker } =
     useDeleteBroker();
