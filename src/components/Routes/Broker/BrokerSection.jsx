@@ -21,7 +21,8 @@ const BrokerSection = () => {
   const [stopConfirmForBroker, setStopConfirmForBroker] = useState(null); // Broker awaiting stop confirmation
   const navigate = useNavigate();
 
-  const { data: brokers = [], isLoading, isError } = useUserBrokerData();
+  const { data: brokers = [], isLoading, isError, isFetching } =
+    useUserBrokerData();
   const { mutate: mutateTradeEngine, isPending } = useStartStopTradeEngine();
   const { mutate: mutateDeleteBroker, isPending: deletingBroker } =
     useDeleteBroker();
@@ -92,13 +93,17 @@ const BrokerSection = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmSquareId, setConfirmSquareId] = useState(null);
 
-  // Close menu on outside click (stable and per-opened menu)
-  // Uses a unique id for each row menu container to avoid ref conflicts
+  // Close menu when clicking outside any version (mobile/desktop) of the open broker row menu
   useEffect(() => {
     if (!openMenuId) return;
     const handler = (e) => {
-      const el = document.getElementById(`broker-menu-${openMenuId}`);
-      if (el && !el.contains(e.target)) setOpenMenuId(null);
+      const menuNodes = document.querySelectorAll(
+        `[data-broker-menu="${openMenuId}"]`
+      );
+      const clickedInside = Array.from(menuNodes).some((node) =>
+        node.contains(e.target)
+      );
+      if (!clickedInside) setOpenMenuId(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -124,7 +129,7 @@ const BrokerSection = () => {
           </PrimaryButton>
         </div>
 
-        {isLoading ? (
+        {isLoading || isFetching ? (
           <div className="space-y-4" aria-busy="true" aria-live="polite">
             {[...Array(3)].map((_, i) => (
               <div
@@ -260,7 +265,7 @@ const BrokerSection = () => {
                       {/* Kebab menu for mobile */}
                       <div
                         className="flex-shrink-0 relative"
-                        id={`broker-menu-${broker.BrokerClientId}`}
+                        data-broker-menu={broker.BrokerClientId}
                       >
                         <button
                           type="button"
@@ -477,7 +482,7 @@ const BrokerSection = () => {
                     {/* Kebab menu for desktop */}
                     <div
                       className="flex-shrink-0 relative"
-                      id={`broker-menu-${broker.BrokerClientId}`}
+                      data-broker-menu={broker.BrokerClientId}
                     >
                       <button
                         type="button"

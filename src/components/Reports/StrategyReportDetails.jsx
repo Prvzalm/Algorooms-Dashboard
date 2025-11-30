@@ -382,10 +382,6 @@ const StrategyReportDetails = ({
                     Exit Price
                   </th>
                   <th className="text-left px-5 py-2 font-medium">Exit Type</th>
-                  <th className="text-left px-5 py-2 font-medium">
-                    Broker Client ID
-                  </th>
-                  <th className="text-left px-5 py-2 font-medium">Order ID</th>
                   <th className="text-left px-5 py-2 font-medium">Exit Time</th>
                   <th className="text-left px-5 py-2 font-medium">P&L</th>
                 </tr>
@@ -434,8 +430,6 @@ const StrategyReportDetails = ({
                           {t.OrderExitType || "N/A"}
                         </span>
                       </td>
-                      <td className="px-5 py-2">{t.Brokerclientid}</td>
-                      <td className="px-5 py-2 text-xs">{t.OrderId}</td>
                       <td className="px-5 py-2">
                         {t.ExitTimeStamp
                           ? new Date(t.ExitTimeStamp).toLocaleString("en-GB", {
