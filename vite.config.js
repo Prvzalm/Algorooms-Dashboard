@@ -6,16 +6,15 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://core-api.algorooms.com",
+        target: "https://uat-core-api.algorooms.com",
         changeOrigin: true,
         secure: true,
       },
       // Proxy for backtest service to avoid CORS in dev
-      "/btapi": {
+      "/backtest": {
         target: "https://backtest.algorooms.com",
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/btapi/, ""),
       },
     },
   },

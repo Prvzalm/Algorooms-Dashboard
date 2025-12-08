@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getBrokerPricingPlan } from "../api/subscriptionApi";
+import { getBrokerPricingPlan, initiatePayment } from "../api/subscriptionApi";
 import axiosInstance from "../api/axiosInstance";
 
 export const useBrokerPlans = (planType, apiKey) =>
@@ -36,6 +36,12 @@ export const usePaymentDetails = (payload) => {
     },
     enabled: !!payload,
     staleTime: 1000 * 60 * 2,
+  });
+};
+
+export const useInitiatePayment = () => {
+  return useMutation({
+    mutationFn: (payload) => initiatePayment(payload),
   });
 };
 

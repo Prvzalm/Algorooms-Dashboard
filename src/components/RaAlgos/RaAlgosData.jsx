@@ -25,25 +25,23 @@ const RaAlgosData = ({
           >
             <div>
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-[#2E3A59] dark:text-white leading-snug max-w-[140px] truncate">
+                <h3 className="font-semibold text-[#2E3A59] dark:text-white leading-snug max-w-[180px] truncate">
                   {st.name}
                 </h3>
-                <button className="text-[11px] text-[#718EBF] dark:text-gray-400 hover:text-[#0096FF]">
+                <button className="text-[#718EBF] dark:text-gray-400">
                   {st.saves} Saves
                 </button>
               </div>
-              <p className="text-[11px] leading-relaxed text-[#718EBF] dark:text-gray-400 line-clamp-4 mb-4">
+              <p className="text-sm leading-relaxed text-[#718EBF] dark:text-gray-400 line-clamp-3 mb-4">
                 {st.description}
               </p>
             </div>
             <div className="mt-auto flex items-center justify-between pt-2">
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#718EBF] dark:text-gray-400 mb-1">
+                <p className="text-xs uppercase tracking-wide text-[#718EBF] dark:text-gray-400 mb-1">
                   Margin
                 </p>
-                <p className="text-sm font-semibold text-[#0096FF]">
-                  {st.margin}
-                </p>
+                <p className="font-semibold text-[#00A261]">{st.margin}</p>
               </div>
               <button className="bg-[#0096FF] hover:bg-[#007FDB] text-white text-xs font-medium px-6 py-1.5 rounded-md">
                 Deploy

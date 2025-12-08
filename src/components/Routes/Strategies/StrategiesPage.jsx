@@ -1,121 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { emptyDeployedStrategy } from "../../../assets";
+import { useLocation } from "react-router-dom";
 import StrategyTemplates from "../Dashboard/StrategyTemplates";
-import MyPortfolioTab from "./MyPortfolioTab";
-import { FiChevronDown, FiMoreVertical } from "react-icons/fi";
 import {
   useChangeDeployedStrategyTradeMode,
   useSquareOffStrategyMutation,
+  useRemoveStrategyDeployment,
 } from "../../../hooks/strategyHooks";
-import { useBrokerwiseStrategies } from "../../../hooks/dashboardHooks";
+import {
+  useBrokerwiseStrategies,
+  useUserBrokerData,
+} from "../../../hooks/dashboardHooks";
 import { useStartStopTradeEngine } from "../../../hooks/brokerHooks";
-import { calculatePnlRow } from "../../../services/utils/calc";
-import { getExchangeCode } from "../../../services/utils/exchanges";
-import octopusInstance from "../../../services/WebSockets/feeds/octopusInstance";
 import MyStrategiesList from "./MyStrategiesList";
 import DeployedStrategiesList from "./DeployedStrategiesList";
+import { useLivePnlData } from "../../../hooks/useLivePnlData";
+import ConfirmModal from "../../ConfirmModal";
+import StopTradeEngineModal from "../../StopTradeEngineModal";
+import DeployStrategyModal from "./DeployStrategyModal";
 
-const mainTabs = [
-  "My Strategies",
-  "Deployed Strategies",
-  "Strategy Templates",
-  "My Portfolio",
-];
-
-// sub-tabs state remains here, tab buttons are rendered inside MyStrategiesList
-
-// Sum helpers
-const sum = (arr) => arr.reduce((a, b) => a + b, 0);
-
-// Recalculate from positions upward
-const recomputeStrategyPnl = (strategy) => {
-  const positions = strategy.positions || [];
-  const pnl = sum(
-    positions.map((p) => {
-      const { PNL } = calculatePnlRow(p);
-      return Number(PNL) || 0;
-    })
-  );
-  return { ...strategy, strategyPNL: pnl };
-};
-
-const recomputeBrokerPnl = (brokerItem) => {
-  const brokerPNL = sum(
-    (brokerItem.strategies || []).map((s) => Number(s.strategyPNL) || 0)
-  );
-  return { ...brokerItem, brokerPNL };
-};
-
-const computeGrandTotal = (brokers) =>
-  sum(brokers.map((b) => Number(b.brokerPNL) || 0));
-
-// Build initial in-memory model from API payload
-const buildLiveModelFromApi = (apiData = []) => {
-  const brokers = apiData.map((b) => {
-    const strategies = [];
-    let runningCount = 0;
-    let deployedCount = 0;
-
-    b.DeploymentDetail?.forEach((s) => {
-      s.DeploymentDetail?.forEach((d) => {
-        deployedCount += 1;
-        if (d.Running_Status) runningCount += 1;
-
-        // Prefer real positions if present; otherwise fallback to counts
-        const positions = s.OrderDetails || [];
-        const orders = s.OrderDetails || [];
-
-        const strategy = recomputeStrategyPnl({
-          id: s.strategyId,
-          name: s.StrategyName,
-          running: d.Running_Status,
-          isLiveMode: d.isLiveMode,
-          maxLoss: d.MaxLoss,
-          maxProfit: d.MaxProfit,
-          tradeCycle: d.MaxTradeCycle,
-          qtyMultiplier: d.QtyMultiplier,
-          squareOff: d.AutoSquareOffTime,
-          deploymentTime: d.deploymentTimeStamp,
-          positions,
-          orders,
-          // if API had a cached TotalPnl but we have positions, we recomputed anyway
-          strategyPNL: positions.length === 0 ? d.TotalPnl ?? 0 : undefined,
-          pendingOrders: d.PendingOrdersCount,
-        });
-
-        strategies.push(
-          positions.length === 0
-            ? strategy // no positions; keep API pnl
-            : recomputeStrategyPnl(strategy) // positions exist; ensure computed
-        );
-      });
-    });
-
-    const brokerItem = {
-      broker: {
-        name: b.BrokerName,
-        code: b.BrokerClientId,
-        logo: b.brokerLogoUrl,
-        tradeEngineStatus: b.TradeEngineStatus,
-        tradeEngineName:
-          b.TradeEngineName || b.TradeEngine || b.tradeEngineName,
-        brokerId: b.BrokerId,
-      },
-      runningCount,
-      deployedCount,
-      strategies,
-      raw: b,
-    };
-
-    return recomputeBrokerPnl(brokerItem);
-  });
-
-  return {
-    brokers,
-    grandTotalPnl: computeGrandTotal(brokers),
-  };
-};
+const mainTabs = ["My Strategies", "Deployed Strategies", "Strategy Templates"];
 
 const StrategiesPage = () => {
   const location = useLocation();
@@ -124,7 +27,6 @@ const StrategiesPage = () => {
     location?.state?.activeTab || "My Strategies"
   );
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
-  const navigate = useNavigate();
   // MyStrategiesList manages its own pagination internally
 
   // If navigation provides an activeTab (via location.state), ensure we pick it up
@@ -139,24 +41,42 @@ const StrategiesPage = () => {
     data: deployedData = [],
     isLoading: deployedLoading,
     isError: deployedError,
+    isFetching: deployedFetching,
   } = useBrokerwiseStrategies("Date");
 
+  const { data: userBrokers = [], isFetching: userBrokersFetching } =
+    useUserBrokerData();
+
   const [expandedBrokerIds, setExpandedBrokerIds] = useState([]);
+
+  // Use custom hook for centralized PNL management
+  const { brokers: storeBrokers, grandTotalPnl } = useLivePnlData(
+    deployedData,
+    deployedLoading,
+    deployedError
+  );
 
   // Trade Engine control state (similar to BrokerSection)
   const [engineStatusOverrides, setEngineStatusOverrides] = useState({}); // BrokerClientId -> "Running"|"Stopped"
   const [pendingBrokerId, setPendingBrokerId] = useState(null);
   const [confirmForBrokerId, setConfirmForBrokerId] = useState(null);
+  const [stopConfirmForBrokerItem, setStopConfirmForBrokerItem] =
+    useState(null);
   const mutatingRef = useRef(false);
   const { mutate: mutateTradeEngine, isPending: enginePending } =
     useStartStopTradeEngine();
   // Strategy trade mode mutation
   const { mutate: mutateStrategyMode, isPending: strategyModePending } =
     useChangeDeployedStrategyTradeMode();
-  const { mutate: mutateSquareOff, isPending: squareOffPending } =
-    useSquareOffStrategyMutation();
+  const { mutate: mutateSquareOff } = useSquareOffStrategyMutation();
+  const { mutate: mutateRemoveDeployment } = useRemoveStrategyDeployment();
   const [strategyOverrides, setStrategyOverrides] = useState({}); // compositeKey -> {running,isLiveMode}
   const [squareOffPendingIds, setSquareOffPendingIds] = useState(new Set()); // composite keys currently squaring off
+  const [removingDeploymentIds, setRemovingDeploymentIds] = useState(new Set());
+  const [removingBrokerIds, setRemovingBrokerIds] = useState(new Set());
+  const [removeDeploymentTarget, setRemoveDeploymentTarget] = useState(null);
+  const [removeBrokerTarget, setRemoveBrokerTarget] = useState(null);
+  const [editDeploymentTarget, setEditDeploymentTarget] = useState(null);
 
   const toggleExpand = (code) => {
     setExpandedBrokerIds((prev) =>
@@ -164,100 +84,35 @@ const StrategiesPage = () => {
     );
   };
 
-  // state to hold live, render-ready structure
-  const [live, setLive] = useState({ brokers: [], grandTotalPnl: 0 });
+  // Convert store data to format expected by DeployedStrategiesList
+  const userBrokerMap = userBrokers.reduce((acc, broker) => {
+    acc[broker.BrokerClientId] = broker;
+    return acc;
+  }, {});
 
-  // keep refs to handlers so we can unsubscribe cleanly
-  const wsHandlersRef = useRef([]);
-  const isSubscribingRef = useRef(false);
+  const live = {
+    brokers: storeBrokers.map((b) => {
+      const userBroker = userBrokerMap[b.broker.code];
+      return {
+        ...b,
+        broker: {
+          ...b.broker,
+          tradeEngineStatus:
+            userBroker?.TradeEngineStatus ||
+            b.broker.tradeEngineStatus ||
+            "Stopped",
+          tradeEngineName:
+            userBroker?.TradeEngineName ||
+            userBroker?.TradeEngine ||
+            b.broker.tradeEngineName,
+        },
+        totalPnl: b.brokerPNL, // Add for backwards compatibility
+      };
+    }),
+    grandTotalPnl,
+  };
 
-  // Build initial live model when API payload changes
-  useEffect(() => {
-    if (!deployedData || deployedLoading || deployedError) return;
-
-    // Stop any existing subscriptions before rebuilding
-    wsHandlersRef.current.forEach((h) => h?.unsubscribe?.());
-    wsHandlersRef.current = [];
-
-    const model = buildLiveModelFromApi(deployedData);
-    setLive(model);
-
-    // Wire WebSocket subscriptions for all positions
-    // We DO NOT depend on `live` in this effect to avoid resubscribing on every tick
-    isSubscribingRef.current = true;
-
-    model.brokers.forEach((brokerItem, i) => {
-      brokerItem.strategies.forEach((stgy, j) => {
-        (stgy.positions || []).forEach((pos, k) => {
-          const subscriptionLocation = `${
-            pos.OrderId || pos.id || "pos"
-          }_${i}_${j}_${k}`;
-          const identifier = `${i}_${j}_${k}`;
-          const exchangeCode =
-            getExchangeCode(pos.exchange || pos.orderRequest?._exchange) || "-";
-          const instrumentToken =
-            pos.ExchangeToken ?? pos.instrumentToken ?? -1;
-
-          const handler = octopusInstance.wsHandler({
-            messageType: "CompactMarketDataMessage",
-            subscriptionLocation,
-            identifier,
-            payload: { exchangeCode, instrumentToken },
-          });
-
-          wsHandlersRef.current.push(handler);
-
-          handler
-            .subscribe(({ msg }) => {
-              const ltp = msg?.ltp;
-              if (ltp == null) return;
-
-              // Functional update: touch only the path we need
-              setLive((prev) => {
-                const brokers = [...prev.brokers];
-
-                // clone nested nodes along the path (i, j, k)
-                const b = { ...brokers[i] };
-                const strategies = [...b.strategies];
-                const s = { ...strategies[j] };
-                const positions = [...(s.positions || [])];
-                const position = { ...positions[k], LTP: ltp };
-
-                // position PnL
-                position.PNL = calculatePnlRow(position).PNL;
-
-                positions[k] = position;
-                s.positions = positions;
-
-                // recompute strategy & broker
-                const sRe = recomputeStrategyPnl(s);
-                strategies[j] = sRe;
-                b.strategies = strategies;
-                const bRe = recomputeBrokerPnl(b);
-                brokers[i] = bRe;
-
-                return {
-                  brokers,
-                  grandTotalPnl: computeGrandTotal(brokers),
-                };
-              });
-            })
-            .catch((e) => {
-              // optional: toast/log
-              console.error("WS subscribe error", e);
-            });
-        });
-      });
-    });
-
-    isSubscribingRef.current = false;
-
-    // cleanup when API payload changes/unmount
-    return () => {
-      wsHandlersRef.current.forEach((h) => h?.unsubscribe?.());
-      wsHandlersRef.current = [];
-    };
-  }, [deployedData, deployedLoading, deployedError]);
+  const deployedRefreshing = deployedFetching && !deployedLoading;
 
   const getEffectiveTradeEngineStatus = (brokerItem) => {
     const override = engineStatusOverrides[brokerItem.broker.code];
@@ -286,28 +141,50 @@ const StrategiesPage = () => {
     // Keep live mode as-is (do not force) so running toggle only affects running state.
     const effective = getStrategyEffective(brokerItem, strategy);
     const actionType = nextRunning ? "Start" : "Stop";
+    const originalRunning = strategy.running;
     updateStrategyOverride(brokerItem, strategy, { running: nextRunning });
-    mutateStrategyMode({
-      StrategyId: String(strategy.id),
-      BrokerClientId: brokerItem.broker.code,
-      BrokerId: brokerItem.raw?.BrokerId,
-      isLiveMode: effective.isLiveMode, // send current live mode
-      ActionType: actionType,
-    });
+    mutateStrategyMode(
+      {
+        StrategyId: String(strategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: brokerItem.raw?.BrokerId,
+        isLiveMode: effective.isLiveMode, // send current live mode
+        ActionType: actionType,
+      },
+      {
+        onError: () => {
+          // Revert optimistic update on error
+          updateStrategyOverride(brokerItem, strategy, {
+            running: originalRunning,
+          });
+        },
+      }
+    );
   };
 
   const handleStrategyToggleLiveForward = (brokerItem, strategy, toLive) => {
     const actionType = toLive ? "Live" : "Paper";
+    const originalIsLiveMode = strategy.isLiveMode;
     updateStrategyOverride(brokerItem, strategy, { isLiveMode: toLive });
     const effective = getStrategyEffective(brokerItem, strategy);
-    mutateStrategyMode({
-      StrategyId: String(strategy.id),
-      BrokerClientId: brokerItem.broker.code,
-      BrokerId: brokerItem.raw?.BrokerId,
-      isLiveMode: toLive,
-      ActionType: actionType,
-      // running state remains whatever it was
-    });
+    mutateStrategyMode(
+      {
+        StrategyId: String(strategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: brokerItem.raw?.BrokerId,
+        isLiveMode: toLive,
+        ActionType: actionType,
+        // running state remains whatever it was
+      },
+      {
+        onError: () => {
+          // Revert optimistic update on error
+          updateStrategyOverride(brokerItem, strategy, {
+            isLiveMode: originalIsLiveMode,
+          });
+        },
+      }
+    );
   };
 
   const handleStrategySquareOff = (brokerItem, strategy) => {
@@ -331,6 +208,139 @@ const StrategiesPage = () => {
     );
   };
 
+  const handleRequestEditDeployment = (
+    brokerItem,
+    rawStrategy,
+    effectiveStrategy
+  ) => {
+    setEditDeploymentTarget({
+      brokerItem,
+      rawStrategy,
+      effectiveStrategy,
+    });
+  };
+
+  const handleRequestRemoveDeployment = (
+    brokerItem,
+    rawStrategy,
+    effectiveStrategy
+  ) => {
+    setRemoveDeploymentTarget({
+      brokerItem,
+      rawStrategy,
+      effectiveStrategy,
+    });
+  };
+
+  const handleRequestRemoveBroker = (brokerItem) => {
+    if (!brokerItem) return;
+    setRemoveBrokerTarget(brokerItem);
+  };
+
+  const confirmRemoveDeployment = () => {
+    if (!removeDeploymentTarget) return;
+    const { brokerItem, rawStrategy } = removeDeploymentTarget;
+    if (!rawStrategy?.id || !brokerItem?.broker?.code) {
+      setRemoveDeploymentTarget(null);
+      return;
+    }
+
+    const compositeKey = computeStrategyKey(brokerItem, rawStrategy);
+    const brokerId =
+      rawStrategy.brokerId ||
+      brokerItem.broker.brokerId ||
+      brokerItem.raw?.BrokerId ||
+      "";
+
+    setRemovingDeploymentIds((prev) => {
+      const next = new Set(prev);
+      next.add(compositeKey);
+      return next;
+    });
+
+    mutateRemoveDeployment(
+      {
+        StrategyId: String(rawStrategy.id),
+        BrokerClientId: brokerItem.broker.code,
+        BrokerId: String(brokerId),
+        RemoveDeploymentType: "strategy",
+      },
+      {
+        onSuccess: () => {
+          setStrategyOverrides((prev) => {
+            if (!prev[compositeKey]) return prev;
+            const next = { ...prev };
+            delete next[compositeKey];
+            return next;
+          });
+        },
+        onSettled: () => {
+          setRemovingDeploymentIds((prev) => {
+            const next = new Set(prev);
+            next.delete(compositeKey);
+            return next;
+          });
+          setRemoveDeploymentTarget(null);
+        },
+      }
+    );
+  };
+
+  const confirmRemoveBrokerDeployment = () => {
+    if (!removeBrokerTarget) return;
+    const brokerCode = removeBrokerTarget?.broker?.code;
+    if (!brokerCode) {
+      setRemoveBrokerTarget(null);
+      return;
+    }
+
+    if (removingBrokerIds.has(brokerCode)) return;
+
+    const brokerId =
+      removeBrokerTarget?.broker?.brokerId ||
+      removeBrokerTarget?.raw?.BrokerId ||
+      "";
+
+    setRemovingBrokerIds((prev) => {
+      const next = new Set(prev);
+      next.add(brokerCode);
+      return next;
+    });
+
+    mutateRemoveDeployment(
+      {
+        BrokerClientId: brokerCode,
+        BrokerId: String(brokerId),
+        RemoveDeploymentType: "broker",
+      },
+      {
+        onSuccess: () => {
+          setStrategyOverrides((prev) => {
+            const keys = Object.keys(prev);
+            if (!keys.length) return prev;
+            let changed = false;
+            const next = { ...prev };
+            keys.forEach((key) => {
+              if (key.startsWith(`${brokerCode}_`)) {
+                delete next[key];
+                changed = true;
+              }
+            });
+            return changed ? next : prev;
+          });
+        },
+        onSettled: () => {
+          setRemovingBrokerIds((prev) => {
+            const next = new Set(prev);
+            next.delete(brokerCode);
+            return next;
+          });
+          setRemoveBrokerTarget(null);
+        },
+      }
+    );
+  };
+
   const performToggleTradeEngine = (brokerItem, nextAction) => {
     if (!brokerItem || enginePending || mutatingRef.current) return;
     mutatingRef.current = true;
@@ -343,11 +353,10 @@ const StrategiesPage = () => {
       },
       {
         onSuccess: () => {
-          setEngineStatusOverrides((prev) => ({
-            ...prev,
-            [brokerItem.broker.code]:
-              nextAction === "Start" ? "Running" : "Stopped",
-          }));
+          // No optimistic update
+        },
+        onError: () => {
+          // No revert
         },
         onSettled: () => {
           mutatingRef.current = false;
@@ -366,10 +375,68 @@ const StrategiesPage = () => {
       setConfirmForBrokerId(brokerItem.broker.code);
       return;
     }
-    performToggleTradeEngine(brokerItem, nextAction);
+    // For stop, show stop modal
+    setStopConfirmForBrokerItem(brokerItem);
   };
 
   // Render helpers moved to extracted components
+
+  const removeCompositeKey = removeDeploymentTarget
+    ? computeStrategyKey(
+        removeDeploymentTarget.brokerItem,
+        removeDeploymentTarget.rawStrategy
+      )
+    : null;
+
+  const removalPendingForTarget = removeCompositeKey
+    ? removingDeploymentIds.has(removeCompositeKey)
+    : false;
+
+  const removeStrategyName =
+    removeDeploymentTarget?.rawStrategy?.name ||
+    removeDeploymentTarget?.effectiveStrategy?.name ||
+    "this strategy";
+  const removeBrokerName =
+    removeDeploymentTarget?.brokerItem?.broker?.name || "this broker";
+  const removeBrokerModalName =
+    removeBrokerTarget?.broker?.name || "this broker";
+
+  const brokerRemovalPending = removeBrokerTarget?.broker?.code
+    ? removingBrokerIds.has(removeBrokerTarget.broker.code)
+    : false;
+
+  const editModalStrategy = editDeploymentTarget
+    ? {
+        StrategyId: editDeploymentTarget.rawStrategy?.id,
+        StrategyName: editDeploymentTarget.rawStrategy?.name,
+      }
+    : null;
+
+  const editInitialDeployment = editDeploymentTarget
+    ? {
+        isLiveMode: !!editDeploymentTarget.effectiveStrategy?.isLiveMode,
+        qtyMultiplier:
+          editDeploymentTarget.effectiveStrategy?.qtyMultiplier ??
+          editDeploymentTarget.rawStrategy?.qtyMultiplier ??
+          "",
+        maxProfit:
+          editDeploymentTarget.effectiveStrategy?.maxProfit ??
+          editDeploymentTarget.rawStrategy?.maxProfit ??
+          "",
+        maxLoss:
+          editDeploymentTarget.effectiveStrategy?.maxLoss ??
+          editDeploymentTarget.rawStrategy?.maxLoss ??
+          "",
+        autoSquareOffTime:
+          editDeploymentTarget.effectiveStrategy?.autoSquareOffTime ??
+          editDeploymentTarget.rawStrategy?.autoSquareOffTime ??
+          "",
+        maxTradeCycle:
+          editDeploymentTarget.effectiveStrategy?.maxTradeCycle ??
+          editDeploymentTarget.rawStrategy?.maxTradeCycle,
+        brokerClientIds: [editDeploymentTarget.brokerItem.broker.code],
+      }
+    : null;
 
   return (
     <div className="w-full h-full md:p-6 text-[#2E3A59] dark:text-white">
@@ -380,7 +447,7 @@ const StrategiesPage = () => {
             onClick={() => setActiveTab(tab)}
             className={`px-4 pb-2 font-medium md:text-base text-sm flex-shrink-0 ${
               activeTab === tab
-                ? "text-[#0096FF] border-b-2 border-[#0096FF]"
+                ? "text-[#1B44FE] border-b-2 border-[#1B44FE]"
                 : "text-[#718EBF] dark:text-gray-400"
             }`}
           >
@@ -415,12 +482,93 @@ const StrategiesPage = () => {
           handleStrategySquareOff={handleStrategySquareOff}
           loading={deployedLoading}
           error={deployedError}
+          onEditStrategy={handleRequestEditDeployment}
+          onDeleteStrategy={handleRequestRemoveDeployment}
+          removingDeploymentIds={removingDeploymentIds}
+          onRemoveBroker={handleRequestRemoveBroker}
+          removingBrokerIds={removingBrokerIds}
+          refreshing={deployedRefreshing}
+          userBrokersFetching={userBrokersFetching}
         />
       )}
       {activeTab === "Strategy Templates" && (
         <StrategyTemplates pageSize={10} showSeeAll={false} />
       )}
-      {activeTab === "My Portfolio" && <MyPortfolioTab />}
+
+      <ConfirmModal
+        open={!!removeBrokerTarget}
+        title="Remove Broker Deployments?"
+        message={`Removing all deployments under ${removeBrokerModalName} will stop every strategy associated with this broker. Continue?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        loading={brokerRemovalPending}
+        onCancel={() => {
+          if (brokerRemovalPending) return;
+          setRemoveBrokerTarget(null);
+        }}
+        onConfirm={confirmRemoveBrokerDeployment}
+      />
+
+      <ConfirmModal
+        open={!!removeDeploymentTarget}
+        title="Remove Deployment?"
+        message={`Removing ${removeStrategyName} from ${removeBrokerName} will stop it from running under this broker. Continue?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        loading={removalPendingForTarget}
+        onCancel={() => {
+          if (removalPendingForTarget) return;
+          setRemoveDeploymentTarget(null);
+        }}
+        onConfirm={confirmRemoveDeployment}
+      />
+
+      {editDeploymentTarget && editModalStrategy ? (
+        <DeployStrategyModal
+          open
+          strategy={editModalStrategy}
+          onClose={() => setEditDeploymentTarget(null)}
+          initialDeployment={editInitialDeployment}
+        />
+      ) : null}
+
+      <ConfirmModal
+        open={!!confirmForBrokerId}
+        title="Start Trade Engine?"
+        message={
+          "This will start executing live trades for the selected broker.\nMake sure your strategies and margins are configured."
+        }
+        confirmLabel="OK"
+        cancelLabel="Cancel"
+        loading={enginePending}
+        onCancel={() => setConfirmForBrokerId(null)}
+        onConfirm={() => {
+          const brokerItem = live.brokers.find(
+            (b) => b.broker.code === confirmForBrokerId
+          );
+          setConfirmForBrokerId(null);
+          if (brokerItem) performToggleTradeEngine(brokerItem, "Start");
+        }}
+      />
+
+      <StopTradeEngineModal
+        open={!!stopConfirmForBrokerItem}
+        title="Stop Trade Engine?"
+        message="Choose how to stop the trade engine."
+        cancelLabel="Cancel"
+        stopLabel="Stop"
+        stopSquareOffLabel="Stop & Square Off"
+        loading={enginePending}
+        onCancel={() => setStopConfirmForBrokerItem(null)}
+        onStop={() => {
+          setStopConfirmForBrokerItem(null);
+          performToggleTradeEngine(stopConfirmForBrokerItem, "Stop");
+        }}
+        onStopSquareOff={() => {
+          setStopConfirmForBrokerItem(null);
+          performToggleTradeEngine(stopConfirmForBrokerItem, "StopNSquareOff");
+        }}
+      />
     </div>
   );
 };

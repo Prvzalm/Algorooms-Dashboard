@@ -5,6 +5,7 @@ import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import { useDuplicateStrategy } from "../../../hooks/strategyHooks";
 import MiniCumulativeChart from "../../Charts/MiniCumulativeChart";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
   const [page, setPage] = useState(1);
@@ -79,10 +80,12 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
   if (isError) return <div>Failed to load strategies.</div>;
 
   return (
-    <div className="bg-white dark:bg-darkbg rounded-xl text-black dark:text-white">
+    <div className="text-black dark:text-white">
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex justify-between items-center">
-          <h3 className="font-semibold text-lg">Strategy Templates</h3>
+          <h3 className="font-semibold text-xl md:text-2xl text-[#343C6A] dark:text-white">
+            Strategy Templates
+          </h3>
           <div
             className="flex items-center gap-3 flex-wrap justify-end relative"
             ref={filterRef}
@@ -236,7 +239,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                     state: { activeTab: "Strategy Templates" },
                   })
                 }
-                className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                className="text-[#343C6A] dark:text-blue-400 text-lg hover:underline"
               >
                 See All
               </button>
@@ -250,7 +253,7 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
           ? Array.from({ length: pageSize }).map((_, idx) => (
               <div
                 key={`skeleton-${idx}`}
-                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between animate-pulse"
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#131419] p-4 rounded-3xl text-sm flex flex-col justify-between animate-pulse"
               >
                 <div>
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
@@ -274,20 +277,20 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
           : items.map((item, idx) => (
               <div
                 key={idx}
-                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 rounded-3xl text-sm flex flex-col justify-between"
+                className="border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#131419] p-4 rounded-3xl text-sm flex flex-col justify-between"
               >
                 <div>
                   <p className="font-semibold mb-2">{item.StrategyName}</p>
-                  <div className="flex text-xs gap-x-6">
+                  {/* <div className="flex text-xs gap-x-6">
                     <p>
                       Margin:{" "}
                       <span className="text-green-500">
                         ₹{item.MinimumCapital ?? "N/A"}
                       </span>
                     </p>
-                  </div>
+                  </div> */}
 
-                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                  {/* <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
                     <MiniCumulativeChart
                       data={
                         item?.BackTestResultData?.StrategyScriptList?.[0]
@@ -310,15 +313,15 @@ const StrategyTemplates = ({ pageSize = 3, showSeeAll = true }) => {
                         ).toLocaleString()}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
-                <button
-                  className="mt-4 w-1/2 bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-2 rounded-md text-sm transition"
+                <PrimaryButton
+                  className="mt-4 w-1/2 mx-auto py-2 text-sm"
                   onClick={() => openDuplicate(item)}
                 >
                   Add to my strategy
-                </button>
+                </PrimaryButton>
               </div>
             ))}
       </div>

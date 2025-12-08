@@ -10,6 +10,9 @@ import {
   duplicateStrategy,
   getStrategyDetailsForEdit,
   deleteStrategy,
+  getStrategyDetailsById,
+  deployStrategy,
+  removeStrategyDeployment,
 } from "../api/strategies";
 import axiosInstance from "../api/axiosInstance";
 
@@ -58,6 +61,7 @@ export const useCreateStrategyMutation = () => {
     mutationFn: (payload) => createStrategy(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
     },
   });
 };
@@ -82,7 +86,9 @@ export const useChangeDeployedStrategyTradeMode = () => {
       } else {
         toast.error(data?.Message || "Update failed");
       }
-      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      // Removed query invalidation to prevent full section reload
+      // UI is updated optimistically via strategyOverrides
+      // qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
     },
     onError: (err) => {
       const msg = err?.response?.data?.Message || err.message || "Request failed";
@@ -102,7 +108,8 @@ export const useSquareOffStrategyMutation = () => {
       } else {
         toast.error(data?.Message || "Square off failed");
       }
-      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      // Removed query invalidation to prevent full section reload
+      // qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
     },
     onError: (err) => {
       const msg = err?.response?.data?.Message || err.message || "Request failed";
@@ -132,7 +139,7 @@ export const useStrategyDetailsForEdit = (strategyId, enabled = true) => {
     queryKey: ["strategy-details-edit", strategyId],
     queryFn: () => getStrategyDetailsForEdit(strategyId),
     enabled: !!strategyId && enabled,
-    staleTime: 1000 * 60,
+    // staleTime: 1000 * 60,
   });
 };
 
@@ -146,6 +153,50 @@ export const useDeleteStrategy = () => {
     },
     onError: (err) => {
       const msg = err?.message || err?.response?.data?.Message || "Delete failed";
+      toast.error(msg);
+    },
+  });
+};
+
+// Fetch details by id (for deploy popup)
+export const useStrategyDetailsById = (strategyId, enabled = true) => {
+  return useQuery({
+    queryKey: ["strategy-details-by-id", strategyId],
+    queryFn: () => getStrategyDetailsById(strategyId),
+    enabled: !!strategyId && enabled,
+    staleTime: 1000 * 60,
+  });
+};
+
+// Deploy strategy mutation
+export const useDeployStrategy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => deployStrategy(payload),
+    onSuccess: (data) => {
+      if (data?.Message) toast.success(data.Message);
+      // Refresh brokerwise strategies and possibly marketplace/user lists
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err?.message || "Failed to deploy";
+      toast.error(msg);
+    },
+  });
+};
+
+export const useRemoveStrategyDeployment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => removeStrategyDeployment(payload),
+    onSuccess: (data) => {
+      if (data?.Message) toast.success(data.Message);
+      qc.invalidateQueries({ queryKey: ["brokerwise-strategies"] });
+      qc.invalidateQueries({ queryKey: ["user-strategies"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.Message || err?.message || "Failed to remove deployment";
       toast.error(msg);
     },
   });

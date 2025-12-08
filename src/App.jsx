@@ -20,6 +20,7 @@ import AddBrokerPage from "./components/Routes/Broker/AddBrokerPage";
 import SimulatorPage from "./components/Routes/Simulator/SimulatorPage";
 import SimulatorAddFuture from "./components/Routes/SimulatorAddFuture/SimulatorAddFuture";
 import ConnectBroker from "./components/Routes/Broker/ConnectBroker";
+import Reports from "./components/Reports/Reports";
 
 import Auth from "./components/Auth";
 import { useState } from "react";
@@ -99,14 +100,14 @@ function App() {
             path="/trading/strategy-builder/:strategyId"
             element={<StrategyBuilder />}
           />
-          <Route path="/trading/signals" element={<TradingviewSignalsPage />} />
+          {/* <Route path="/trading/signals" element={<TradingviewSignalsPage />} /> */}
           <Route path="/subscription" element={<SubscriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/subscriptions" element={<SubscriptionsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/strategies" element={<StrategiesPage />} />
-          <Route path="/raalgo" element={<RaAlgosPage />} />
+          {/* <Route path="/raalgo" element={<RaAlgosPage />} /> */}
           <Route
             path="/backtesting/strategybacktest"
             element={<BacktestStrategyComponent />}
@@ -123,6 +124,7 @@ function App() {
           <Route path="/broker" element={<BrokerSection />} />
           <Route path="/add-broker" element={<AddBrokerPage />} />
           <Route path="/connect-broker" element={<ConnectBroker />} />
+          <Route path="/reports" element={<Reports />} />
         </Route>
 
         {/* Catch-all: redirect unknown routes */}

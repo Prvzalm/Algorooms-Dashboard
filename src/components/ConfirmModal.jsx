@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import PrimaryButton from "./common/PrimaryButton";
 
 const ConfirmModal = ({
   open,
@@ -46,13 +47,13 @@ const ConfirmModal = ({
           >
             {cancelLabel}
           </button>
-          <button
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-60"
+          <PrimaryButton
             onClick={onConfirm}
             disabled={loading}
+            className="px-4 py-2"
           >
             {loading ? "Please wait..." : confirmLabel}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>,

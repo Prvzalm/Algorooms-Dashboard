@@ -13,6 +13,7 @@ import BacktestSummaryCard from "../../Routes/BackTest/BacktestSummaryCard";
 import MaxProfitLossChart from "../../Routes/BackTest/MaxProfitLossChart";
 import DaywiseBreakdown from "../../Routes/BackTest/DaywiseBreakdown";
 import TransactionDetails from "../../Routes/BackTest/TransactionDetails";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const timeRanges = [
   "1 Month",
@@ -439,7 +440,7 @@ const MyPortfolioTab = () => {
                   >
                     <input
                       type="checkbox"
-                      className="accent-[#0096FF]"
+                      className="accent-[#1B44FE]"
                       checked={checked}
                       onChange={() => handleStrategyToggle(id)}
                     />
@@ -451,7 +452,7 @@ const MyPortfolioTab = () => {
               })}
               {selectedStrategies.length > 0 && (
                 <button
-                  className="mt-2 w-full text-xs bg-blue-600 text-white py-1 rounded"
+                  className="mt-2 w-full text-xs bg-[#1B44FE] text-white py-1 rounded"
                   onClick={() => setSelectedStrategies([])}
                 >
                   Clear Selection
@@ -469,7 +470,7 @@ const MyPortfolioTab = () => {
               className={`text-sm px-4 py-2 rounded-md border ${
                 (activeTimeRange === range && range !== "Custom Range") ||
                 (range === "Custom Range" && showCustomRange)
-                  ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
+                  ? "text-[#1B44FE] border-[#A5B8FF] bg-[#E8EDFF] dark:bg-[#0F3F62]"
                   : "border-gray-200 dark:border-[#2D2F36] text-[#2E3A59] dark:text-gray-300"
               }`}
             >
@@ -509,7 +510,7 @@ const MyPortfolioTab = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowExportOptions((prev) => !prev)}
-              className="text-sm px-4 py-2 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
+              className="text-sm px-4 py-2 border border-[#1B44FE] rounded-md text-[#1B44FE] flex items-center gap-1"
             >
               Export <FiChevronDown />
             </button>
@@ -530,10 +531,8 @@ const MyPortfolioTab = () => {
               </div>
             )}
           </div>
-          <button
-            className={`text-sm px-4 py-2 rounded-md text-white ${
-              isFetchingMulti ? "bg-gray-400" : "bg-[#0096FF]"
-            }`}
+          <PrimaryButton
+            className="text-sm px-4 py-2 rounded-md disabled:bg-gray-400"
             disabled={
               isFetchingMulti ||
               !selectedStrategies.length ||
@@ -550,7 +549,7 @@ const MyPortfolioTab = () => {
             }
           >
             {isFetchingMulti ? "Running..." : "Run Backtest"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 

@@ -13,6 +13,8 @@ import { useUserStrategies } from "../../../hooks/strategyHooks";
 import { useProfileQuery } from "../../../hooks/profileHooks";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBacktestResult } from "../../../api/backTestApi";
+import BacktestSkeleton from "./BacktestSkeleton";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const timeRanges = [
   "1 Month",
@@ -25,7 +27,10 @@ const timeRanges = [
 
 const exportOptions = ["Download PDF", "Email PDF", "View in Browser"];
 
-const BacktestStrategyComponent = () => {
+const BacktestStrategyComponent = ({
+  initialStrategyId = null,
+  strategyBuilder = false,
+}) => {
   // selected strategies can come from URL (strategyId param) or user selection
   const { strategyId } = useParams();
   const navigate = useNavigate();
@@ -92,12 +97,13 @@ const BacktestStrategyComponent = () => {
     setRunToken(0);
   }, [selectedStrategies, activeTimeRange, startDate, endDate]);
 
-  // initialize selected strategies from route param (once or when param changes)
+  // initialize selected strategies from route param or prop (once or when param/prop changes)
   useEffect(() => {
-    if (strategyId) {
-      setSelectedStrategies([String(strategyId)]);
+    const idToUse = strategyId || initialStrategyId;
+    if (idToUse) {
+      setSelectedStrategies([String(idToUse)]);
     }
-  }, [strategyId]);
+  }, [strategyId, initialStrategyId]);
 
   // profile for userId
   const { data: profile } = useProfileQuery();
@@ -383,7 +389,7 @@ const BacktestStrategyComponent = () => {
       : "--";
 
   return (
-    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
+    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white bg-white dark:bg-[#131419]">
       {strategyId ? (
         <div className="flex items-start gap-3 mb-6">
           <button
@@ -407,10 +413,12 @@ const BacktestStrategyComponent = () => {
         </div>
       ) : (
         <>
-          <h2 className="text-lg font-semibold">Choose Strategy to Backtest</h2>
+          <h2 className="text-lg font-semibold">
+            Choose Strategies to Backtest
+          </h2>
           <p className="text-sm text-gray-400 mb-6">
-            Pick one of your strategies, select a time range, and run a backtest
-            to view performance.
+            Pick one or more than one of your strategies, select a time range,
+            and run a backtest to view performance.
           </p>
         </>
       )}
@@ -418,21 +426,25 @@ const BacktestStrategyComponent = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         {/* Multi strategy selector - always visible */}
         <div className="w-full sm:w-1/3 relative" ref={strategyDropdownRef}>
-          <button
-            className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-left flex justify-between items-center"
-            onClick={() => setShowStrategyList((p) => !p)}
-          >
-            {selectedStrategies.length
-              ? `${selectedStrategies
-                  .map((s) =>
-                    (strategies || []).find((st) => String(st.StrategyId) === s)
-                  )
-                  .filter(Boolean)
-                  .map((st) => st.StrategyName || st.Name || st.StrategyId)
-                  .join(", ")} Selected`
-              : "Select Strategies"}
-            <FiChevronDown />
-          </button>
+          {!strategyBuilder && (
+            <button
+              className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-left flex justify-between items-center"
+              onClick={() => setShowStrategyList((p) => !p)}
+            >
+              {selectedStrategies.length
+                ? `${selectedStrategies
+                    .map((s) =>
+                      (strategies || []).find(
+                        (st) => String(st.StrategyId) === s
+                      )
+                    )
+                    .filter(Boolean)
+                    .map((st) => st.StrategyName || st.Name || st.StrategyId)
+                    .join(", ")} Selected`
+                : "Select Strategies"}
+              <FiChevronDown />
+            </button>
+          )}
           {selectedStrategies.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {selectedStrategies.map((id) => {
@@ -544,35 +556,35 @@ const BacktestStrategyComponent = () => {
         </div>
 
         <div className="flex justify-between items-center gap-2">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowExportMenu((prev) => !prev)}
-              className="text-sm px-4 py-2 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
-            >
-              Export to PDF <FiChevronDown />
-            </button>
+          {portfolioData && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowExportMenu((prev) => !prev)}
+                className="text-sm px-4 py-2 border border-[#0096FF] rounded-md text-[#0096FF] flex items-center gap-1"
+              >
+                Export to PDF <FiChevronDown />
+              </button>
 
-            {showExportMenu && (
-              <div className="absolute right-0 mt-2 bg-white dark:bg-[#1E2027] border rounded shadow-md w-44 z-10">
-                {exportOptions.map((option, idx) => (
-                  <div
-                    key={idx}
-                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2A2C33] cursor-pointer text-sm"
-                    onClick={() => {
-                      setShowExportMenu(false);
-                      alert(`Selected: ${option}`);
-                    }}
-                  >
-                    {option}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            className={`ml-3 text-sm px-4 py-2 rounded-md text-white ${
-              isFetchingMulti ? "bg-gray-400" : "bg-[#0096FF]"
-            }`}
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 bg-white dark:bg-[#1E2027] border rounded shadow-md w-44 z-10">
+                  {exportOptions.map((option, idx) => (
+                    <div
+                      key={idx}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2A2C33] cursor-pointer text-sm"
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        alert(`Selected: ${option}`);
+                      }}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <PrimaryButton
+            className="ml-3 text-sm px-4 py-2"
             onClick={() => setRunToken((n) => n + 1)}
             disabled={
               isFetchingMulti ||
@@ -589,15 +601,19 @@ const BacktestStrategyComponent = () => {
             }
           >
             {isFetchingMulti ? "Running..." : "Run Backtest"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
       {multiError && (
-        <div className="text-red-500 mb-4 text-sm">{multiError.message}</div>
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+            {multiError?.response?.data?.Message ||
+              multiError?.message ||
+              "Failed to fetch backtest result"}
+          </p>
+        </div>
       )}
-      {isFetchingMulti && (
-        <div className="mb-4 text-sm">Loading backtest data...</div>
-      )}
+      {isFetchingMulti && <BacktestSkeleton />}
       {aggregatedData ? (
         <>
           <BacktestReport overall={overall} equityCurve={equityCurve} />

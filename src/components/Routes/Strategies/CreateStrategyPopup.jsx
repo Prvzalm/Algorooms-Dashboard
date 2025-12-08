@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiCheck } from "react-icons/fi";
 import { sebiModal } from "../../../assets";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const CreateStrategyPopup = ({ onClose }) => {
   const popupRef = useRef(null);
@@ -40,27 +41,27 @@ const CreateStrategyPopup = ({ onClose }) => {
             {
               key: "builder",
               title: "Strategy Builder",
-              desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
+              desc: "Design multi-leg option strategies with visual controls, advanced risk management, and deployment-ready automation.",
             },
-            {
-              key: "signals",
-              title: "Tradingview Signals Trading",
-              desc: "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci. Eit cursus semper massa congue pretium facilisis odio convallis.",
-            },
+            // {
+            //   key: "signals",
+            //   title: "Tradingview Signals Trading",
+            //   desc: "Pipe TradingView alerts directly into Algorooms executions with managed risk and audit trails.",
+            // },
           ].map((item) => (
             <div
               key={item.key}
               onClick={() => setSelected(item.key)}
               className={`p-4 rounded-xl border ${
                 selected === item.key
-                  ? "border-[#0096FF] bg-[#F0F8FF] dark:bg-[#1E2027]"
+                  ? "border-[#1B44FE] bg-[#E8EDFF] dark:bg-[#1E2027]"
                   : "border-gray-200 dark:border-[#2D2F36]"
               } cursor-pointer relative transition`}
             >
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{item.title}</p>
                 {selected === item.key && (
-                  <span className="w-5 h-5 flex items-center justify-center bg-[#0096FF] rounded-full text-white">
+                  <span className="w-5 h-5 flex items-center justify-center bg-[#1B44FE] rounded-full text-white">
                     <FiCheck size={12} />
                   </span>
                 )}
@@ -68,18 +69,18 @@ const CreateStrategyPopup = ({ onClose }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {item.desc}
               </p>
-              <p className="mt-2 text-xs text-blue-500 underline">Read More</p>
+              <p className="mt-2 text-xs text-[#1B44FE] underline">Read More</p>
             </div>
           ))}
         </div>
 
         <div className="pt-2">
-          <button
+          <PrimaryButton
             onClick={handleCreate}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white py-3 rounded-lg font-medium"
+            className="w-full py-3 rounded-lg font-medium"
           >
             Create Strategy
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

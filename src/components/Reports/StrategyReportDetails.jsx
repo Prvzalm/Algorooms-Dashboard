@@ -1,0 +1,477 @@
+import React, { useMemo } from "react";
+import { formatCurrency } from "../../hooks/reportsHooks";
+import DonutChart from "./ui/DonutChart";
+import Heatmap from "./ui/Heatmap";
+import EquityCurve from "./ui/EquityCurve";
+import StrategyCard from "./ui/StrategyCard";
+
+const StrategyReportDetails = ({
+  strategy,
+  dateRange,
+  onBack,
+  strategyMode = "live",
+  setStrategyMode = () => {},
+  refetchParent,
+}) => {
+  // Safety check for strategy object
+  if (!strategy) {
+    return (
+      <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-5 shadow-sm">
+        <div className="text-center text-slate-500 dark:text-slate-400">
+          Strategy data not available
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate strategy summary metrics from DateWiseReportList
+  const calculateStrategySummaryMetrics = (strategy) => {
+    const reportList = strategy?.DateWiseReportList ?? [];
+
+    if (!Array.isArray(reportList) || reportList.length === 0) {
+      return {
+        maxWinStreak: 0,
+        maxLoseStreak: 0,
+        maxProfit: 0,
+        maxLoss: 0,
+        avgGain: 0,
+        avgLoss: 0,
+        maxDrawdown: 0,
+      };
+    }
+
+    let maxWinStreak = 0,
+      maxLoseStreak = 0;
+
+    let maxProfit = -Infinity;
+    let maxLoss = Infinity;
+
+    let totalGain = 0,
+      totalLoss = 0;
+    let winCount = 0,
+      loseCount = 0;
+
+    let currentStreak = 0;
+    let previousSign = null;
+
+    let peak = -Infinity;
+    let maxDrawdown = 0;
+
+    reportList.forEach((entry) => {
+      const pnl = entry.pnlDayWise;
+
+      // Max profit/loss
+      maxProfit = Math.max(maxProfit, pnl);
+      maxLoss = Math.min(maxLoss, pnl);
+
+      // Avg gain/loss calc
+      if (pnl >= 0) {
+        winCount++;
+        totalGain += pnl;
+      } else {
+        loseCount++;
+        totalLoss += pnl;
+      }
+
+      // Streak logic
+      const currentSign = pnl >= 0 ? "win" : "lose";
+      if (previousSign === currentSign) {
+        currentStreak++;
+      } else {
+        if (previousSign === "win") {
+          maxWinStreak = Math.max(maxWinStreak, currentStreak);
+        } else if (previousSign === "lose") {
+          maxLoseStreak = Math.max(maxLoseStreak, currentStreak);
+        }
+        currentStreak = 1;
+      }
+      previousSign = currentSign;
+
+      // Drawdown logic
+      const cumPnl = entry.pnlDayWiseGraph ?? 0;
+      peak = Math.max(peak, cumPnl);
+      const drawdown = peak - cumPnl;
+      maxDrawdown = Math.max(maxDrawdown, drawdown);
+    });
+
+    // Final streak check
+    if (previousSign === "win") {
+      maxWinStreak = Math.max(maxWinStreak, currentStreak);
+    } else if (previousSign === "lose") {
+      maxLoseStreak = Math.max(maxLoseStreak, currentStreak);
+    }
+
+    const avgGain = winCount > 0 ? totalGain / winCount : 0;
+    const avgLoss = loseCount > 0 ? totalLoss / loseCount : 0;
+
+    return {
+      maxWinStreak,
+      maxLoseStreak,
+      maxProfit: maxProfit === -Infinity ? 0 : maxProfit,
+      maxLoss: maxLoss === Infinity ? 0 : maxLoss,
+      avgGain,
+      avgLoss,
+      maxDrawdown,
+    };
+  };
+
+  const summaryMetrics = useMemo(
+    () => calculateStrategySummaryMetrics(strategy),
+    [strategy]
+  );
+
+  const donutSegments =
+    strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
+      ? strategy.DateWiseReportList.map((d, i) => ({
+          id: d.Date || `date-${i}`,
+          value: Math.abs(d.pnlDayWise || 0),
+          color: [
+            "#FFB020",
+            "#2563EB",
+            "#10B981",
+            "#6366F1",
+            "#EC4899",
+            "#F97316",
+          ][i % 6],
+        }))
+      : [];
+
+  const equityPoints = useMemo(() => {
+    if (
+      !strategy?.DateWiseReportList ||
+      !Array.isArray(strategy.DateWiseReportList)
+    )
+      return [];
+    let cumulative = 0;
+    return strategy.DateWiseReportList.map((d) => {
+      cumulative += d.pnlDayWise || 0;
+      return { x: d.Date, y: cumulative };
+    });
+  }, [strategy]);
+
+  const heatmapData =
+    strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
+      ? strategy.DateWiseReportList.map((d) => ({
+          date: d.Date,
+          value: d.pnlDayWise || 0,
+        })).sort((a, b) => new Date(a.date) - new Date(b.date))
+      : [];
+
+  // Monthly totals now rendered inside Heatmap (withMonthlyTotals)
+
+  return (
+    <div className="bg-white dark:bg-[#1E2027] rounded-2xl border border-slate-200 dark:border-[#2D2F36] p-4 md:p-5 space-y-5 shadow-sm">
+      {/* Top Bar */}
+      <div className="flex gap-10 text-base font-medium border-b border-slate-200 dark:border-[#2D2F36]">
+        <button
+          onClick={onBack}
+          className="pr-4 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1"
+        >
+          <span className="text-lg">&larr;</span> Back
+        </button>
+        <button className="relative py-3 text-slate-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#0096FF]">
+          Report
+        </button>
+        <button className="py-3 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hidden">
+          Trade Engine Logs
+        </button>
+        {/* Controls hidden per request; keeping date display only */}
+        <div className="ml-auto flex items-center gap-4 text-sm pr-2">
+          <div className="text-slate-500">
+            From {new Date(dateRange.fromDate).toLocaleDateString("en-GB")}
+          </div>
+          <div className="text-slate-500">
+            To {new Date(dateRange.toDate).toLocaleDateString("en-GB")}
+          </div>
+        </div>
+      </div>
+
+      {/* Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex gap-6 items-center bg-white dark:bg-[#15171C]">
+          <div>
+            <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+              Strategy Breakdown
+            </h4>
+            <DonutChart size={140} stroke={20} segments={donutSegments} />
+          </div>
+          <ul className="space-y-2 text-sm font-medium max-h-[160px] overflow-y-auto pr-2 w-44">
+            {strategy?.DateWiseReportList &&
+            Array.isArray(strategy.DateWiseReportList) &&
+            strategy.DateWiseReportList.length > 0 ? (
+              strategy.DateWiseReportList.map((d, i) => (
+                <li
+                  key={d.Date || `date-${i}`}
+                  className="flex items-center gap-2"
+                >
+                  <span
+                    className="w-3 h-3 rounded"
+                    style={{
+                      background: [
+                        "#FFB020",
+                        "#2563EB",
+                        "#10B981",
+                        "#6366F1",
+                        "#EC4899",
+                        "#F97316",
+                      ][i % 6],
+                    }}
+                  ></span>
+                  <span
+                    className="flex-1 truncate text-slate-500 dark:text-slate-300"
+                    title={new Date(d.Date).toLocaleDateString("en-GB")}
+                  >
+                    {new Date(d.Date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold ${
+                      (d.pnlDayWise || 0) >= 0
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }`}
+                  >
+                    {d.pnlDayWise || 0}
+                  </span>
+                </li>
+              ))
+            ) : (
+              <li className="text-slate-400 dark:text-slate-500 text-xs">
+                No data
+              </li>
+            )}
+          </ul>
+        </div>
+        <div className="border border-slate-200 dark:border-[#2D2F36] rounded-xl p-4 flex flex-col gap-3 bg-white dark:bg-[#15171C]">
+          <Heatmap data={heatmapData} withMonthlyTotals />
+        </div>
+      </div>
+
+      {/* Strategy Expanded Card with Equity + Stats */}
+      <div className="rounded-xl border border-slate-200 dark:border-[#2D2F36] overflow-hidden bg-white dark:bg-[#15171C]">
+        <div className="p-5 flex flex-col lg:flex-row gap-8">
+          <div className="flex-1">
+            <div className="flex items-center gap-6 mb-4">
+              <h3 className="font-medium text-lg text-slate-800 dark:text-slate-100">
+                {strategy.StrategyName || "Unknown Strategy"}
+              </h3>
+              <div className="flex gap-6 text-sm font-medium">
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Total Traders
+                  </span>
+                  <span className="text-slate-800 dark:text-slate-200">
+                    {strategy.TotalTrade || 0}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-emerald-600">P&L</span>
+                  <span
+                    className={`font-semibold ${
+                      (strategy.pnlStrategyWise || 0) >= 0
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }`}
+                  >
+                    {formatCurrency(strategy.pnlStrategyWise || 0)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-rose-600">Losses</span>
+                  <span className="text-rose-600">
+                    {formatCurrency(strategy.AvgLoss || 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="h-[190px] w-full">
+              <EquityCurve points={equityPoints} />
+            </div>
+            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-2 pr-4">
+              {equityPoints.slice(0, 5).map((p) => (
+                <span key={p.x}>
+                  {new Date(p.x).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="w-full max-w-[260px] grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Winning streak
+              </div>
+              <div className="font-medium text-slate-700 dark:text-slate-200">
+                {summaryMetrics.maxWinStreak}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Losing streak
+              </div>
+              <div className="font-medium text-slate-700 dark:text-slate-200">
+                {summaryMetrics.maxLoseStreak}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Max gains
+              </div>
+              <div className="font-medium text-emerald-600">
+                {formatCurrency(summaryMetrics.maxProfit)}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">Max Loss</div>
+              <div className="font-medium text-rose-600">
+                {formatCurrency(summaryMetrics.maxLoss)}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Avg gain/winning trade
+              </div>
+              <div className="font-medium text-emerald-600">
+                {formatCurrency(summaryMetrics.avgGain)}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Avg loss/losing trade
+              </div>
+              <div className="font-medium text-rose-600">
+                {formatCurrency(summaryMetrics.avgLoss)}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 dark:text-slate-400">
+                Max Drawdown
+              </div>
+              <div className="font-medium text-rose-600">
+                {summaryMetrics?.maxDrawdown}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Transactions */}
+        <div className="border-t border-slate-200 dark:border-[#2D2F36]">
+          <div className="p-5 pb-3">
+            <h4 className="font-medium text-base text-slate-800 dark:text-slate-100">
+              Transaction Details
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-[#1E2027]">
+                  <th className="text-left px-5 py-2 font-medium">
+                    Date & Time
+                  </th>
+                  <th className="text-left px-5 py-2 font-medium">Type</th>
+                  <th className="text-left px-5 py-2 font-medium">Symbol</th>
+                  <th className="text-left px-5 py-2 font-medium">Quantity</th>
+                  <th className="text-left px-5 py-2 font-medium">
+                    Entry Price
+                  </th>
+                  <th className="text-left px-5 py-2 font-medium">
+                    Exit Price
+                  </th>
+                  <th className="text-left px-5 py-2 font-medium">Exit Type</th>
+                  <th className="text-left px-5 py-2 font-medium">Exit Time</th>
+                  <th className="text-left px-5 py-2 font-medium">P&L</th>
+                </tr>
+              </thead>
+              <tbody>
+                {strategy.ListOfTransactionsPerStrategy &&
+                Array.isArray(strategy.ListOfTransactionsPerStrategy) ? (
+                  strategy.ListOfTransactionsPerStrategy.map((t, i) => (
+                    <tr
+                      key={`${t.OrderId || i}`}
+                      className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      <td className="px-5 py-2">
+                        {new Date(t.TimeStamp).toLocaleString("en-GB", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-5 py-2">
+                        <span
+                          className={`font-medium ${
+                            t.TransactionType === "BUY"
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {t.TransactionType}
+                        </span>
+                      </td>
+                      <td className="px-5 py-2">{t.TradingSymbol}</td>
+                      <td className="px-5 py-2">{t.Quantity}</td>
+                      <td className="px-5 py-2">{t.EntryPrice}</td>
+                      <td className="px-5 py-2">{t.ExitPrice}</td>
+                      <td className="px-5 py-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-medium ${
+                            t.OrderExitType === "LONG_TARGET"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                              : "bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400"
+                          }`}
+                        >
+                          {t.OrderExitType || "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-2">
+                        {t.ExitTimeStamp
+                          ? new Date(t.ExitTimeStamp).toLocaleString("en-GB", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })
+                          : "N/A"}
+                      </td>
+                      <td className="px-5 py-2 font-medium">
+                        <span
+                          className={`${
+                            (t.pnlPerTransaction || 0) >= 0
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {formatCurrency(t.pnlPerTransaction || 0)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="12"
+                      className="px-5 py-4 text-center text-slate-500 dark:text-slate-400"
+                    >
+                      No transactions found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StrategyReportDetails;

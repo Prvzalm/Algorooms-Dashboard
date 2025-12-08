@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { FiCopy } from "react-icons/fi";
 import { sharePopupIcon, shareSimulatorIcon } from "../../../assets";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const SharePopup = ({
   url = "https://www.algorooms.in/#!/share/bflbvk;fvfv",
@@ -33,16 +34,16 @@ const SharePopup = ({
           <span className="break-all block">{url}</span>
         </div>
 
-        <button
-          className="w-full bg-[#0096FF] hover:bg-blue-500 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-2"
+        <PrimaryButton
+          className="w-full py-4 rounded-lg font-medium gap-2"
           onClick={() => {
             navigator.clipboard.writeText(url);
             onClose?.();
           }}
         >
-          <img src={shareSimulatorIcon} />
+          <img src={shareSimulatorIcon} alt="Copy" />
           Copy link
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

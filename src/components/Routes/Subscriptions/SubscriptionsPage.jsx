@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import FAQs from "./FAQs";
 import BacktestCredits from "./BacktestCredits";
 import PlanChangeConfirmationModal from "./PlanChangeConfirmationModal";
@@ -19,6 +19,7 @@ const SubscriptionsPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFailure, setShowFailure] = useState(false);
   const [apiKey] = useState("abc");
+  const [paymentPayload, setPaymentPayload] = useState(null);
   const { data: pricingData, isLoading } = useBrokerPlans(
     activeTab.toLowerCase(),
     apiKey
@@ -27,13 +28,16 @@ const SubscriptionsPage = () => {
   const { data: paymentData } = usePaymentDetails(payload);
 
   const handlePlanContinue = (plan) => {
-    setPayload({
+    const payload = {
       Planid: plan.planId || plan.PlanId,
       PlanType: activeTab.toLowerCase(),
       SubscriptionType: mainTab === "Plans" ? "BROKER" : "BACKTEST",
       CouponCode: "",
       BrokerClientId: "",
-    });
+    };
+
+    setPayload(payload);
+    setPaymentPayload(payload);
     setShowConfirm(false);
     setShowPayment(true);
   };
@@ -45,16 +49,13 @@ const SubscriptionsPage = () => {
       ...plan,
       title: `${plan.planName} Plan`,
       price: plan.Price,
-      description: "Auto-fetched from API",
+      description:
+        plan.Description || plan.PlanDescription || plan.planDescription || "",
       features: [
         `${plan.allowedBacktestCount} allowed backtest credits`,
         `${plan.maxStrategyCreation} strategy creation allowed`,
-        `${plan.maxLiveDeployment} live deployment allowed`,
-        `${plan.maxPaperDeployment} forward deployment allowed`,
+        `${plan.maxLiveDeployment} live + ${plan.maxPaperDeployment} forward deployments allowed`,
         `${plan.maxStrategyAllowedInPhortpholio} strategy portfolio allowed`,
-        plan.isHNIMarketPlaceAccess
-          ? "Retail + HNI strategies allowed"
-          : "Retail strategies allowed",
         `${plan.allowedBrokes.join(", ")} brokers allowed`,
       ],
     }));
@@ -77,7 +78,9 @@ const SubscriptionsPage = () => {
   return (
     <div>
       <div className="md:p-6 text-[#2E3A59] dark:text-white space-y-6">
-        <div className="text-xl font-semibold">My Subscription</div>
+        <div className="text-xl md:text-2xl text-[#2E3A59] dark:text-white font-semibold">
+          My Subscription
+        </div>
 
         <div className="flex gap-6 border-b border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
           {mainTabs.map((tab) => (
@@ -97,15 +100,15 @@ const SubscriptionsPage = () => {
 
         {mainTab === "Plans" ? (
           <div>
-            <div className="flex gap-6 border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
+            <div className="flex gap-3 mt-4">
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-2 px-4 py-3 rounded-lg ${
+                  className={`px-4 py-3 rounded-lg text-sm font-medium ${
                     activeTab === tab
-                      ? "text-[#0096FF] bg-blue-100 border border-[#0096FF]"
-                      : "text-gray-500 bg-blue-50 border dark:text-gray-400"
+                      ? "bg-[#1B44FE] text-white"
+                      : "text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {tab}
@@ -122,13 +125,20 @@ const SubscriptionsPage = () => {
                     key={index}
                     className="border border-[#E6EDF4] dark:border-[#1E2027] bg-white dark:bg-[#15171C] rounded-2xl p-6 space-y-4"
                   >
-                    <div className="text-lg font-semibold">
+                    <div className="text-lg font-semibold text-[#2E3A59] dark:text-white">
                       {plan.planName} Plan
                     </div>
-                    <div className="text-3xl font-bold">₹{plan.Price}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {plan.description}
+                    <div className="text-3xl font-bold text-[#2E3A59] dark:text-white">
+                      ₹{plan.Price}
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                        (+ GST)
+                      </span>
                     </div>
+                    {plan.description ? (
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {plan.description}
+                      </div>
+                    ) : null}
 
                     <button
                       onClick={() => {
@@ -137,16 +147,16 @@ const SubscriptionsPage = () => {
                       }}
                       className={`w-full py-4 rounded-xl text-sm font-semibold ${
                         plan.planName.toLowerCase() === "unlimited"
-                          ? "bg-[#0096FF] text-white"
-                          : "border border-[#D5DAE1] dark:border-gray-700"
+                          ? "bg-[#1B44FE] text-white"
+                          : "border border-[#D5DAE1] dark:border-gray-700 text-[#2E3A59] dark:text-white"
                       }`}
                     >
                       Get Started
                     </button>
 
                     <div>
-                      <div className="text-sm font-semibold mb-2">
-                        What’s included:
+                      <div className="text-sm font-semibold mb-2 text-[#2E3A59] dark:text-white">
+                        What's included:
                       </div>
                       <ul className="space-y-1 text-sm text-[#2E3A59] dark:text-white">
                         <li>
@@ -156,21 +166,12 @@ const SubscriptionsPage = () => {
                           • {plan.maxStrategyCreation} strategy creation allowed
                         </li>
                         <li>
-                          • {plan.maxLiveDeployment} live deployment allowed
-                        </li>
-                        <li>
-                          • {plan.maxPaperDeployment} forward deployment allowed
+                          • {plan.maxLiveDeployment} live + forward deployments
+                          allowed
                         </li>
                         <li>
                           • {plan.maxStrategyAllowedInPhortpholio} strategy
                           portfolio allowed
-                        </li>
-                        <li>
-                          •{" "}
-                          {plan.isHNIMarketPlaceAccess
-                            ? "Retail + HNI"
-                            : "Retail only"}{" "}
-                          strategies allowed
                         </li>
                         <li>
                           • Brokers allowed: {plan.allowedBrokes.join(", ")}
@@ -206,17 +207,24 @@ const SubscriptionsPage = () => {
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
         data={paymentData}
-        onProcessPayment={() => {
+        paymentPayload={paymentPayload}
+        onProcessPayment={(paymentResponse) => {
           setShowPayment(false);
 
-          const isSuccess = true;
-
-          if (isSuccess) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-          } else {
-            setShowFailure(true);
+          // Store payment response in localStorage
+          if (paymentResponse) {
+            localStorage.setItem(
+              "paymentLink",
+              paymentResponse.paymentLink || ""
+            );
+            localStorage.setItem("orderId", paymentResponse.orderId || "");
+            localStorage.setItem("tokenType", paymentResponse.tokenType || "");
+            localStorage.setItem("amount", paymentResponse.amount || "");
           }
+
+          // Show success modal (payment link opened in new tab)
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
         }}
       />
       <PaymentSuccessModal

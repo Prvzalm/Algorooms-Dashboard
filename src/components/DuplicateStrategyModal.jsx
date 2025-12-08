@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import PrimaryButton from "./common/PrimaryButton";
 
 const DuplicateStrategyModal = ({
   open,
@@ -69,13 +70,13 @@ const DuplicateStrategyModal = ({
           >
             Cancel
           </button>
-          <button
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-60"
+          <PrimaryButton
+            className="px-4 py-2"
             onClick={() => name.trim() && onSubmit?.(name.trim())}
             disabled={!name.trim() || loading}
           >
             {loading ? "Duplicating..." : "Duplicate"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>,

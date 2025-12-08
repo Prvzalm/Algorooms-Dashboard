@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import PrimaryButton from "../../common/PrimaryButton";
 import Leg1 from "../StrategyBuilderComponents/Leg1";
 import OrderType from "../StrategyBuilderComponents/OrderType";
 import RiskAndAdvance from "../StrategyBuilderComponents/RiskAndAdvance";
@@ -110,7 +111,7 @@ const TradingviewSignalsPage = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-6 text-sm text-gray-700 dark:text-gray-200 overflow-hidden"
       >
-        <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+        <div className="p-4 border rounded-xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
           <h2 className="font-semibold dark:text-white">Select Signal From</h2>
           <div className="flex flex-wrap gap-4">
             {[
@@ -134,7 +135,7 @@ const TradingviewSignalsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-xl space-y-4 w-full dark:bg-[#15171C] dark:border-[#1E2027]">
+              <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
                 <h2 className="font-semibold dark:text-white">Strategy Type</h2>
                 <div className="space-y-2">
                   {[
@@ -157,7 +158,7 @@ const TradingviewSignalsPage = () => {
                 </div>
               </div>
 
-              <div className="p-4 border rounded-xl space-y-4 dark:bg-[#15171C] dark:border-[#1E2027]">
+              <div className="p-4 border rounded-xl space-y-4 bg-white dark:bg-[#131419] dark:border-[#1E2027]">
                 <h2 className="font-semibold dark:text-white">
                   Select Instruments
                 </h2>
@@ -207,24 +208,24 @@ const TradingviewSignalsPage = () => {
 
         {/* Mobile view: fixed button at bottom */}
         <div className="md:hidden mobile-buttons-container">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="bg-[#0096FF] text-white px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-50 w-full max-w-xs"
+            className="px-8 py-3 rounded-lg text-sm font-medium w-full max-w-xs"
           >
             {isPending ? "Creating..." : "Create Signal Strategy"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Desktop view: normal button placement */}
         <div className="flex justify-end">
-          <button
+          <PrimaryButton
             type="submit"
             disabled={isPending}
-            className="ml-auto bg-[#0096FF] text-white md:px-8 px-4 py-3 rounded-lg text-sm font-medium disabled:opacity-50 hidden md:block"
+            className="ml-auto md:px-8 px-4 py-3 rounded-lg text-sm font-medium hidden md:block"
           >
             {isPending ? "Creating..." : "Create Signal Strategy"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Spacer for mobile view to prevent content from being hidden behind fixed button */}

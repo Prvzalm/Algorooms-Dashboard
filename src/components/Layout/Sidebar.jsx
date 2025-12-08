@@ -28,6 +28,7 @@ import {
 } from "../../assets";
 import { useAuth } from "../../context/AuthContext";
 import { useProfileQuery } from "../../hooks/profileHooks";
+import Avatar from "../common/Avatar";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -78,12 +79,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       icon: tradingIcon,
       selectedIcon: selectedTradingIcon,
-      name: "Trading",
-      isParent: true,
-      children: [
-        { name: "Strategy Builder", path: "/trading/strategy-builder" },
-        { name: "Tradingview Signals Trading", path: "/trading/signals" },
-      ],
+      name: "Strategy Builder",
+      // isParent: true,
+      path: "/trading/strategy-builder",
+      // children: [
+      //   { name: "Strategy Builder", path: "/trading/strategy-builder" },
+      //   { name: "Tradingview Signals Trading", path: "/trading/signals" },
+      // ],
     },
     {
       icon: strategiesIcon,
@@ -91,12 +93,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       name: "Strategies",
       path: "/strategies",
     },
-    {
-      icon: raAlgosIcon,
-      selectedIcon: selectedRaAlgosIcon,
-      name: "Ra Algos",
-      path: "/raalgo",
-    },
+    // {
+    //   icon: raAlgosIcon,
+    //   selectedIcon: selectedRaAlgosIcon,
+    //   name: "Ra Algos",
+    //   path: "/raalgo",
+    // },
     {
       icon: backTestingIcon,
       selectedIcon: selectedBackTestingIcon,
@@ -112,6 +114,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       selectedIcon: selectedBrokerIcon,
       name: "Broker",
       path: "/broker",
+    },
+    {
+      icon: strategiesIcon,
+      selectedIcon: selectedStrategyIcon,
+      name: "Reports",
+      path: "/reports",
     },
     {
       icon: subscriptionIcon,
@@ -136,7 +144,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <aside
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`bg-white dark:bg-[#15171C] transition-all duration-300
+          className={`bg-[#F8F9FB] dark:bg-[#131419] transition-all duration-300
             ${sidebarExpanded ? "w-64" : "w-16"}
             fixed h-full z-40 border-r border-[#26272F33] dark:border-[#1E2027]`}
         >
@@ -148,12 +156,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <FiX size={24} />
             </button>
           )}
-          <div className="w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
-            <img
-              src={sidebarExpanded ? algoLogo : shrinkLogo}
-              alt="Logo"
-              className={`${sidebarExpanded ? "w-auto" : "w-6 h-6"}`}
-            />
+          <div className="bg-white dark:bg-[#0F1014] w-full h-16 px-4 border-b border-[#26272F33] dark:border-[#1E2027] flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="focus:outline-none"
+            >
+              <img
+                src={sidebarExpanded ? algoLogo : shrinkLogo}
+                alt="Logo"
+                className={`${
+                  sidebarExpanded ? "w-auto" : "w-6 h-6"
+                } hover:opacity-90 transition`}
+              />
+            </button>
             {!isOpen && (
               <button
                 onClick={() =>
@@ -162,7 +178,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     return !prev;
                   })
                 }
-                className="ml-auto bg-white dark:bg-[#15171C] border rounded-full shadow p-1"
+                className="ml-auto bg-white dark:bg-[#0F1014] border rounded-full shadow p-1"
               >
                 {isCollapsed ? (
                   <FiChevronRight size={16} />
@@ -174,7 +190,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           </div>
 
           <ul
-            className={`mt-4 text-sm space-y-2 text-gray-700 dark:text-gray-300 ${
+            className={`mt-4 text-sm space-y-1 text-gray-700 dark:text-gray-300 ${
               sidebarExpanded ? "px-6" : "px-2"
             }`}
           >
@@ -189,10 +205,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   {item.children ? (
                     <>
                       <button
-                        className={`flex items-center w-full ml-2 space-x-3 py-2 focus:outline-none relative group ${
+                        className={`flex items-center w-full ml-2 space-x-3 py-3 px-3 rounded-lg transition-all focus:outline-none relative group ${
                           isParentActive
-                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
-                            : "text-gray-700 dark:text-gray-400"
+                            ? "bg-[#1B44FE] text-white font-semibold shadow-md"
+                            : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`}
                         onClick={() =>
                           setOpenMenus((prev) => ({
@@ -205,7 +221,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                           <img
                             src={isParentActive ? item.selectedIcon : item.icon}
                             alt={item.name}
-                            className="w-5 h-5"
+                            className={`w-5 h-5 ${
+                              isParentActive ? "brightness-0 invert" : ""
+                            }`}
                           />
                           {!sidebarExpanded && (
                             <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
@@ -253,10 +271,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                       to={item.path}
                       onClick={() => setIsOpen(false)}
                       className={({ isActive }) =>
-                        `flex items-center space-x-3 ml-2 py-2 transition-colors group ${
+                        `flex items-center space-x-3 ml-2 py-3 px-3 rounded-lg transition-all group ${
                           isActive
-                            ? "text-[#0096FF] dark:text-blue-400 font-semibold"
-                            : "hover:text-blue-500 dark:hover:text-blue-300 text-gray-700 dark:text-gray-400"
+                            ? "bg-[#1B44FE] text-white font-semibold shadow-md"
+                            : "hover:bg-gray-200 dark:hover:bg-[#1E2027] text-gray-700 dark:text-gray-400"
                         }`
                       }
                     >
@@ -268,7 +286,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                               : item.icon
                           }
                           alt={item.name}
-                          className="w-5 h-5"
+                          className={`w-5 h-5 ${
+                            location.pathname === item.path
+                              ? "brightness-0 invert"
+                              : ""
+                          }`}
                         />
                         {!sidebarExpanded && (
                           <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
@@ -298,10 +320,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   : "flex justify-center"
               }`}
             >
-              <img
+              <Avatar
                 src={profile?.AvtarURL}
-                alt="User"
+                name={profile?.Name}
                 className="w-10 h-10 rounded-full"
+                fontSize="text-xs"
               />
               {sidebarExpanded && (
                 <div className="flex flex-col text-sm">
@@ -319,12 +342,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
-                <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-white dark:bg-[#15171C] p-4 space-y-4">
+                <div className="w-64 rounded-2xl border border-[#DFEAF2] dark:border-[#1E2027] bg-[#F8F9FB] dark:bg-[#131419] p-4 space-y-4">
                   <div className="flex items-center space-x-4">
-                    <img
+                    <Avatar
                       src={profile?.AvtarURL}
-                      alt="User"
+                      name={profile?.Name}
                       className="w-14 h-14 rounded-full"
+                      fontSize="text-lg"
                     />
                     <div>
                       <div className="text-xs text-gray-500">
@@ -342,12 +366,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   <div className="border-t border-[#E6EDF4] dark:border-[#1E2027] pt-4 space-y-3 text-sm text-[#4C5A71] dark:text-gray-300">
                     <NavLink to="/profile" className="block hover:underline">
                       My Profile
-                    </NavLink>
-                    <NavLink
-                      to="/subscriptions"
-                      className="block hover:underline"
-                    >
-                      My Subscription
                     </NavLink>
                     <button
                       onClick={handleSignOut}

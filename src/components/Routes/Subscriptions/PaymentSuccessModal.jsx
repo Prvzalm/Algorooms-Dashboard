@@ -16,24 +16,36 @@ const PaymentSuccessModal = ({ isOpen, onClose, data }) => {
           <img src={successPaymentIcon} alt="" />
         </div>
 
-        <div className="text-lg font-medium mb-1">Payment Success!</div>
-        <div className="text-[22px] font-bold mb-4">₹{data.amount}</div>
+        <div className="text-lg font-medium mb-1 text-[#2E3A59] dark:text-white">
+          Payment Success!
+        </div>
+        <div className="text-[22px] font-bold mb-4 text-[#2E3A59] dark:text-white">
+          ₹{data.amount}
+        </div>
 
-        <div className="text-left text-sm text-[#2E3A59] dark:text-white space-y-3 border-t pt-4">
+        <div className="text-left text-sm text-[#2E3A59] dark:text-white space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
           <div className="flex justify-between">
-            <span className="font-normal text-[#707070]">Ref Number</span>
+            <span className="font-normal text-[#707070] dark:text-gray-400">
+              Ref Number
+            </span>
             <span className="font-medium">{data.ref || "000085752257"}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-normal text-[#707070]">Payment Time</span>
+            <span className="font-normal text-[#707070] dark:text-gray-400">
+              Payment Time
+            </span>
             <span className="font-medium">{data.time}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-normal text-[#707070]">Payment Method</span>
+            <span className="font-normal text-[#707070] dark:text-gray-400">
+              Payment Method
+            </span>
             <span className="font-medium">{data.method}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-normal text-[#707070]">Sender Name</span>
+            <span className="font-normal text-[#707070] dark:text-gray-400">
+              Sender Name
+            </span>
             <span className="font-medium">{data.sender}</span>
           </div>
         </div>

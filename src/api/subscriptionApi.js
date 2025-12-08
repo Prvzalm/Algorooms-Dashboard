@@ -13,3 +13,11 @@ export const getBrokerPricingPlan = async (
   );
   return response.data?.Data?.SubscriptionPlanDetail || [];
 };
+
+export const initiatePayment = async (payload) => {
+  const response = await axiosInstance.post(
+    "/Subscription/PaymentInitiateTransaction",
+    payload
+  );
+  return response.data?.Data;
+};

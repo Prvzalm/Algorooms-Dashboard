@@ -59,9 +59,10 @@ export const useStartStopTradeEngine = () => {
       } else {
         toast.success(data?.Message || "Trade engine updated");
       }
-
-      queryClient.invalidateQueries(["masterBrokerData"]);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(["user-broker-data"]);
+      queryClient.invalidateQueries(["brokerwise-strategies"]);
     },
     onError: (error) => {
       const msg =

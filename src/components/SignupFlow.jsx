@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
+import PrimaryButton from "./common/PrimaryButton";
 import {
   useRegisterMutation,
   useRequestEmailOtpMutation,
@@ -132,14 +133,14 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
-          <button
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
+          <PrimaryButton
+            className="w-full py-4 rounded-lg font-semibold"
             onClick={handleRequestOtp}
           >
             Send OTP to Email
-          </button>
+          </PrimaryButton>
         </>
       )}
 
@@ -155,16 +156,16 @@ export default function SignupFlow({ email, setEmail, setMode }) {
                 onChange={(e) => handleOtpChange(e.target.value, i)}
                 onKeyDown={(e) => handleOtpKeyDown(e, i)}
                 onPaste={handleOtpPaste}
-                className="w-10 h-12 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-center text-xl focus:outline-none text-black dark:text-white placeholder:text-gray-500"
+                className="w-10 h-12 rounded-lg bg-gray-100 text-center text-xl focus:outline-none text-black placeholder:text-gray-500"
               />
             ))}
           </div>
-          <button
+          <PrimaryButton
             onClick={handleVerifyOtp}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg mt-4"
+            className="w-full py-4 rounded-lg font-semibold mt-4"
           >
             Verify OTP
-          </button>
+          </PrimaryButton>
         </>
       )}
 
@@ -175,28 +176,28 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
           <input
             type="tel"
             placeholder="Mobile Number"
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
-            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
           <input
             type="password"
             placeholder="Password"
             value={signupPassword}
             onChange={(e) => setSignupPassword(e.target.value)}
-            className="w-full px-4 py-4 rounded-lg bg-gray-100 dark:bg-[#1E2027] text-sm focus:outline-none text-black dark:text-white placeholder:text-gray-500"
+            className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
-          <button
+          <PrimaryButton
             onClick={handleRegister}
-            className="w-full bg-[#0096FF] hover:bg-blue-600 text-white font-semibold py-4 rounded-lg"
+            className="w-full py-4 rounded-lg font-semibold"
           >
             Register
-          </button>
+          </PrimaryButton>
         </>
       )}
     </>

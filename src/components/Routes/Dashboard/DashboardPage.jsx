@@ -2,8 +2,7 @@ import HeaderCard from "./HeaderCard";
 import StrategyDeployed from "./StrategyDeployed";
 import StrategyTemplates from "./StrategyTemplates";
 import BrokerCard from "./BrokerCard";
-import Tutorials from "./Tutorials";
-import RaAlgos from "./RaAlgos";
+import JoinAndSupport from "./JoinAndSupport";
 import { man, tutorialIcon, upStox, upStoxJas } from "../../../assets";
 import { useEffect, useRef, useState } from "react";
 import NoticeModal from "../../NoticeModal";
@@ -11,21 +10,40 @@ import {
   useBrokerwiseStrategies,
   useUserBrokerData,
 } from "../../../hooks/dashboardHooks";
+import RaAlgosPage from "../RaAlgos/RaAlgosPage";
+import { useNavigate } from "react-router-dom";
+import {
+  useBrokerPnl,
+  useBrokerStrategies,
+  useTopGainerLoser,
+} from "../../../stores/pnlStore";
+import { useLivePnlData } from "../../../hooks/useLivePnlData";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [showNotice, setShowNotice] = useState(() => {
     return !localStorage.getItem("noticeAccepted");
   });
+
+  // TanStack Query for API data
   const {
     data: brokerData,
     isLoading: isBrokerLoading,
     isError: isBrokerError,
   } = useUserBrokerData();
+
   const {
     data: brokerStrategiesData,
     isLoading: isStrategyLoading,
     isError: isStrategyError,
   } = useBrokerwiseStrategies();
+
+  // Use custom hook for centralized PNL management
+  const { brokers: pnlBrokers, grandTotalPnl } = useLivePnlData(
+    brokerStrategiesData,
+    isStrategyLoading,
+    isStrategyError
+  );
 
   const strategies = brokerStrategiesData || [];
 
@@ -90,32 +108,12 @@ const Dashboard = () => {
     (strategy) => strategy.BrokerClientId === selectedBroker?.code
   );
 
-  const yourTutorialData = [
-    {
-      title: "Nifty Option",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "20k",
-      shares: "5k",
-    },
-    {
-      title: "BankNifty Strategy",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "12k",
-      shares: "3.2k",
-    },
-    {
-      title: "Algo Trading 101",
-      icon: tutorialIcon,
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Aliquam neque sed diam mi ornare senectus orci.",
-      likes: "18k",
-      shares: "4.7k",
-    },
-  ];
+  // Use optimized selectors for selected broker data
+  const selectedBrokerPnl = useBrokerPnl(selectedBroker?.code);
+  const allStrategiesForSelectedBroker = useBrokerStrategies(
+    selectedBroker?.code
+  );
+  const { topGainer, topLoser } = useTopGainerLoser(selectedBroker?.code);
 
   const yourAlgoData = [
     {
@@ -153,30 +151,27 @@ const Dashboard = () => {
   // Component-wise loading & error handling: avoid blocking the whole page
   const HeaderSkeleton = () => (
     <div className="col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
-        <div className="h-5 w-40 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-6 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
 
   const BrokerCardSkeleton = () => (
     <div className="col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] h-full">
-        <div className="h-5 w-28 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24] h-full">
+        <div className="h-6 w-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
 
   const StrategiesSkeleton = () => (
-    <div className="md:col-span-3 col-span-1">
-      <div className="animate-pulse p-4 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
-        <div className="h-5 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-          <div className="h-24 bg-gray-200 dark:bg-[#2a2a30] rounded" />
-        </div>
+    <div className="col-span-1">
+      <div className="animate-pulse p-6 rounded-2xl border dark:border-[#2a2a30] bg-white dark:bg-[#1f1f24]">
+        <div className="h-6 w-48 bg-gray-200 dark:bg-[#2a2a30] rounded" />
+        <div className="mt-6 h-32 bg-gray-200 dark:bg-[#2a2a30] rounded" />
       </div>
     </div>
   );
@@ -185,12 +180,12 @@ const Dashboard = () => {
     <>
       {showNotice && <NoticeModal onClose={handleCloseNotice} />}
       <div className="flex justify-between relative text-black dark:text-white">
-        <div className="flex md:text-lg md:font-semibold font-bold items-center w-2/3">
+        <div className="flex text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white items-center w-2/3">
           My Dashboard
         </div>
 
         <div className="md:flex hidden md:flex-row md:text-lg md:font-semibold items-center justify-evenly w-full md:w-1/3 space-y-2 md:space-y-0">
-          <p className="text-sm md:text-base font-bold md:font-semibold text-center">
+          <p className="text-xl md:text-2xl font-semibold text-[#343C6A] dark:text-white text-center whitespace-nowrap">
             Strategy Deployed
           </p>
 
@@ -244,7 +239,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mt-6 items-start">
+      <div className="grid md:grid-cols-3 gap-4 mt-4 items-start">
         <div
           className={
             isBrokerLoading
@@ -262,9 +257,9 @@ const Dashboard = () => {
             </div>
           ) : (
             <HeaderCard
-              totalPnl="5,756"
-              topGainer="Nifty Options S1"
-              topLoser="Nifty Options S1"
+              totalPnl={grandTotalPnl.toFixed(2)}
+              topGainer={topGainer?.name || "-"}
+              topLoser={topLoser?.name || "-"}
               accountImg={upStoxJas}
               brokers={brokers}
             />
@@ -290,6 +285,7 @@ const Dashboard = () => {
         ) : (
           <StrategyDeployed
             strategies={selectedBrokerStrategies}
+            liveStrategies={allStrategiesForSelectedBroker}
             selectedBroker={selectedBroker}
             uniqueBrokers={uniqueBrokers}
             handleSelect={handleSelect}
@@ -299,14 +295,24 @@ const Dashboard = () => {
 
       <StrategyTemplates />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-1">
-          <Tutorials tutorials={yourTutorialData} />
+      {/* <div className="grid grid-cols-1 gap-4">
+        <div className="rounded-xl text-black dark:text-white">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-xl md:text-2xl text-[#343C6A] dark:text-white">
+              Ra Algos
+            </h3>
+            <button
+              onClick={() => navigate("/raalgo")}
+              className="text-[#343C6A] dark:text-blue-400 text-lg hover:underline"
+            >
+              See All
+            </button>
+          </div>
+
+          <RaAlgosPage algos={yourAlgoData} dashboard={true} />
         </div>
-        <div className="col-span-2">
-          <RaAlgos algos={yourAlgoData} />
-        </div>
-      </div>
+      </div> */}
+      <JoinAndSupport />
     </>
   );
 };

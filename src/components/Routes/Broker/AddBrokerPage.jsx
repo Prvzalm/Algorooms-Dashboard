@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { infoIcon, searchIcon } from "../../../assets";
 import { FaYoutube } from "react-icons/fa";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiCopy } from "react-icons/fi";
 import { useMasterBrokerData } from "../../../hooks/brokerHooks";
 import { toast } from "react-toastify";
 import { useAddBroker } from "../../../hooks/brokerHooks";
 import { useNavigate } from "react-router-dom";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const AddBrokerPage = () => {
   const [brokerId, setBrokerId] = useState("");
-  const [appName, setAppName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +33,21 @@ const AddBrokerPage = () => {
   // Master API brokers should only require Broker ID in the UI and payload
   const isMaster = !!selectedBroker?.IsMasterApiAvailable;
 
+  const handleCopyUrl = async () => {
+    if (!selectedBroker?.ApiRedirectUrl) return;
+    try {
+      await navigator.clipboard.writeText(selectedBroker.ApiRedirectUrl);
+      toast.success("URL copied to clipboard!");
+    } catch (error) {
+      toast.error("Failed to copy URL");
+    }
+  };
+
   const handleSubmit = async () => {
+    if (!selectedBroker) {
+      toast.error("Please select a broker");
+      return;
+    }
     try {
       const payload = isMaster
         ? {
@@ -46,7 +60,7 @@ const AddBrokerPage = () => {
             BrokerClientId: brokerId,
             APIKey: apiKey,
             APISecretKey: apiSecret,
-            APIAppId: appName,
+            APIAppId: selectedBroker.BrokerName,
             IsCustomApi: isMaster,
           };
 
@@ -79,11 +93,12 @@ const AddBrokerPage = () => {
       </div>
       <div className="flex flex-col lg:flex-row gap-6 border border-[#E4EAF0] dark:border-[#2D2F36] rounded-2xl p-4 md:p-6 bg-white dark:bg-[#1F1F24]">
         <div className="w-full lg:w-2/3">
-          <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
+          <h2 className="text-xl md:text-2xl font-semibold text-[#2E3A59] dark:text-white">
             Add Your Broker
           </h2>
           <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">
-            Lorem Ipsum donor
+            Browse the partner list and pick the broker you want to connect with
+            Algorooms.
           </p>
 
           <div className="relative mb-6">
@@ -158,7 +173,8 @@ const AddBrokerPage = () => {
             Add Your Broker Detail
           </h2>
           <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">
-            Lorem Ipsum donor
+            Enter the login information or tokens required by your broker so we
+            can finish the setup.
           </p>
 
           {isLoading ? (
@@ -219,24 +235,6 @@ const AddBrokerPage = () => {
               <>
                 <div>
                   <label
-                    htmlFor="appName"
-                    className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    App Name
-                  </label>
-                  <input
-                    id="appName"
-                    name="appName"
-                    type="text"
-                    placeholder="App Name (Any)"
-                    value={appName}
-                    onChange={(e) => setAppName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-                  />
-                </div>
-
-                <div>
-                  <label
                     htmlFor="apiKey"
                     className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
@@ -276,24 +274,52 @@ const AddBrokerPage = () => {
 
           <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
             Redirect Url:
-            <img width={14} height={14} src={infoIcon} alt="info" />
+            <span className="relative group inline-flex">
+              <button
+                type="button"
+                className="w-4 h-4 flex items-center justify-center"
+                aria-label="Redirect URL information"
+              >
+                <img width={14} height={14} src={infoIcon} alt="info" />
+              </button>
+              <span
+                className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                role="tooltip"
+              >
+                Copy this callback URL into your broker developer console.
+                Tokens will only be issued if the redirect exactly matches the
+                value configured here.
+              </span>
+            </span>
           </div>
-          <a
-            href={selectedBroker?.ApiRedirectUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-500 mb-4 block break-all"
-          >
-            {selectedBroker?.ApiRedirectUrl || "-"}
-          </a>
+          <div className="flex items-center gap-2 mb-4">
+            <a
+              href={selectedBroker?.ApiRedirectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-500 block break-all flex-1"
+            >
+              {selectedBroker?.ApiRedirectUrl || "-"}
+            </a>
+            {selectedBroker?.ApiRedirectUrl && (
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#2D2F36] transition-colors"
+                aria-label="Copy redirect URL"
+              >
+                <FiCopy className="w-4 h-4 text-[#718EBF] dark:text-[#A0AEC0]" />
+              </button>
+            )}
+          </div>
 
-          <button
-            className="w-full py-3 rounded-lg bg-[#0096FF] text-white font-medium"
+          <PrimaryButton
+            className="w-full py-3"
             onClick={handleSubmit}
             disabled={adding}
           >
             {adding ? "Submitting..." : "Submit"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

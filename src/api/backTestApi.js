@@ -10,8 +10,6 @@ export const fetchBackTestCounterDetails = async () => {
   return response.data.Data;
 };
 
-// Direct backtest result API (external base URL)
-// params: { strategyId, fromDate, toDate, isMarketPlaceStrategy=false, userId, apiKey, rangeType="fixed" }
 export const fetchBacktestResult = async (params) => {
   const {
     strategyId,
@@ -22,7 +20,6 @@ export const fetchBacktestResult = async (params) => {
     apiKey = "abc",
     rangeType = "fixed",
   } = params || {};
-  // required params check (allow apiKey default but validate others)
   if (!strategyId || !fromDate || !toDate || !userId) {
     throw new Error("Missing required backtest query params: strategyId, fromDate, toDate, userId");
   }
@@ -37,15 +34,15 @@ export const fetchBacktestResult = async (params) => {
     RangeType: rangeType,
   });
 
-  const realBacktestHost = import.meta.env.VITE_BACKTEST_URL || "https://backtest.algorooms.com";
+  const isLocalDev =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+  const externalHost = (import.meta.env.VITE_BACKTEST_URL || "https://backtest.algorooms.com").replace(/\/$/, "");
+  const finalUrl = isLocalDev
+    ? `/backtest?${queryParams.toString()}`
+    : `${externalHost}/backtest?${queryParams.toString()}`;
 
-  const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-  const url = isDev
-    ? `/btapi/backtest?${queryParams.toString()}`
-    : `${realBacktestHost.replace(/\/$/, "")}/backtest?${queryParams.toString()}`;
-
-  const response = await axios.get(url);
+  const response = await axios.get(finalUrl);
   const data = response?.data;
   if (data?.Status !== "Success") {
     throw new Error(data?.Message || "Failed to fetch backtest result");

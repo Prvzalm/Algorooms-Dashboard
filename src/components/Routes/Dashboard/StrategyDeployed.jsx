@@ -7,11 +7,13 @@ import {
 } from "../../../assets";
 import { FiChevronDown } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import PrimaryButton from "../../common/PrimaryButton";
 
 const icons = [strategy1, strategy2, strategy3];
 
 const StrategyDeployed = ({
   strategies,
+  liveStrategies = [],
   uniqueBrokers,
   selectedBroker,
   handleSelect,
@@ -32,27 +34,36 @@ const StrategyDeployed = ({
 
   const deployedStrategies = strategies?.flatMap((broker) =>
     broker.DeploymentDetail.flatMap((strategy) =>
-      strategy.DeploymentDetail.map((deployment) => ({
-        strategyName: strategy.StrategyName,
-        strategyId: strategy.strategyId,
-        brokerName: broker.BrokerName,
-        brokerCode: broker.BrokerClientId,
-        brokerLogo: broker.brokerLogoUrl,
-        totalPnl: deployment.TotalPnl,
-        isLive: deployment.isLiveMode,
-        running: deployment.Running_Status,
-        maxProfit: deployment.MaxProfit,
-        maxLoss: deployment.MaxLoss,
-        deploymentType: deployment.DeploymentType,
-        timestamp: deployment.deploymentTimeStamp,
-      }))
+      strategy.DeploymentDetail.map((deployment) => {
+        // Find the live PNL for this strategy from WebSocket data
+        const liveStrategy = liveStrategies.find(
+          (ls) => ls.id === strategy.strategyId
+        );
+
+        return {
+          strategyName: strategy.StrategyName,
+          strategyId: strategy.strategyId,
+          brokerName: broker.BrokerName,
+          brokerCode: broker.BrokerClientId,
+          brokerLogo: broker.brokerLogoUrl,
+          totalPnl: liveStrategy?.strategyPNL ?? deployment.TotalPnl,
+          isLive: deployment.isLiveMode,
+          running: deployment.Running_Status,
+          maxProfit: deployment.MaxProfit,
+          maxLoss: deployment.MaxLoss,
+          deploymentType: deployment.DeploymentType,
+          timestamp: deployment.deploymentTimeStamp,
+        };
+      })
     )
   );
 
   return (
     <>
       <div className="flex md:hidden flex-row items-center justify-between w-full space-y-2">
-        <p className="text-sm font-bold text-center">Strategy Deployed</p>
+        <p className="text-xl text-[#343C6A] font-semibold text-center whitespace-nowrap">
+          Strategy Deployed
+        </p>
 
         {uniqueBrokers.length !== 0 ? (
           <div
@@ -100,7 +111,17 @@ const StrategyDeployed = ({
       </div>
 
       {uniqueBrokers.length !== 0 ? (
-        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-[227px] overflow-y-auto text-black dark:text-white">
+        <div className="bg-white dark:bg-[#15171C] space-y-2 p-4 border border-[#DFEAF2] dark:border-[#1E2027] rounded-3xl h-[227px] overflow-y-auto overflow-x-hidden text-black dark:text-white relative">
+          <button
+            onClick={() =>
+              navigate("/strategies", {
+                state: { activeTab: "Deployed Strategies" },
+              })
+            }
+            className="absolute top-2 right-4 text-sm text-[#19A0FF] hover:text-[#007BFF] cursor-pointer"
+          >
+            See All
+          </button>
           {deployedStrategies.map((s, i) => {
             const Icon = icons[i % icons.length];
             const isNegative = s.totalPnl < 0;
@@ -123,9 +144,12 @@ const StrategyDeployed = ({
                     />
                   </div>
 
-                  <div className="flex flex-row items-center justify-between w-full">
-                    <div className="space-y-1">
-                      <p className="font-medium text-gray-800 dark:text-white">
+                  <div className="flex flex-row items-center justify-between w-full overflow-x-hidden">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p
+                        className="font-medium text-gray-800 dark:text-white truncate"
+                        title={s.strategyName}
+                      >
                         {s.strategyName}
                       </p>
                       <p className="text-xs flex flex-wrap items-center gap-1">
@@ -155,7 +179,7 @@ const StrategyDeployed = ({
                         isNegative ? "text-red-500" : "text-green-500"
                       }`}
                     >
-                      ₹{Math.abs(s.totalPnl)}
+                      ₹{Math.abs(s.totalPnl).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -178,12 +202,12 @@ const StrategyDeployed = ({
             </p>
           </div>
 
-          <button
+          <PrimaryButton
             onClick={() => navigate("/strategies")}
-            className="bg-[#0096FF] hover:bg-[#007ad6] text-white font-medium text-sm px-5 py-2 rounded-md transition"
+            className="text-sm px-5 py-2"
           >
             Create Strategy
-          </button>
+          </PrimaryButton>
         </div>
       )}
     </>
