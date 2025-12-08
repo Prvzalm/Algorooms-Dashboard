@@ -8,6 +8,7 @@ import {
   Filler,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Filler);
 
@@ -356,6 +357,13 @@ const MaxProfitLossChart = ({
     layout: { padding: { bottom: 58 } },
   };
 
+  const avgProfitClass = getPnlTextClass(avgProfit, {
+    neutral: "text-gray-500 dark:text-gray-400",
+  });
+  const avgLossClass = getPnlTextClass(avgLoss, {
+    neutral: "text-gray-500 dark:text-gray-400",
+  });
+
   return (
     <div className="w-full bg-white dark:bg-darkbg rounded-2xl mb-8">
       <div className="flex justify-between items-start mb-2">
@@ -365,11 +373,11 @@ const MaxProfitLossChart = ({
           </h2>
           <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
             Avg Profit:{" "}
-            <span className="text-green-600 font-medium">
+            <span className={`${avgProfitClass} font-medium`}>
               {avgProfit.toFixed(2)}
             </span>{" "}
             | Avg Loss:{" "}
-            <span className="text-red-500 font-medium">
+            <span className={`${avgLossClass} font-medium`}>
               {avgLoss.toFixed(2)}
             </span>
           </div>

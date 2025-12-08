@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
@@ -85,6 +85,31 @@ const BrokerMultiSelect = ({ options, value, onChange }) => {
   );
 };
 
+const isDefinedValue = (value) =>
+  value !== undefined && value !== null && value !== "";
+
+const getDefinedValue = (source, keys = []) => {
+  if (!source) return undefined;
+  for (const key of keys) {
+    const value = source[key];
+    if (isDefinedValue(value)) return value;
+  }
+  return undefined;
+};
+
+const resolveValueFromSources = (sources = [], keys = []) => {
+  for (const source of sources) {
+    if (Array.isArray(source)) {
+      const nested = resolveValueFromSources(source, keys);
+      if (nested !== undefined) return nested;
+      continue;
+    }
+    const value = getDefinedValue(source, keys);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+};
+
 const DeployStrategyModal = ({
   open,
   onClose,
@@ -110,8 +135,8 @@ const DeployStrategyModal = ({
 
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [qtyMultiplier, setQtyMultiplier] = useState(1);
-  const [maxProfit, setMaxProfit] = useState(0);
-  const [maxLoss, setMaxLoss] = useState(0);
+  const [maxProfit, setMaxProfit] = useState("");
+  const [maxLoss, setMaxLoss] = useState("");
   const [autoSquareOffTime, setAutoSquareOffTime] = useState("");
   const [selectedBrokerIds, setSelectedBrokerIds] = useState([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -120,96 +145,78 @@ const DeployStrategyModal = ({
   const [originalMaxProfit, setOriginalMaxProfit] = useState(0);
   const [originalMaxLoss, setOriginalMaxLoss] = useState(0);
 
-  // Track initialization for details/broker defaults separately per open
-  const initRef = useRef({ details: false, brokers: false, deployment: false });
+  // Track initialization per field to avoid overriding user edits mid-session
+  const initRef = useRef({
+    qty: false,
+    profit: false,
+    loss: false,
+    autoSquareOff: false,
+    mode: false,
+    brokers: false,
+  });
+
+  const resetInitFlags = useCallback(() => {
+    initRef.current = {
+      qty: false,
+      profit: false,
+      loss: false,
+      autoSquareOff: false,
+      mode: false,
+      brokers: false,
+    };
+  }, []);
+
   useEffect(() => {
     if (!open) {
-      initRef.current = { details: false, brokers: false, deployment: false };
+      resetInitFlags();
       return;
     }
 
-    const state = initRef.current;
+    const sources = [initialDeployment, strategy, details];
+    const applyField = (flagKey, keys, setter) => {
+      if (initRef.current[flagKey]) return;
+      const value = resolveValueFromSources(sources, keys);
+      if (value === undefined) return;
+      setter(value);
+      initRef.current[flagKey] = true;
+    };
 
-    if (!state.deployment && initialDeployment) {
-      if (initialDeployment.isLiveMode !== undefined) {
-        setIsLiveMode(!!initialDeployment.isLiveMode);
-      }
-      if (initialDeployment.qtyMultiplier !== undefined) {
-        const val = initialDeployment.qtyMultiplier;
-        setQtyMultiplier(
-          val === undefined || val === null || val === "" ? "" : String(val)
-        );
-      }
-      if (initialDeployment.maxProfit !== undefined) {
-        const val = initialDeployment.maxProfit;
-        setMaxProfit(
-          val === undefined || val === null || val === "" ? "" : String(val)
-        );
-      }
-      if (initialDeployment.maxLoss !== undefined) {
-        const val = initialDeployment.maxLoss;
-        setMaxLoss(
-          val === undefined || val === null || val === "" ? "" : String(val)
-        );
-      }
-      if (initialDeployment.autoSquareOffTime !== undefined) {
-        setAutoSquareOffTime(initialDeployment.autoSquareOffTime || "");
-      }
-      if (
-        Array.isArray(initialDeployment.brokerClientIds) &&
-        initialDeployment.brokerClientIds.length > 0
-      ) {
-        setSelectedBrokerIds(initialDeployment.brokerClientIds);
-      }
-      state.deployment = true;
-    }
+    applyField("mode", ["isLiveMode", "IsLiveMode"], (value) =>
+      setIsLiveMode(!!value)
+    );
 
-    if (!state.details && details) {
-      if (
-        !(
-          state.deployment &&
-          initialDeployment &&
-          initialDeployment.autoSquareOffTime !== undefined
-        )
-      ) {
-        setAutoSquareOffTime(details.AutoSquareOffTime || "");
-      }
-      const profit = details.ExitWhenTotalProfit;
-      const loss = details.ExitWhenTotalLoss;
+    applyField("qty", ["qtyMultiplier", "QtyMultiplier"], (value) => {
+      setQtyMultiplier(String(value));
+    });
 
-      // Store original values
-      const originalProfit =
-        profit === undefined || profit === null ? 0 : Number(profit);
-      const originalLoss =
-        loss === undefined || loss === null ? 0 : Number(loss);
-      setOriginalMaxProfit(originalProfit);
-      setOriginalMaxLoss(originalLoss);
-
-      if (
-        !(
-          state.deployment &&
-          initialDeployment &&
-          initialDeployment.maxProfit !== undefined
-        )
-      ) {
-        setMaxProfit(String(originalProfit));
+    applyField(
+      "profit",
+      ["maxProfit", "MaxProfit", "ExitWhenTotalProfit"],
+      (value) => {
+        const numeric = Number(value);
+        const safe = Number.isFinite(numeric) ? numeric : 0;
+        setOriginalMaxProfit(safe);
+        setMaxProfit(String(safe));
       }
-      if (
-        !(
-          state.deployment &&
-          initialDeployment &&
-          initialDeployment.maxLoss !== undefined
-        )
-      ) {
-        setMaxLoss(String(originalLoss));
-      }
-      state.details = true;
-    }
+    );
 
-    if (!state.brokers && brokerOptions.length > 0) {
+    applyField("loss", ["maxLoss", "MaxLoss", "ExitWhenTotalLoss"], (value) => {
+      const numeric = Number(value);
+      const safe = Number.isFinite(numeric) ? numeric : 0;
+      setOriginalMaxLoss(safe);
+      setMaxLoss(String(safe));
+    });
+
+    applyField(
+      "autoSquareOff",
+      ["autoSquareOffTime", "AutoSquareOffTime"],
+      (value) => setAutoSquareOffTime(value || "")
+    );
+
+    if (!initRef.current.brokers && brokerOptions.length > 0) {
       setSelectedBrokerIds((prev) => {
         if (prev.length > 0) {
-          state.brokers = true;
+          initRef.current.brokers = true;
           return prev;
         }
         const defaults =
@@ -217,11 +224,43 @@ const DeployStrategyModal = ({
           initialDeployment.brokerClientIds.length > 0
             ? initialDeployment.brokerClientIds
             : brokerOptions.map((o) => o.value);
-        state.brokers = true;
+        initRef.current.brokers = true;
         return defaults;
       });
     }
-  }, [open, details, brokerOptions, initialDeployment]);
+  }, [
+    open,
+    initialDeployment,
+    strategy,
+    details,
+    brokerOptions,
+    resetInitFlags,
+  ]);
+
+  useEffect(() => {
+    if (open) return;
+    setIsLiveMode(false);
+    setQtyMultiplier(1);
+    setMaxProfit("");
+    setMaxLoss("");
+    setOriginalMaxProfit(0);
+    setOriginalMaxLoss(0);
+    setAutoSquareOffTime("");
+    setSelectedBrokerIds([]);
+    setTermsAccepted(false);
+  }, [open]);
+
+  const resolveMaxTradeCycle = () => {
+    const value = resolveValueFromSources(
+      [initialDeployment, strategy, details],
+      ["maxTradeCycle", "MaxTradeCycle", "maxTrade", "MaxTrade"]
+    );
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return 1;
+    }
+    return numeric;
+  };
 
   // Update displayed values when quantity multiplier changes
   useEffect(() => {
@@ -238,15 +277,10 @@ const DeployStrategyModal = ({
   const loading = !!detailsLoading && !!open;
 
   const submit = () => {
-    const maxTradeCycle =
-      initialDeployment?.maxTradeCycle !== undefined &&
-      initialDeployment?.maxTradeCycle !== null
-        ? Number(initialDeployment.maxTradeCycle) || 1
-        : Number(details?.MaxTrade) || 1;
     const payload = {
       StrategyId: strategyId,
       isLiveMode,
-      MaxTradeCycle: maxTradeCycle,
+      MaxTradeCycle: resolveMaxTradeCycle(),
       MaxProfit: String(Number(maxProfit) || 0),
       QtyMultiplier: String(Number(qtyMultiplier) || 0),
       MaxLoss: String(Number(maxLoss) || 0),
@@ -381,17 +415,6 @@ const DeployStrategyModal = ({
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2d33] px-3 py-2 text-sm"
                 value={autoSquareOffTime || ""}
                 onChange={(e) => setAutoSquareOffTime(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium mb-1">
-                Max Trade (from strategy)
-              </label>
-              <input
-                disabled
-                value={details?.MaxTrade ?? "-"}
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d33] px-3 py-2 text-sm text-gray-600"
               />
             </div>
           </div>

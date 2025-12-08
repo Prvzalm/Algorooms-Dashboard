@@ -6,6 +6,8 @@ import {
   useRequestEmailOtpMutation,
   useValidateEmailOtpMutation,
 } from "../hooks/loginHooks";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function SignupFlow({ email, setEmail, setMode }) {
   const [signupStep, setSignupStep] = useState(1);
@@ -18,6 +20,11 @@ export default function SignupFlow({ email, setEmail, setMode }) {
   const { mutate: requestEmailOtp } = useRequestEmailOtpMutation();
   const { mutate: validateEmailOtp } = useValidateEmailOtpMutation();
   const { mutate: registerUser } = useRegisterMutation();
+  const { login, loginWithToken } = useAuth();
+  const navigate = useNavigate();
+
+  const getApiErrorMessage = (error, fallbackMessage) =>
+    error?.response?.data?.Message || error?.message || fallbackMessage;
 
   const handleRequestOtp = () => {
     if (!email) return toast.info("Enter email");
@@ -36,7 +43,8 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             toast.error(res.data.Message || "Failed to send OTP");
           }
         },
-        onError: () => toast.error("Request OTP failed"),
+        onError: (error) =>
+          toast.error(getApiErrorMessage(error, "Request OTP failed")),
       }
     );
   };
@@ -60,7 +68,8 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             toast.error(res.data.Message || "OTP incorrect");
           }
         },
-        onError: () => toast.error("OTP verification failed"),
+        onError: (error) =>
+          toast.error(getApiErrorMessage(error, "OTP verification failed")),
       }
     );
   };
@@ -111,15 +120,50 @@ export default function SignupFlow({ email, setEmail, setMode }) {
         ApiKey: "abc",
       },
       {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           if (res.data.Status === "Success") {
-            toast.success("Registration successful. Please log in.");
-            setMode("login");
+            toast.success("Registration successful!");
+
+            const tokenFromResponse =
+              res?.data?.Data?.AccessToken ||
+              res?.data?.Data?.Token ||
+              res?.data?.AccessToken ||
+              res?.data?.token;
+
+            if (tokenFromResponse) {
+              const result = await loginWithToken(tokenFromResponse);
+              if (result?.success) {
+                navigate("/");
+                return;
+              }
+              toast.error(
+                result?.message ||
+                  "Registered but auto login failed. Please sign in manually."
+              );
+              setMode("login");
+              return;
+            }
+
+            const loginResult = await login({
+              UserId: email,
+              Password: signupPassword,
+              ApiKey: "abc",
+            });
+            if (loginResult?.success) {
+              navigate("/");
+            } else {
+              toast.error(
+                loginResult?.message ||
+                  "Registered successfully, please log in manually."
+              );
+              setMode("login");
+            }
           } else {
             toast.error(res.data.Message || "Registration failed");
           }
         },
-        onError: () => toast.error("Error during registration"),
+        onError: (error) =>
+          toast.error(getApiErrorMessage(error, "Error during registration")),
       }
     );
   };
@@ -127,7 +171,13 @@ export default function SignupFlow({ email, setEmail, setMode }) {
   return (
     <>
       {signupStep === 1 && (
-        <>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleRequestOtp();
+          }}
+          className="space-y-4"
+        >
           <input
             type="email"
             placeholder="Email Address"
@@ -136,16 +186,22 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
           <PrimaryButton
+            type="submit"
             className="w-full py-4 rounded-lg font-semibold"
-            onClick={handleRequestOtp}
           >
             Send OTP to Email
           </PrimaryButton>
-        </>
+        </form>
       )}
 
       {signupStep === 2 && (
-        <>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleVerifyOtp();
+          }}
+          className="space-y-4"
+        >
           <div className="flex justify-between">
             {signupOtp.map((digit, i) => (
               <input
@@ -161,16 +217,22 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             ))}
           </div>
           <PrimaryButton
-            onClick={handleVerifyOtp}
-            className="w-full py-4 rounded-lg font-semibold mt-4"
+            type="submit"
+            className="w-full py-4 rounded-lg font-semibold"
           >
             Verify OTP
           </PrimaryButton>
-        </>
+        </form>
       )}
 
       {signupStep === 3 && (
-        <>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleRegister();
+          }}
+          className="space-y-4"
+        >
           <input
             type="text"
             placeholder="Full Name"
@@ -193,12 +255,12 @@ export default function SignupFlow({ email, setEmail, setMode }) {
             className="w-full px-4 py-4 rounded-lg bg-gray-100 text-sm focus:outline-none text-black placeholder:text-gray-500"
           />
           <PrimaryButton
-            onClick={handleRegister}
+            type="submit"
             className="w-full py-4 rounded-lg font-semibold"
           >
             Register
           </PrimaryButton>
-        </>
+        </form>
       )}
     </>
   );

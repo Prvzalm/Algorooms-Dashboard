@@ -14,6 +14,7 @@ import MaxProfitLossChart from "../../Routes/BackTest/MaxProfitLossChart";
 import DaywiseBreakdown from "../../Routes/BackTest/DaywiseBreakdown";
 import TransactionDetails from "../../Routes/BackTest/TransactionDetails";
 import PrimaryButton from "../../common/PrimaryButton";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 const timeRanges = [
   "1 Month",
@@ -368,10 +369,33 @@ const MyPortfolioTab = () => {
     }));
   }, [perStrategy, metricsDefinition]);
 
+  const pnlMetricKeys = useMemo(
+    () =>
+      new Set([
+        "TotalProfitLoss",
+        "MaxProfit",
+        "MaxLoss",
+        "AverageProfitPerDay",
+        "AverageLossPerDay",
+        "CommulitiveDrawDown",
+        "TotalDrawDown",
+      ]),
+    []
+  );
+
   const numberFmt = (n, digits = 2) =>
     typeof n === "number"
       ? n.toLocaleString(undefined, { maximumFractionDigits: digits })
       : "--";
+
+  const runDisabled =
+    isFetchingMulti || !selectedStrategies.length || !fromDateRFC || !toDateRFC;
+
+  const handleRunSubmit = (e) => {
+    e?.preventDefault();
+    if (runDisabled) return;
+    setRunToken((n) => n + 1);
+  };
 
   const handleStrategyToggle = (id) => {
     setSelectedStrategies((prev) =>
@@ -380,7 +404,10 @@ const MyPortfolioTab = () => {
   };
 
   return (
-    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white">
+    <form
+      onSubmit={handleRunSubmit}
+      className="w-full md:p-6 text-[#2E3A59] dark:text-white"
+    >
       <h2 className="text-lg font-semibold mb-2">My Portfolio Backtest</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
         Select multiple strategies, choose time range and run an aggregated
@@ -391,6 +418,7 @@ const MyPortfolioTab = () => {
         {/* Multi strategy selector */}
         <div className="w-full lg:w-1/3 relative" ref={strategyDropdownRef}>
           <button
+            type="button"
             className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-2 rounded-lg text-left flex justify-between items-center"
             onClick={() => setShowStrategyList((p) => !p)}
           >
@@ -452,6 +480,7 @@ const MyPortfolioTab = () => {
               })}
               {selectedStrategies.length > 0 && (
                 <button
+                  type="button"
                   className="mt-2 w-full text-xs bg-[#1B44FE] text-white py-1 rounded"
                   onClick={() => setSelectedStrategies([])}
                 >
@@ -465,6 +494,7 @@ const MyPortfolioTab = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {timeRanges.map((range) => (
             <button
+              type="button"
               key={range}
               onClick={() => handleTimeRangeClick(range)}
               className={`text-sm px-4 py-2 rounded-md border ${
@@ -509,6 +539,7 @@ const MyPortfolioTab = () => {
         <div className="flex items-center gap-2">
           <div className="relative" ref={dropdownRef}>
             <button
+              type="button"
               onClick={() => setShowExportOptions((prev) => !prev)}
               className="text-sm px-4 py-2 border border-[#1B44FE] rounded-md text-[#1B44FE] flex items-center gap-1"
             >
@@ -518,6 +549,7 @@ const MyPortfolioTab = () => {
               <div className="absolute right-0 mt-2 bg-white dark:bg-[#1F1F24] shadow-lg border border-gray-200 dark:border-[#2D2F36] rounded-md text-sm z-10 w-44">
                 {["PDF", "Excel", "CSV"].map((type) => (
                   <button
+                    type="button"
                     key={type}
                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36]"
                     onClick={() => {
@@ -533,13 +565,8 @@ const MyPortfolioTab = () => {
           </div>
           <PrimaryButton
             className="text-sm px-4 py-2 rounded-md disabled:bg-gray-400"
-            disabled={
-              isFetchingMulti ||
-              !selectedStrategies.length ||
-              !fromDateRFC ||
-              !toDateRFC
-            }
-            onClick={() => setRunToken((n) => n + 1)}
+            type="submit"
+            disabled={runDisabled}
             title={
               !selectedStrategies.length
                 ? "Select strategies"
@@ -601,35 +628,14 @@ const MyPortfolioTab = () => {
                       >
                         <td className="py-2 pr-4 font-medium">{row.label}</td>
                         {row.values.map(({ strategyId, value }) => {
-                          const isPositive = [
-                            "TotalProfitLoss",
-                            "WinTrades",
-                            "WinDays",
-                            "WinDayPer",
-                            "WinTradesPer",
-                            "MaxProfit",
-                            "WinStreak",
-                            "AverageProfitPerDay",
-                          ].includes(row.key);
-                          const isNegative = [
-                            "MaxLoss",
-                            "AverageLossPerDay",
-                            "CommulativeDrawDown",
-                            "TotalDrawDown",
-                            "LoseTrades",
-                            "LoseDays",
-                            "LoseDayPer",
-                            "LoseTradesPer",
-                            "LoseStreak",
-                          ].includes(row.key);
-                          const cls =
-                            typeof value === "number"
-                              ? isPositive
-                                ? "text-green-600"
-                                : isNegative
-                                ? "text-red-500"
-                                : ""
-                              : "";
+                          const shouldColor =
+                            pnlMetricKeys.has(row.key) &&
+                            typeof value === "number";
+                          const cls = shouldColor
+                            ? getPnlTextClass(value, {
+                                neutral: "text-gray-500 dark:text-gray-400",
+                              })
+                            : "";
                           const display =
                             typeof value === "number"
                               ? numberFmt(value) + (row.suffix || "")
@@ -692,7 +698,7 @@ const MyPortfolioTab = () => {
           </div>
         )
       )}
-    </div>
+    </form>
   );
 };
 

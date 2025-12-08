@@ -25,14 +25,46 @@ const PaymentDetailsModal = ({
 
     initiatePayment(paymentPayload, {
       onSuccess: (response) => {
-        // Response contains: paymentLink, orderId, tokenType, amount
-        if (response?.paymentLink) {
-          // Open Razorpay payment link in new tab
-          window.open(response.paymentLink, "_blank");
-          toast.success("Payment link generated successfully");
+        const normalizedStatus = (
+          response?.status ||
+          response?.Status ||
+          response?.paymentStatus ||
+          ""
+        )
+          .toString()
+          .toLowerCase();
+
+        const isSuccessful =
+          response?.success === true ||
+          response?.isSuccess === true ||
+          normalizedStatus === "success" ||
+          normalizedStatus === "paid" ||
+          normalizedStatus === "completed" ||
+          !!response?.paymentLink ||
+          !!response?.PaymentLink;
+
+        if (isSuccessful) {
+          const link =
+            response?.paymentLink ||
+            response?.PaymentLink ||
+            response?.redirectUrl;
+
+          if (link) {
+            window.open(link, "_blank");
+          }
+
+          toast.success(
+            response?.message ||
+              response?.Message ||
+              "Payment initiated successfully"
+          );
           onProcessPayment(response);
         } else {
-          toast.error("Failed to generate payment link");
+          toast.error(
+            response?.message ||
+              response?.Message ||
+              "Failed to initiate payment"
+          );
         }
       },
       onError: (error) => {
@@ -126,9 +158,14 @@ const PaymentDetailsModal = ({
           />
           <label className="text-sm text-[#2E3A59] dark:text-white">
             I accept all payment terms and{" "}
-            <span className="text-blue-600 dark:text-blue-400 underline cursor-pointer">
+            <a
+              href="https://algorooms.com/privacy-policy.html#refund"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 underline"
+            >
               refund policy
-            </span>
+            </a>
           </label>
         </div>
 

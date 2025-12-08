@@ -1,17 +1,31 @@
+import { useNavigate } from "react-router-dom";
 import { emptyHeaderCard } from "../../../assets";
 import { useProfileQuery } from "../../../hooks/profileHooks";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
   const { data: profileData, isLoading, isError } = useProfileQuery();
+  const navigate = useNavigate();
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error...</div>;
+  const totalPnlValue = Number(totalPnl) || 0;
+  const totalPnlClass = getPnlTextClass(totalPnlValue, {
+    positive: "text-green-200",
+    negative: "text-red-300",
+    neutral: "text-white/80",
+  });
   return (
     <div className="flex flex-col">
       <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-t-3xl flex flex-col justify-between">
         {brokers.length !== 0 ? (
           <>
             <div className="text-sm mb-1">Total P&L</div>
-            <div className="text-3xl font-bold mb-2">₹{totalPnl}</div>
+            <div className={`text-3xl font-bold mb-2 ${totalPnlClass}`}>
+              ₹
+              {totalPnlValue.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </div>
             <div className="flex text-sm justify-between gap-4">
               <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <span className="text-gray-300 text-xs mb-0.5">
@@ -47,7 +61,11 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
                 Account.
               </p>
               <div>
-                <button className="bg-white text-[#0096FF] px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-200 transition">
+                <button
+                  className="bg-white text-[#0096FF] px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-200 transition"
+                  type="button"
+                  onClick={() => navigate("/add-broker")}
+                >
                   + Add Broker
                 </button>
               </div>

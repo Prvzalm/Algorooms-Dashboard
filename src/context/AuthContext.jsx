@@ -7,6 +7,7 @@ const AuthContext = createContext({
   token: null,
   user: null,
   login: async () => ({ success: false }),
+  loginWithToken: async () => ({ success: false }),
   logout: () => {},
   loading: true,
 });
@@ -49,6 +50,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const applyTokenAndProfile = async (accessToken) => {
+    if (!accessToken) {
+      return { success: false, message: "Missing access token" };
+    }
+    setToken(accessToken);
+    localStorage.setItem("token", accessToken);
+    axiosInstance.defaults.headers.common[
+      "Authorization"
+    ] = `Bearer ${accessToken}`;
+    await ensureProfile();
+    return { success: true };
+  };
+
   const login = async ({ UserId, Password, ApiKey }) => {
     try {
       const res = await axiosInstance.post("/home/loginUser", {
@@ -60,15 +74,10 @@ export const AuthProvider = ({ children }) => {
       const { Data, Status, Message } = res.data;
 
       if (Status === "Success") {
-        setToken(Data.AccessToken);
-        localStorage.setItem("token", Data.AccessToken);
-
-        axiosInstance.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${Data.AccessToken}`;
-
-        await ensureProfile();
-
+        const result = await applyTokenAndProfile(Data?.AccessToken);
+        if (!result.success) {
+          return result;
+        }
         return { success: true };
       } else {
         return { success: false, message: Message || "Login failed" };
@@ -105,6 +114,7 @@ export const AuthProvider = ({ children }) => {
         token,
         user,
         login,
+        loginWithToken: applyTokenAndProfile,
         logout,
         loading,
       }}

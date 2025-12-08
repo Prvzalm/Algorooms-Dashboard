@@ -43,12 +43,14 @@ const AddBrokerPage = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const submitBrokerForm = async () => {
     if (!selectedBroker) {
       toast.error("Please select a broker");
       return;
     }
     try {
+      const apiAppId = `${selectedBroker.BrokerName || ""}_${brokerId || ""}`;
+
       const payload = isMaster
         ? {
             BrokerId: selectedBroker.BrokerId,
@@ -60,7 +62,7 @@ const AddBrokerPage = () => {
             BrokerClientId: brokerId,
             APIKey: apiKey,
             APISecretKey: apiSecret,
-            APIAppId: selectedBroker.BrokerName,
+            APIAppId: apiAppId,
             IsCustomApi: isMaster,
           };
 
@@ -77,6 +79,11 @@ const AddBrokerPage = () => {
       toast.error(error?.response?.data?.Message || "Failed to add broker");
       console.error("AddBroker API Error:", error);
     }
+  };
+
+  const handleBrokerFormSubmit = (e) => {
+    e.preventDefault();
+    submitBrokerForm();
   };
 
   return (
@@ -169,157 +176,177 @@ const AddBrokerPage = () => {
         </div>
 
         <div className="w-full lg:w-1/3 md:border-l border-[#E4EAF0] dark:border-[#2D2F36] md:pl-6">
-          <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
-            Add Your Broker Detail
-          </h2>
-          <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-4">
-            Enter the login information or tokens required by your broker so we
-            can finish the setup.
-          </p>
-
-          {isLoading ? (
-            <div
-              className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 mb-6 bg-white dark:bg-[#1F1F24]"
-              aria-busy="true"
-            >
-              <div className="flex items-center gap-3 w-full">
-                <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-[#2D2F36] animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-40 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
-                  <div className="h-3 w-56 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
-                </div>
-              </div>
+          <form
+            onSubmit={handleBrokerFormSubmit}
+            className="space-y-4"
+            noValidate
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-[#2E3A59] dark:text-white">
+                Add Your Broker Detail
+              </h2>
+              <p className="text-sm text-[#718EBF] dark:text-[#A0AEC0]">
+                Enter the login information or tokens required by your broker so
+                we can finish the setup.
+              </p>
             </div>
-          ) : (
-            selectedBroker && (
-              <div className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 mb-6 bg-white dark:bg-[#1F1F24]">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={selectedBroker.BrokerLogoUrl}
-                    alt={selectedBroker.BrokerName}
-                    className="w-16 h-16"
-                  />
-                  <div>
-                    <p className="font-semibold text-[#2E3A59] dark:text-white">
-                      {selectedBroker.BrokerName}
-                    </p>
-                    <p className="flex items-center text-xs text-[#718EBF] dark:text-[#A0AEC0]">
-                      How to add {selectedBroker.BrokerName}?{" "}
-                      <FaYoutube className="text-red-500 text-xl ml-1" />
-                    </p>
+
+            {isLoading ? (
+              <div
+                className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24]"
+                aria-busy="true"
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-[#2D2F36] animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-40 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
+                    <div className="h-3 w-56 bg-gray-200 dark:bg-[#2D2F36] rounded animate-pulse" />
                   </div>
                 </div>
               </div>
-            )
-          )}
+            ) : (
+              selectedBroker && (
+                <div className="flex items-center justify-between border border-[#E4EAF0] dark:border-[#2D2F36] rounded-xl p-4 bg-white dark:bg-[#1F1F24]">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={selectedBroker.BrokerLogoUrl}
+                      alt={selectedBroker.BrokerName}
+                      className="w-16 h-16"
+                    />
+                    <div>
+                      <p className="font-semibold text-[#2E3A59] dark:text-white">
+                        {selectedBroker.BrokerName}
+                      </p>
+                      <p className="flex items-center text-xs text-[#718EBF] dark:text-[#A0AEC0]">
+                        How to add {selectedBroker.BrokerName}?{" "}
+                        <FaYoutube className="text-red-500 text-xl ml-1" />
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
 
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="brokerId"
-                className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Broker ID
-              </label>
-              <input
-                id="brokerId"
-                name="brokerId"
-                type="text"
-                placeholder="Enter Broker ID"
-                value={brokerId}
-                onChange={(e) => setBrokerId(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-              />
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="brokerId"
+                  className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Broker ID
+                </label>
+                <input
+                  id="brokerId"
+                  name="brokerId"
+                  type="text"
+                  placeholder="Enter Broker ID"
+                  value={brokerId}
+                  onChange={(e) => setBrokerId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+                />
+              </div>
+              {!isMaster && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="apiKey"
+                      className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      API Key
+                    </label>
+                    <input
+                      id="apiKey"
+                      name="apiKey"
+                      type="text"
+                      placeholder="API Key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="apiSecret"
+                      className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      API Secret Key
+                    </label>
+                    <input
+                      id="apiSecret"
+                      name="apiSecret"
+                      type="text"
+                      placeholder="API Secret Key"
+                      value={apiSecret}
+                      onChange={(e) => setApiSecret(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            {!isMaster && (
-              <>
-                <div>
-                  <label
-                    htmlFor="apiKey"
-                    className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    API Key
-                  </label>
-                  <input
-                    id="apiKey"
-                    name="apiKey"
-                    type="text"
-                    placeholder="API Key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-                  />
-                </div>
 
-                <div>
-                  <label
-                    htmlFor="apiSecret"
-                    className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+            <div>
+              <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
+                Redirect Url:
+                <span className="relative group inline-flex">
+                  <button
+                    type="button"
+                    className="w-4 h-4 flex items-center justify-center"
+                    aria-label="Redirect URL information"
                   >
-                    API Secret Key
-                  </label>
-                  <input
-                    id="apiSecret"
-                    name="apiSecret"
-                    type="text"
-                    placeholder="API Secret Key"
-                    value={apiSecret}
-                    onChange={(e) => setApiSecret(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm text-[#2E3A59] dark:text-white placeholder:text-[#718EBF]"
-                  />
-                </div>
-              </>
-            )}
-          </div>
+                    <img width={14} height={14} src={infoIcon} alt="info" />
+                  </button>
+                  <span
+                    className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
+                    role="tooltip"
+                  >
+                    Copy this callback URL into your broker developer console.
+                    Tokens will only be issued if the redirect exactly matches
+                    the value configured here.
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={selectedBroker?.ApiRedirectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-500 block break-all flex-1"
+                >
+                  {selectedBroker?.ApiRedirectUrl || "-"}
+                </a>
+                {selectedBroker?.ApiRedirectUrl && (
+                  <button
+                    type="button"
+                    onClick={handleCopyUrl}
+                    className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#2D2F36] transition-colors"
+                    aria-label="Copy redirect URL"
+                  >
+                    <FiCopy className="w-4 h-4 text-[#718EBF] dark:text-[#A0AEC0]" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0]">
+                Static IP:
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-blue-500 block break-all flex-1">
+                  10.0.0.1
+                </p>
+              </div>
+            </div>
 
-          <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0] mb-2">
-            Redirect Url:
-            <span className="relative group inline-flex">
-              <button
-                type="button"
-                className="w-4 h-4 flex items-center justify-center"
-                aria-label="Redirect URL information"
-              >
-                <img width={14} height={14} src={infoIcon} alt="info" />
-              </button>
-              <span
-                className="pointer-events-none absolute right-0 top-full mt-2 w-60 max-w-xs text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 bg-white dark:bg-[#1E2027] border border-gray-200 dark:border-[#2A2D35] rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition"
-                role="tooltip"
-              >
-                Copy this callback URL into your broker developer console.
-                Tokens will only be issued if the redirect exactly matches the
-                value configured here.
-              </span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mb-4">
-            <a
-              href={selectedBroker?.ApiRedirectUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-500 block break-all flex-1"
+            <PrimaryButton
+              className="w-full py-3"
+              type="submit"
+              disabled={adding}
             >
-              {selectedBroker?.ApiRedirectUrl || "-"}
-            </a>
-            {selectedBroker?.ApiRedirectUrl && (
-              <button
-                type="button"
-                onClick={handleCopyUrl}
-                className="flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#2D2F36] transition-colors"
-                aria-label="Copy redirect URL"
-              >
-                <FiCopy className="w-4 h-4 text-[#718EBF] dark:text-[#A0AEC0]" />
-              </button>
-            )}
-          </div>
-
-          <PrimaryButton
-            className="w-full py-3"
-            onClick={handleSubmit}
-            disabled={adding}
-          >
-            {adding ? "Submitting..." : "Submit"}
-          </PrimaryButton>
+              {adding ? "Submitting..." : "Submit"}
+            </PrimaryButton>
+          </form>
         </div>
       </div>
     </div>

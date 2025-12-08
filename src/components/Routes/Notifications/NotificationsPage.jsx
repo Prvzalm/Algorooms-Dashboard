@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { noNotification, notificationGeneral } from "../../../assets";
 
-const tabs = ["General", "Broadcast Received", "Broadcast Sent"];
+const tabs = [
+  "General",
+  //  "Broadcast Received",
+  //   "Broadcast Sent"
+];
 
 const mockNotifications = {
   General: [

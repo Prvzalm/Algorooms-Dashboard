@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { formatCurrency } from "../../hooks/reportsHooks";
+import { getPnlTextClass } from "../../services/utils/formatters";
 import DonutChart from "./ui/DonutChart";
 import Heatmap from "./ui/Heatmap";
 import EquityCurve from "./ui/EquityCurve";
@@ -267,13 +268,13 @@ const StrategyReportDetails = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-emerald-600">P&L</span>
+                  <span className="text-green-600 dark:text-green-400">
+                    P&L
+                  </span>
                   <span
-                    className={`font-semibold ${
-                      (strategy.pnlStrategyWise || 0) >= 0
-                        ? "text-emerald-600"
-                        : "text-rose-600"
-                    }`}
+                    className={`font-semibold ${getPnlTextClass(
+                      strategy.pnlStrategyWise || 0
+                    )}`}
                   >
                     {formatCurrency(strategy.pnlStrategyWise || 0)}
                   </span>
@@ -408,8 +409,8 @@ const StrategyReportDetails = ({
                         <span
                           className={`font-medium ${
                             t.TransactionType === "BUY"
-                              ? "text-emerald-600"
-                              : "text-rose-600"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-500 dark:text-red-400"
                           }`}
                         >
                           {t.TransactionType}
@@ -444,11 +445,7 @@ const StrategyReportDetails = ({
                       </td>
                       <td className="px-5 py-2 font-medium">
                         <span
-                          className={`${
-                            (t.pnlPerTransaction || 0) >= 0
-                              ? "text-emerald-600"
-                              : "text-rose-600"
-                          }`}
+                          className={getPnlTextClass(t.pnlPerTransaction || 0)}
                         >
                           {formatCurrency(t.pnlPerTransaction || 0)}
                         </span>

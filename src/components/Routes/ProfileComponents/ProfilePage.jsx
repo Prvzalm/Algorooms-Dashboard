@@ -4,17 +4,73 @@ import { FiEdit2, FiEye, FiEyeOff, FiCopy } from "react-icons/fi";
 import {
   profileActivePlanIcon,
   profileBacktestIcon,
-  profileMan,
   profileWalletIcon,
 } from "../../../assets";
 import { useProfileQuery, useUpdateProfile } from "../../../hooks/profileHooks";
 import { toast } from "react-toastify";
-import { useChangePasswordMutation } from "../../../hooks/loginHooks";
+import {
+  useChangePasswordMutation,
+  useRequestMobileOtpMutation,
+  useValidateMobileOtpMutation,
+} from "../../../hooks/loginHooks";
 import { useSubscriptionQuery } from "../../../hooks/subscriptionHooks";
 import { useWalletQuery } from "../../../hooks/walletHooks";
 import { useBackTestCounterDetails } from "../../../hooks/backTestHooks";
 import Avatar from "../../common/Avatar";
 import PrimaryButton from "../../common/PrimaryButton";
+
+const MOBILE_OTP_API_KEY = "abc";
+const MOBILE_OTP_TYPE = "MOBILE_UPDATE";
+const MOBILE_OTP_LENGTH = 6;
+
+const getApiErrorMessage = (error, fallbackMessage) =>
+  error?.response?.data?.Message || error?.message || fallbackMessage;
+
+const isApiStatusSuccess = (response) => {
+  const status =
+    response?.data?.Status ??
+    response?.Status ??
+    response?.data?.status ??
+    response?.status;
+  if (typeof status === "string") {
+    return status.toLowerCase() === "success";
+  }
+  if (typeof status === "boolean") {
+    return status;
+  }
+  return false;
+};
+
+const safeNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const getSubscriptionStatus = (endDateStr) => {
+  if (!endDateStr) {
+    return { text: "N/A", isExpired: false, hasValidDate: false };
+  }
+  const parsed = Date.parse(endDateStr);
+  if (Number.isNaN(parsed)) {
+    return { text: "N/A", isExpired: false, hasValidDate: false };
+  }
+
+  const endDate = new Date(parsed);
+  const today = new Date();
+  endDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) {
+    return { text: "Expired", isExpired: true, hasValidDate: true };
+  }
+
+  return {
+    text: `${diffDays} day${diffDays === 1 ? "" : "s"}`,
+    isExpired: false,
+    hasValidDate: true,
+  };
+};
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -23,40 +79,65 @@ const ProfilePage = () => {
   const { data: subscriptionData } = useSubscriptionQuery();
   const { mutate: updateProfile, isPending, error } = useUpdateProfile();
   const { mutate: changePasswordUser } = useChangePasswordMutation();
+  const { mutate: requestMobileOtp, isPending: requestingMobileOtp } =
+    useRequestMobileOtpMutation();
+  const { mutate: validateMobileOtp, isPending: validatingMobileOtp } =
+    useValidateMobileOtpMutation();
   const { data: counter } = useBackTestCounterDetails();
 
   const [form, setForm] = useState({
     Name: "",
     EmailAddress: "",
+    Mobile_Number: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [mobileOtp, setMobileOtp] = useState("");
+  const [otpRequestedFor, setOtpRequestedFor] = useState("");
+  const [otpVerifiedFor, setOtpVerifiedFor] = useState("");
 
   if (isLoading || !profile) return <div>Loading...</div>;
 
+  const resetMobileOtpState = () => {
+    setMobileOtp("");
+    setOtpRequestedFor("");
+    setOtpVerifiedFor("");
+  };
+
   const handleEdit = () => {
+    resetMobileOtpState();
     setIsEditing(true);
     setForm({
       Name: profile?.Name,
       EmailAddress: profile?.EmailAddress,
+      Mobile_Number: profile?.Mobile_Number,
     });
   };
 
   const handleSave = () => {
+    const mobileChanged =
+      form.Mobile_Number && form.Mobile_Number !== profile?.Mobile_Number;
+
+    if (mobileChanged && otpVerifiedFor !== form.Mobile_Number) {
+      toast.info("Verify the new mobile number via OTP before saving");
+      return;
+    }
+
     updateProfile(
       {
         Name: form.Name || profile?.Name,
-        EmailAddress: form.EmailAddress,
-        Mobile_Number: profile?.Mobile_Number,
+        EmailAddress: form.EmailAddress || profile?.EmailAddress,
+        Mobile_Number: form.Mobile_Number || profile?.Mobile_Number,
         Address: profile?.Address,
         ProfileDescription: profile?.ProfileDescription,
       },
       {
         onSuccess: (res) => {
           toast.success(res?.Message || "Profile updated successfully");
+          resetMobileOtpState();
           setIsEditing(false);
         },
         onError: (err) => {
@@ -64,7 +145,6 @@ const ProfilePage = () => {
         },
       }
     );
-    setIsEditing(false);
   };
 
   const handleChangePassword = () => {
@@ -98,7 +178,113 @@ const ProfilePage = () => {
     }
   };
 
+  const handleSendMobileOtp = () => {
+    const mobileNumber = form.Mobile_Number;
+    if (!mobileNumber) {
+      toast.info("Enter a mobile number");
+      return;
+    }
+    if (mobileNumber === profile?.Mobile_Number) {
+      toast.info("Enter a new mobile number to update");
+      return;
+    }
+    if (mobileNumber.length < 10) {
+      toast.info("Enter a valid 10-digit mobile number");
+      return;
+    }
+
+    requestMobileOtp(
+      {
+        MobileNumber: mobileNumber,
+        OTPType: MOBILE_OTP_TYPE,
+        ApiKey: MOBILE_OTP_API_KEY,
+      },
+      {
+        onSuccess: (res) => {
+          if (isApiStatusSuccess(res)) {
+            toast.success("OTP sent to the entered mobile number");
+            setOtpRequestedFor(mobileNumber);
+            setMobileOtp("");
+          } else {
+            toast.error(res?.data?.Message || "Failed to send mobile OTP");
+          }
+        },
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "Failed to send mobile OTP"));
+        },
+      }
+    );
+  };
+
+  const handleVerifyMobileOtp = () => {
+    const mobileNumber = form.Mobile_Number;
+    if (!mobileNumber) {
+      toast.info("Enter a mobile number");
+      return;
+    }
+    if (mobileNumber === profile?.Mobile_Number) {
+      toast.info("Mobile number is unchanged");
+      return;
+    }
+    if (otpRequestedFor !== mobileNumber) {
+      toast.info("Send OTP to this mobile number first");
+      return;
+    }
+    if (!mobileOtp || mobileOtp.length !== MOBILE_OTP_LENGTH) {
+      toast.info(`Enter a valid ${MOBILE_OTP_LENGTH}-digit OTP`);
+      return;
+    }
+
+    validateMobileOtp(
+      {
+        MobileNumber: mobileNumber,
+        OTP: Number(mobileOtp),
+        ApiKey: MOBILE_OTP_API_KEY,
+      },
+      {
+        onSuccess: (res) => {
+          if (isApiStatusSuccess(res)) {
+            toast.success("Mobile number verified");
+            setOtpVerifiedFor(mobileNumber);
+            setMobileOtp("");
+          } else {
+            toast.error(res?.data?.Message || "Invalid mobile OTP");
+          }
+        },
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "OTP verification failed"));
+        },
+      }
+    );
+  };
+
   const subscription = subscriptionData?.[0];
+  const walletBalance = safeNumber(wallet?.WalletBalance);
+  const allowedBacktests = safeNumber(counter?.AllowedBacktestCount);
+  const runningBacktests = safeNumber(counter?.RunningBacktestCount);
+  const availableBacktestCredits = Math.max(
+    allowedBacktests - runningBacktests,
+    0
+  );
+  const subscriptionStatus = getSubscriptionStatus(subscription?.EndDate);
+  const subscriptionMessage = !subscriptionStatus.hasValidDate
+    ? "No active subscription found."
+    : subscriptionStatus.isExpired
+    ? "Your current subscription has expired."
+    : `Your current subscription expires in ${subscriptionStatus.text}.`;
+  const subscriptionMessageClass = subscriptionStatus.isExpired
+    ? "text-sm text-red-500"
+    : subscriptionStatus.hasValidDate
+    ? "text-sm text-green-600"
+    : "text-sm text-gray-500 dark:text-gray-400";
+  const mobileChanged =
+    isEditing &&
+    form.Mobile_Number &&
+    form.Mobile_Number !== profile?.Mobile_Number;
+  const hasOtpForCurrentMobile =
+    mobileChanged && otpRequestedFor === form.Mobile_Number;
+  const isOtpVerifiedForCurrentMobile =
+    mobileChanged && otpVerifiedFor === form.Mobile_Number;
 
   return (
     <div className="text-sm text-gray-800 dark:text-white space-y-6">
@@ -155,11 +341,92 @@ const ProfilePage = () => {
               <div className="font-semibold">{profile?.EmailAddress}</div>
             </div>
 
-            <div>
+            <div className="flex-1 min-w-[200px]">
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Mobile Number
               </div>
-              <div className="font-semibold">{profile?.Mobile_Number}</div>
+              {isEditing ? (
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={15}
+                      value={form.Mobile_Number || ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          Mobile_Number: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                      className="flex-1 rounded-lg border border-[#DFEAF2] dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] px-3 py-2 text-sm"
+                      placeholder="Enter mobile number"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendMobileOtp}
+                      disabled={!mobileChanged || requestingMobileOtp}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                        !mobileChanged || requestingMobileOtp
+                          ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-[#2D2F36]"
+                          : "bg-[#E8EDFF] text-[#1B44FE] dark:bg-[#2D2F36]"
+                      }`}
+                    >
+                      {requestingMobileOtp ? "Sending..." : "Send OTP"}
+                    </button>
+                  </div>
+
+                  {mobileChanged && hasOtpForCurrentMobile && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={MOBILE_OTP_LENGTH}
+                        value={mobileOtp}
+                        onChange={(e) =>
+                          setMobileOtp(e.target.value.replace(/\D/g, ""))
+                        }
+                        className="flex-1 rounded-lg border border-[#DFEAF2] dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] px-3 py-2 text-sm"
+                        placeholder="Enter OTP"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyMobileOtp}
+                        disabled={
+                          isOtpVerifiedForCurrentMobile || validatingMobileOtp
+                        }
+                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                          isOtpVerifiedForCurrentMobile || validatingMobileOtp
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-[#2D2F36]"
+                            : "bg-[#E8EDFF] text-[#1B44FE] dark:bg-[#2D2F36]"
+                        }`}
+                      >
+                        {isOtpVerifiedForCurrentMobile
+                          ? "Verified"
+                          : validatingMobileOtp
+                          ? "Verifying..."
+                          : "Verify OTP"}
+                      </button>
+                    </div>
+                  )}
+
+                  {mobileChanged && !hasOtpForCurrentMobile && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Send OTP to verify the new mobile number.
+                    </p>
+                  )}
+
+                  {isOtpVerifiedForCurrentMobile && (
+                    <p className="text-xs text-green-600">
+                      Mobile number verified.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="font-semibold">
+                  {profile?.Mobile_Number || "--"}
+                </div>
+              )}
             </div>
 
             {isEditing ? (
@@ -195,7 +462,7 @@ const ProfilePage = () => {
                   Wallet Amount
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  ₹ {wallet?.WalletBalance ?? 0}
+                  ₹ {walletBalance.toLocaleString("en-IN")}
                 </div>
               </div>
             </div>
@@ -213,12 +480,7 @@ const ProfilePage = () => {
                   Backtest Credit
                 </div>
                 <div className="text-base font-medium text-[#2E3A59] dark:text-white">
-                  {counter
-                    ? `${
-                        counter.AllowedBacktestCount -
-                        counter.RunningBacktestCount
-                      }`
-                    : "--/--"}
+                  {counter ? availableBacktestCredits : "--/--"}
                 </div>
               </div>
             </div>
@@ -390,11 +652,8 @@ const ProfilePage = () => {
               <div className="text-sm text-[#718EBF] mb-1 mt-4 dark:text-gray-400">
                 Expire
               </div>
-              <div className="text-sm text-red-500">
-                Your current subscription expires in{" "}
-                <span className="text-base font-semibold">
-                  <DaysRemaining endDateStr={subscription?.EndDate} /> days
-                </span>
+              <div className={subscriptionMessageClass}>
+                {subscriptionMessage}
               </div>
             </div>
           </div>
@@ -402,15 +661,6 @@ const ProfilePage = () => {
       </div>
     </div>
   );
-};
-
-const DaysRemaining = ({ endDateStr }) => {
-  const endDate = new Date(endDateStr);
-  const today = new Date();
-  const diffMs = endDate - today;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  return diffDays;
 };
 
 export default ProfilePage;

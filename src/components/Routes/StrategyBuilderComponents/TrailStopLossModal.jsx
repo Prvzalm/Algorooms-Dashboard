@@ -6,17 +6,17 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     initialData.trailingType || "%"
   );
   const [priceMovement, setPriceMovement] = useState(
-    initialData.priceMovement || ""
+    Math.max(0, Number(initialData.priceMovement) || 0)
   );
   const [trailingValue, setTrailingValue] = useState(
-    initialData.trailingValue || ""
+    Math.max(0, Number(initialData.trailingValue) || 0)
   );
 
   const handleSave = () => {
     onSave({
       trailingType,
-      priceMovement: Number(priceMovement) || 0,
-      trailingValue: Number(trailingValue) || 0,
+      priceMovement,
+      trailingValue,
     });
     onClose();
   };
@@ -79,8 +79,12 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             <div className="relative">
               <input
                 type="number"
+                min="0"
+                step="any"
                 value={priceMovement}
-                onChange={(e) => setPriceMovement(e.target.value)}
+                onChange={(e) =>
+                  setPriceMovement(Math.max(0, Number(e.target.value) || 0))
+                }
                 className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333] pr-8"
                 placeholder="Enter value"
               />
@@ -109,8 +113,12 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             </label>
             <input
               type="number"
+              min="0"
+              step="any"
               value={trailingValue}
-              onChange={(e) => setTrailingValue(e.target.value)}
+              onChange={(e) =>
+                setTrailingValue(Math.max(0, Number(e.target.value) || 0))
+              }
               className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
               placeholder="Enter value"
             />

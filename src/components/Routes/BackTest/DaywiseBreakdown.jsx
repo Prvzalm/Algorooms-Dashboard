@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
   const cellRef = useRef();
@@ -18,24 +19,76 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
 
   const data = useMemo(() => {
     if (!dictionaryOfDateWisePnl) return [];
-    // dictionary keys: YYYY-MM-DD => pnl
-    const grouped = {};
-    Object.entries(dictionaryOfDateWisePnl).forEach(([dateStr, pnl]) => {
-      const d = new Date(dateStr);
-      if (isNaN(d)) return;
-      const monthKey = `${d.toLocaleDateString("en-US", {
-        month: "short",
-      })} ${d.getFullYear()}`;
-      if (!grouped[monthKey])
-        grouped[monthKey] = { date: monthKey, pnl: 0, grid: [] };
-      grouped[monthKey].pnl += pnl;
-      grouped[monthKey].grid.push({
-        type: pnl > 0 ? "profit" : pnl < 0 ? "loss" : "inactive",
-        amount: pnl,
-        date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-      });
+
+    const entries = Object.entries(dictionaryOfDateWisePnl)
+      .map(([dateStr, pnl]) => ({ dateStr, pnl: Number(pnl) || 0 }))
+      .filter(({ dateStr }) => !Number.isNaN(new Date(dateStr).getTime()));
+
+    if (!entries.length) return [];
+
+    const monthBuckets = new Map();
+    let minDate = null;
+    let maxDate = null;
+
+    entries.forEach(({ dateStr, pnl }) => {
+      const current = new Date(dateStr);
+      if (!minDate || current < minDate) minDate = current;
+      if (!maxDate || current > maxDate) maxDate = current;
+
+      const ymKey = `${current.getFullYear()}-${String(
+        current.getMonth() + 1
+      ).padStart(2, "0")}`;
+      if (!monthBuckets.has(ymKey)) {
+        monthBuckets.set(ymKey, {
+          month: current.getMonth(),
+          year: current.getFullYear(),
+          days: new Map(),
+        });
+      }
+      const bucket = monthBuckets.get(ymKey);
+      bucket.days.set(current.getDate(), pnl);
     });
-    return Object.values(grouped);
+
+    const months = [];
+    const cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+
+    while (cursor <= end) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      const ymKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const label = `${cursor.toLocaleDateString("en-US", {
+        month: "short",
+      })} ${year}`;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const bucket = monthBuckets.get(ymKey);
+      const grid = [];
+      let monthlySum = 0;
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const amount = bucket?.days.get(day);
+        const dayDate = new Date(year, month, day);
+        const label = dayDate.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+        });
+        if (amount !== undefined) {
+          monthlySum += amount;
+          grid.push({
+            type: amount > 0 ? "profit" : amount < 0 ? "loss" : "inactive",
+            amount,
+            date: label,
+          });
+        } else {
+          grid.push({ type: "inactive", amount: 0, date: label });
+        }
+      }
+
+      months.push({ date: label, pnl: monthlySum, grid });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return months;
   }, [dictionaryOfDateWisePnl]);
 
   // Alternate tooltip: show a small fixed panel on click rather than hover causing overlap issues
@@ -91,13 +144,9 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
                 {month.date}
               </div>
               <div
-                className={`mt-1 text-sm font-semibold ${
-                  month.pnl > 0
-                    ? "text-green-500"
-                    : month.pnl < 0
-                    ? "text-red-500"
-                    : "text-black dark:text-white"
-                }`}
+                className={`mt-1 text-sm font-semibold ${getPnlTextClass(
+                  month.pnl
+                )}`}
               >
                 {formatAmount(month.pnl)}
               </div>

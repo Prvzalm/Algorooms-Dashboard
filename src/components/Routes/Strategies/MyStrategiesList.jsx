@@ -6,7 +6,7 @@ import {
   useDeleteStrategy,
 } from "../../../hooks/strategyHooks";
 import { emptyStrategy, shrinkLogo } from "../../../assets";
-import CreateStrategyPopup from "./CreateStrategyPopup";
+// import CreateStrategyPopup from "./CreateStrategyPopup";
 import DuplicateStrategyModal from "../../DuplicateStrategyModal";
 import ConfirmModal from "../../ConfirmModal";
 import {
@@ -87,7 +87,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
     }
   });
 
-  const [showStrategyPopup, setShowStrategyPopup] = useState(false);
+  // const [showStrategyPopup, setShowStrategyPopup] = useState(false);
   const [actionMenuOpenId, setActionMenuOpenId] = useState(null);
   // Refs to detect outside clicks when the action menu is open
   const menuRef = useRef(null);
@@ -207,16 +207,21 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 <>
                   <PrimaryButton
                     className="px-6 py-2 rounded-lg text-sm font-medium"
-                    onClick={() => setShowStrategyPopup(true)}
+                    onClick={() => navigate("/trading/strategy-builder")}
                   >
                     + Create Strategy
                   </PrimaryButton>
 
-                  {showStrategyPopup && (
-                    <CreateStrategyPopup
-                      onClose={() => setShowStrategyPopup(false)}
-                    />
-                  )}
+                  {/**
+                   * Legacy behavior:
+                   *
+                   * <PrimaryButton onClick={() => setShowStrategyPopup(true)}>
+                   *   + Create Strategy
+                   * </PrimaryButton>
+                   * {showStrategyPopup && (
+                   *   <CreateStrategyPopup onClose={() => setShowStrategyPopup(false)} />
+                   * )}
+                   */}
                 </>
               ) : (
                 <p className="text-sm text-[#718EBF] dark:text-gray-400">
@@ -321,7 +326,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                       </div>
                     </div>
 
-                    <div className="mt-4 max-h-[200px] overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    <div className="mt-4 max-h-[120px] overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                       {strategy.ScriptDetails &&
                       strategy.ScriptDetails.length > 0 ? (
                         strategy.ScriptDetails.map((script, index) => (

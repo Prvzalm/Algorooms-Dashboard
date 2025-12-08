@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import TradeSettings from "./TradeSettings";
@@ -22,7 +22,10 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   const entryDays = watch("EntryDaysBeforExpiry") ?? 0;
   const exitDays = watch("ExitDaysBeforExpiry") ?? 0;
   const strategySegmentType = watch("StrategySegmentType") || "";
-  const isEquityInstrument = strategySegmentType === "Equity";
+  const normalizedSegment = strategySegmentType.toLowerCase();
+  const isEquityInstrument = normalizedSegment === "equity";
+  const isFutureInstrument = normalizedSegment === "future";
+  const hideDeliveryProducts = isEquityInstrument || isFutureInstrument;
 
   // Derive display value from form
   const productType =
@@ -37,7 +40,14 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   // CNC Settings state (these are UI-only, not in form)
   const [showCNCSettings, setShowCNCSettings] = useState(true);
 
-  const orderTypes = ["MIS", "CNC", "BTST"];
+  const orderTypes = hideDeliveryProducts ? ["MIS"] : ["MIS", "CNC", "BTST"];
+
+  useEffect(() => {
+    if (hideDeliveryProducts && productType !== "MIS") {
+      setValue("ProductType", 0, { shouldDirty: true });
+      setValue("isBtSt", false, { shouldDirty: true });
+    }
+  }, [hideDeliveryProducts, productType, setValue]);
   const days = ["MON", "TUE", "WED", "THU", "FRI"];
 
   const toggleDay = (day) => {
@@ -90,7 +100,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           </div>
         )} */}
 
-        {productType === "CNC" && !isEquityInstrument && (
+        {productType === "CNC" && !hideDeliveryProducts && (
           <div className="border border-gray-200 dark:border-[#2C2F36] rounded-lg p-4 space-y-4">
             <button
               type="button"
