@@ -7,6 +7,7 @@ import {
   PointElement,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 ChartJS.register(LineElement, LinearScale, CategoryScale, PointElement);
 
@@ -49,29 +50,32 @@ const BacktestReport = ({ overall, equityCurve }) => {
     },
   };
 
+  const totalPnlValue = Number(overall?.TotalProfitLoss) || 0;
+  const drawdownValue = Number(overall?.CommulitiveDrawDown) || 0;
+  const totalPnlClass = getPnlTextClass(totalPnlValue);
+  const drawdownClass = getPnlTextClass(drawdownValue, {
+    positive: "text-green-600 dark:text-green-400",
+    negative: "text-red-500 dark:text-red-400",
+    neutral: "text-gray-500 dark:text-gray-400",
+  });
+  const formatCurrency = (value) =>
+    Number.isFinite(value)
+      ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+      : "--";
+
   return (
     <div className="w-full bg-white dark:bg-darkbg text-[#2E3A59] dark:text-white rounded-xl">
       <div className="flex flex-col justify-between mb-4">
         <p className="text-lg font-medium">
           P&amp;L:{" "}
-          <span
-            className={
-              overall?.TotalProfitLoss >= 0 ? "text-green-500" : "text-red-500"
-            }
-          >
-            ₹{" "}
-            {overall?.TotalProfitLoss?.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
+          <span className={totalPnlClass}>
+            ₹ {formatCurrency(totalPnlValue)}
           </span>
         </p>
         <p className="text-lg font-medium">
           Max. Draw down:{" "}
-          <span className="text-red-500">
-            ₹{" "}
-            {overall?.CommulitiveDrawDown?.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
+          <span className={drawdownClass}>
+            ₹ {formatCurrency(drawdownValue)}
           </span>
         </p>
       </div>

@@ -8,6 +8,7 @@ import {
 import { FiChevronDown } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import PrimaryButton from "../../common/PrimaryButton";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 
 const icons = [strategy1, strategy2, strategy3];
 
@@ -32,31 +33,32 @@ const StrategyDeployed = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const deployedStrategies = strategies?.flatMap((broker) =>
-    broker.DeploymentDetail.flatMap((strategy) =>
-      strategy.DeploymentDetail.map((deployment) => {
-        // Find the live PNL for this strategy from WebSocket data
-        const liveStrategy = liveStrategies.find(
-          (ls) => ls.id === strategy.strategyId
-        );
+  const deployedStrategies =
+    strategies?.flatMap((broker) =>
+      broker.DeploymentDetail.flatMap((strategy) =>
+        strategy.DeploymentDetail.map((deployment) => {
+          // Find the live PNL for this strategy from WebSocket data
+          const liveStrategy = liveStrategies.find(
+            (ls) => ls.id === strategy.strategyId
+          );
 
-        return {
-          strategyName: strategy.StrategyName,
-          strategyId: strategy.strategyId,
-          brokerName: broker.BrokerName,
-          brokerCode: broker.BrokerClientId,
-          brokerLogo: broker.brokerLogoUrl,
-          totalPnl: liveStrategy?.strategyPNL ?? deployment.TotalPnl,
-          isLive: deployment.isLiveMode,
-          running: deployment.Running_Status,
-          maxProfit: deployment.MaxProfit,
-          maxLoss: deployment.MaxLoss,
-          deploymentType: deployment.DeploymentType,
-          timestamp: deployment.deploymentTimeStamp,
-        };
-      })
-    )
-  );
+          return {
+            strategyName: strategy.StrategyName,
+            strategyId: strategy.strategyId,
+            brokerName: broker.BrokerName,
+            brokerCode: broker.BrokerClientId,
+            brokerLogo: broker.brokerLogoUrl,
+            totalPnl: liveStrategy?.strategyPNL ?? deployment.TotalPnl,
+            isLive: deployment.isLiveMode,
+            running: deployment.Running_Status,
+            maxProfit: deployment.MaxProfit,
+            maxLoss: deployment.MaxLoss,
+            deploymentType: deployment.DeploymentType,
+            timestamp: deployment.deploymentTimeStamp,
+          };
+        })
+      )
+    ) || [];
 
   return (
     <>
@@ -124,10 +126,19 @@ const StrategyDeployed = ({
           </button>
           {deployedStrategies.map((s, i) => {
             const Icon = icons[i % icons.length];
-            const isNegative = s.totalPnl < 0;
+            const pnlValue = Number(s.totalPnl) || 0;
+            const pnlClass = getPnlTextClass(pnlValue);
             const statusParts = [
-              s.running ? "Running" : "Stopped",
-              s.isLive ? "Live" : "Paper",
+              {
+                label: s.running ? "Running" : "Stopped",
+                className: s.running ? "text-[#19A0FF]" : "text-red-500",
+              },
+              {
+                label: s.isLive ? "Live" : "Paper",
+                className: s.isLive
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-amber-500 dark:text-amber-400",
+              },
             ];
 
             return (
@@ -158,28 +169,19 @@ const StrategyDeployed = ({
                             <span className="text-gray-400 dark:text-gray-500">
                               •
                             </span>
-                            <span
-                              className={
-                                part.toLowerCase() === "running"
-                                  ? "text-[#19A0FF]"
-                                  : part.toLowerCase() === "stopped"
-                                  ? "text-red-500"
-                                  : "text-green-600"
-                              }
-                            >
-                              {part}
-                            </span>
+                            <span className={part.className}>{part.label}</span>
                           </span>
                         ))}
                       </p>
                     </div>
 
                     <p
-                      className={`font-bold text-base mt-2 sm:mt-0 sm:ml-6 ${
-                        isNegative ? "text-red-500" : "text-green-500"
-                      }`}
+                      className={`font-bold text-base mt-2 sm:mt-0 sm:ml-6 ${pnlClass}`}
                     >
-                      ₹{Math.abs(s.totalPnl).toFixed(2)}
+                      ₹
+                      {pnlValue.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}
                     </p>
                   </div>
                 </div>

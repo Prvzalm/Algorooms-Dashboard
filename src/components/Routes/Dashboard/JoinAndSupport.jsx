@@ -18,7 +18,7 @@ const JoinAndSupport = () => {
     {
       name: "Youtube Channel",
       icon: FaYoutube,
-      link: "https://youtube.com/@algorooms",
+      link: "https://www.youtube.com/watch?v=_Ykgl07qZ1o",
       bgColor: "bg-red-500",
     },
     {

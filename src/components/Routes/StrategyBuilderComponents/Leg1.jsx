@@ -194,13 +194,37 @@ const Leg1 = ({
     return side === "ITM" ? -num : num;
   };
 
+  const detectUnitToken = (input) => {
+    if (!input && input !== 0) return "";
+    const token = String(input).toLowerCase();
+    if (token.includes("pt")) return "pt";
+    if (token.includes("%") || token.includes("pr")) return "%";
+    return "";
+  };
+
+  const deriveUnitSuffix = (code, fallbackLabel = "") => {
+    const normalizedCode = detectUnitToken(code);
+    if (normalizedCode) return normalizedCode;
+    return detectUnitToken(fallbackLabel);
+  };
+
+  const formatMetricWithUnit = (label, value, unitToken) => {
+    if (value === undefined || value === null || value === "") return null;
+    const base = String(value);
+    const decorated =
+      unitToken === "%" ? `${base}%` : unitToken === "pt" ? `${base} pt` : base;
+    return `${label} ${decorated}`;
+  };
+
   const formatStrikeSummary = (strikeObj) => {
     if (!strikeObj) return "ATM";
     const value = Number(strikeObj.StrikeValue) || 0;
     const abs = Math.abs(value);
     switch (strikeObj.type) {
       case "ATM":
-        return value === 0 ? "ATM" : `ATM ${value > 0 ? `+${abs}` : `-${abs}`}`;
+        return value === 0
+          ? "ATM"
+          : `ATM ${value > 0 ? `+${abs}` : `-${abs}`} pts`;
       case "ATMPER":
         return value === 0
           ? "ATM"
@@ -442,12 +466,27 @@ const Leg1 = ({
         selectedInstrument?.Name ||
         "";
 
+      const actionLabel = [transaction, optionSymbol]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      const slUnit = deriveUnitSuffix(
+        sourceStrike?.SLType,
+        isActive ? slTypeSel : undefined
+      );
+      const tpUnit = deriveUnitSuffix(
+        sourceStrike?.TargetType,
+        isActive ? tpTypeSel : undefined
+      );
+
       const summaryBits = [
+        actionLabel || null,
         instrumentName || null,
         qtyValue ? `Qty ${qtyValue}` : null,
         `Strike ${formatStrikeSummary(strikeObj)}`,
-        targetText ? `TP ${targetText}` : null,
-        stopLossText ? `SL ${stopLossText}` : null,
+        formatMetricWithUnit("TP", targetText, tpUnit),
+        formatMetricWithUnit("SL", stopLossText, slUnit),
       ].filter(Boolean);
 
       return {
@@ -472,6 +511,8 @@ const Leg1 = ({
       stopLossQty,
       existingActiveStrike,
       isPopulatedStrike,
+      slTypeSel,
+      tpTypeSel,
     ]
   );
 
@@ -1735,8 +1776,12 @@ const Leg1 = ({
                               onClick={() => handlePositionChange(pos)}
                               className={`w-1/2 border rounded px-3 py-2 font-semibold transition ${
                                 position === pos
-                                  ? "text-blue-600 border-blue-300 bg-blue-50 dark:bg-[#0F3F62]"
-                                  : "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-[#2C2F36] border-gray-300 dark:border-[#2C2F36]"
+                                  ? pos === "BUY"
+                                    ? "text-green-700 border-green-500 bg-green-50 dark:text-green-400 dark:bg-green-900/20 dark:border-green-600"
+                                    : "text-red-600 border-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900/20 dark:border-red-600"
+                                  : pos === "BUY"
+                                  ? "text-green-600 border-green-200 bg-white dark:text-green-400 dark:bg-transparent dark:border-green-900/40"
+                                  : "text-red-500 border-red-200 bg-white dark:text-red-400 dark:bg-transparent dark:border-red-900/40"
                               }`}
                               disabled={isDisabled}
                             >
@@ -2172,97 +2217,90 @@ const Leg1 = ({
                         />
                       </div>
                     </div>
-
-                    {selectedStrategyTypes?.[0] === "indicator" && (
-                      <>
-                        <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={signalCandleCondition}
-                            onChange={() =>
-                              setSignalCandleCondition(!signalCandleCondition)
-                            }
-                            disabled={isDisabled}
-                          />
-                          <span>
-                            Add Signal Candle Condition{" "}
-                            <span className="text-[11px] text-gray-400">
-                              (Optional)
-                            </span>
-                          </span>
-                        </label>
-
-                        {signalCandleCondition && (
-                          <div className="mt-4 p-4 border border-gray-200 dark:border-[#2C2F36] rounded-lg bg-gray-50 dark:bg-[#1A1D23] space-y-4">
-                            <div className="flex items-center justify-between">
-                              <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={tradeOnTriggerCandle}
-                                  onChange={handleTradeOnTriggerToggle}
-                                  disabled={isDisabled}
-                                />
-                                <span>Trade on Trigger Candle</span>
-                              </label>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
-                                  Buy When
-                                </label>
-                                <select
-                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                                  value={buyWhen}
-                                  onChange={(e) =>
-                                    handleBuyWhenChange(e.target.value)
-                                  }
-                                  disabled={isDisabled}
-                                >
-                                  <option value="Low Break">Low Break</option>
-                                  <option value="High Break">High Break</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
-                                  Short When
-                                </label>
-                                <select
-                                  className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                                  value={shortWhen}
-                                  onChange={(e) =>
-                                    handleShortWhenChange(e.target.value)
-                                  }
-                                  disabled={isDisabled}
-                                >
-                                  <option value="Low Break">Low Break</option>
-                                  <option value="High Break">High Break</option>
-                                </select>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center">
-                              <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={ofContinuousCandle}
-                                  onChange={handleContinuousToggle}
-                                  disabled={isDisabled}
-                                />
-                                <span>Of Continious Candle</span>
-                              </label>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
                 )}
               </div>
             );
           })}
         </div>
+        {selectedStrategyTypes?.[0] === "indicator" && (
+          <div className="mt-6 border border-dashed border-gray-200 dark:border-[#2C2F36] rounded-xl p-4 bg-gray-50/60 dark:bg-[#1A1D23] space-y-4">
+            <label className="text-xs text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={signalCandleCondition}
+                onChange={() =>
+                  !isDisabled && setSignalCandleCondition((prev) => !prev)
+                }
+                disabled={isDisabled}
+              />
+              <span>
+                Add Signal Candle Condition{" "}
+                <span className="text-[11px] text-gray-400">(Optional)</span>
+              </span>
+            </label>
+
+            {signalCandleCondition && (
+              <div className="p-4 border border-gray-200 dark:border-[#2C2F36] rounded-lg bg-white dark:bg-[#11141A] space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={tradeOnTriggerCandle}
+                      onChange={handleTradeOnTriggerToggle}
+                      disabled={isDisabled}
+                    />
+                    <span>Trade on Trigger Candle</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      Buy When
+                    </label>
+                    <select
+                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      value={buyWhen}
+                      onChange={(e) => handleBuyWhenChange(e.target.value)}
+                      disabled={isDisabled}
+                    >
+                      <option value="Low Break">Low Break</option>
+                      <option value="High Break">High Break</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      Short When
+                    </label>
+                    <select
+                      className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
+                      value={shortWhen}
+                      onChange={(e) => handleShortWhenChange(e.target.value)}
+                      disabled={isDisabled}
+                    >
+                      <option value="Low Break">Low Break</option>
+                      <option value="High Break">High Break</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={ofContinuousCandle}
+                      onChange={handleContinuousToggle}
+                      disabled={isDisabled}
+                    />
+                    <span>Of Continious Candle</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

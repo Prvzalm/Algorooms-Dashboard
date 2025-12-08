@@ -77,6 +77,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       path: "/",
     },
     {
+      icon: brokerIcon,
+      selectedIcon: selectedBrokerIcon,
+      name: "Broker",
+      path: "/broker",
+    },
+    {
       icon: tradingIcon,
       selectedIcon: selectedTradingIcon,
       name: "Strategy Builder",
@@ -108,12 +114,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         { name: "Strategy Backtest", path: "/backtesting/strategybacktest" },
         { name: "Simulator", path: "/backtesting/simulator" },
       ],
-    },
-    {
-      icon: brokerIcon,
-      selectedIcon: selectedBrokerIcon,
-      name: "Broker",
-      path: "/broker",
     },
     {
       icon: strategiesIcon,

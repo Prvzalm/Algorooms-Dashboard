@@ -388,11 +388,24 @@ const BacktestStrategyComponent = ({
       ? n.toLocaleString(undefined, { maximumFractionDigits: digits })
       : "--";
 
+  const runDisabled =
+    isFetchingMulti || !selectedStrategies.length || !fromDateRFC || !toDateRFC;
+
+  const handleRunBacktestSubmit = (e) => {
+    e?.preventDefault();
+    if (runDisabled) return;
+    setRunToken((n) => n + 1);
+  };
+
   return (
-    <div className="w-full md:p-6 text-[#2E3A59] dark:text-white bg-white dark:bg-[#131419]">
+    <form
+      onSubmit={handleRunBacktestSubmit}
+      className="w-full md:p-6 text-[#2E3A59] dark:text-white bg-white dark:bg-[#131419]"
+    >
       {strategyId ? (
         <div className="flex items-start gap-3 mb-6">
           <button
+            type="button"
             onClick={() => navigate("/strategies")}
             className="mt-1 p-2 rounded-md border border-gray-200 dark:border-[#2D2F36] hover:bg-gray-100 dark:hover:bg-[#2A2C33]"
             aria-label="Back to Strategies"
@@ -428,6 +441,7 @@ const BacktestStrategyComponent = ({
         <div className="w-full sm:w-1/3 relative" ref={strategyDropdownRef}>
           {!strategyBuilder && (
             <button
+              type="button"
               className="w-full bg-[#F5F8FA] dark:bg-[#2D2F36] text-sm px-4 py-3 rounded-lg text-left flex justify-between items-center"
               onClick={() => setShowStrategyList((p) => !p)}
             >
@@ -500,6 +514,7 @@ const BacktestStrategyComponent = ({
               })}
               {selectedStrategies.length > 0 && (
                 <button
+                  type="button"
                   className="mt-2 w-full text-xs bg-blue-600 text-white py-1 rounded"
                   onClick={() => setSelectedStrategies([])}
                 >
@@ -585,13 +600,8 @@ const BacktestStrategyComponent = ({
           )}
           <PrimaryButton
             className="ml-3 text-sm px-4 py-2"
-            onClick={() => setRunToken((n) => n + 1)}
-            disabled={
-              isFetchingMulti ||
-              !selectedStrategies.length ||
-              !fromDateRFC ||
-              !toDateRFC
-            }
+            type="submit"
+            disabled={runDisabled}
             title={
               isFetchingMulti
                 ? "Backtest running"
@@ -738,7 +748,7 @@ const BacktestStrategyComponent = ({
           </div>
         )
       )}
-    </div>
+    </form>
   );
 };
 

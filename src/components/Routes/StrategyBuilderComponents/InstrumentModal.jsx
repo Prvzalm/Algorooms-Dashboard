@@ -23,6 +23,7 @@ const InstrumentModal = ({
   selectedStrategyTypes = [],
 }) => {
   const modalRef = useRef(null);
+  const previousSegmentRef = useRef("Option");
   // send a single space when input is empty so API returns "all" instruments
   const [searchQuery, setSearchQuery] = useState("");
   const [segmentType, setSegmentType] = useState("Option");
@@ -80,6 +81,15 @@ const InstrumentModal = ({
       setSegmentType("Option");
     }
   }, [selectedStrategyTypes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const prev = previousSegmentRef.current;
+    if (prev !== segmentType) {
+      setSelected("");
+      setSelectedList([]);
+    }
+    previousSegmentRef.current = segmentType;
+  }, [segmentType, setSelected, setSelectedList]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

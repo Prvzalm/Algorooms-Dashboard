@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ConfirmModal from "../../ConfirmModal";
 import { emptyDeployedStrategy } from "../../../assets";
+import { getPnlTextClass } from "../../../services/utils/formatters";
 import {
   FiChevronDown,
   FiEdit2,
@@ -161,35 +162,64 @@ const DeployedStrategiesList = ({
                   </div>
                 </div>
 
-                <div className="flex gap-4 lg:gap-6 items-center flex-wrap">
-                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
+                <div className="flex gap-4 lg:gap-6 items-stretch lg:items-center flex-wrap w-full lg:w-auto">
+                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap w-full sm:w-auto lg:w-auto text-center sm:text-left">
                     Running {String(brokerItem.runningCount).padStart(2, "0")}
                   </div>
-                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
+                  <div className="bg-[#F5F8FA] dark:bg-[#2A2A2E] text-sm rounded-md px-4 py-1 text-[#718EBF] dark:text-gray-400 whitespace-nowrap w-full sm:w-auto lg:w-auto text-center sm:text-left">
                     Deployed {String(brokerItem.deployedCount).padStart(2, "0")}
                   </div>
-                  <button
-                    onClick={() => handleToggleTradeEngine(brokerItem)}
-                    disabled={
-                      rowPending || removingBroker || userBrokersFetching
-                    }
-                    className={`px-4 py-1.5 text-xs font-medium rounded-md border transition flex items-center gap-2 whitespace-nowrap ${
-                      tradeEngineStatus === "Running"
-                        ? "bg-green-50 border-green-500 text-green-600 dark:bg-green-900/20 dark:border-green-600"
-                        : "bg-[#F5F8FA] dark:bg-[#2A2A2E] border-[#E4EAF0] dark:border-[#2D2F36] text-[#2E3A59] dark:text-gray-200"
-                    } ${
-                      rowPending
-                        ? "opacity-60 cursor-not-allowed"
-                        : "hover:brightness-105"
-                    }`}
-                  >
-                    {(rowPending || removingBroker || userBrokersFetching) && (
-                      <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
-                    )}
-                    {tradeEngineStatus === "Running"
-                      ? "Stop Engine"
-                      : "Start Engine"}
-                  </button>
+                  <div className="flex flex-col gap-1 min-w-[200px] w-full sm:w-auto">
+                    <div className="flex items-center justify-between sm:justify-start gap-2 text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
+                      Trade Engine
+                      {(rowPending ||
+                        removingBroker ||
+                        userBrokersFetching) && (
+                        <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
+                      )}
+                    </div>
+                    <div className="flex bg-[#E4EAF0] dark:bg-[#2D2F36] rounded-full p-0.5 text-xs font-semibold">
+                      {[
+                        {
+                          label: "Stopped",
+                          value: false,
+                          accent: "text-red-500 dark:text-red-400",
+                        },
+                        {
+                          label: "Running",
+                          value: true,
+                          accent: "text-green-600 dark:text-green-400",
+                        },
+                      ].map(({ label, value, accent }) => {
+                        const engineActive = tradeEngineStatus === "Running";
+                        const active = engineActive === value;
+                        const disabled =
+                          rowPending || removingBroker || userBrokersFetching;
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            className={`flex-1 px-3 py-1 rounded-full transition ${
+                              active
+                                ? `bg-white dark:bg-[#1B1D22] ${accent} shadow`
+                                : "text-[#718EBF] dark:text-gray-400"
+                            } ${
+                              disabled
+                                ? "cursor-not-allowed opacity-60"
+                                : "hover:text-[#1B44FE]"
+                            }`}
+                            onClick={() => {
+                              if (disabled || active) return;
+                              handleToggleTradeEngine(brokerItem);
+                            }}
+                            disabled={disabled}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-4 lg:gap-6 lg:ml-auto w-full lg:w-auto justify-between lg:justify-end">
@@ -198,11 +228,9 @@ const DeployedStrategiesList = ({
                       PnL
                     </span>
                     <span
-                      className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap min-w-[100px] ${
-                        brokerItem.totalPnl >= 0
-                          ? "text-green-600"
-                          : "text-red-500"
-                      }`}
+                      className={`font-semibold tabular-nums inline-block text-right whitespace-nowrap min-w-[100px] ${getPnlTextClass(
+                        brokerItem.brokerPNL
+                      )}`}
                       title={`₹${brokerItem.brokerPNL.toFixed(2)}`}
                     >
                       ₹{brokerItem.brokerPNL.toFixed(2)}
@@ -264,6 +292,15 @@ const DeployedStrategiesList = ({
                       expandedStrategyKeys.has(compositeKey);
                     const removingDeployment =
                       removingDeploymentIds?.has?.(compositeKey);
+                    const controlDisabled =
+                      removingDeployment || strategyModePending;
+                    const squareOffPending =
+                      squareOffPendingIds.has(compositeKey);
+                    const squareOffDisabled =
+                      !s.running ||
+                      controlDisabled ||
+                      squareOffPending ||
+                      removingDeployment;
                     return (
                       <div key={compositeKey} className="space-y-2">
                         {/* Strategy Card */}
@@ -315,7 +352,7 @@ const DeployedStrategiesList = ({
                           </div>
 
                           {/* Max Profit/Loss */}
-                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px]">
+                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px] w-full sm:w-auto">
                             <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Profit</p>
                               <p className="font-semibold text-[#2E3A59] dark:text-white">
@@ -331,109 +368,125 @@ const DeployedStrategiesList = ({
                           </div>
 
                           {/* Controls Section */}
-                          <div className="flex items-center gap-3 flex-wrap xl:flex-nowrap xl:ml-auto relative">
+                          <div className="flex items-stretch gap-3 flex-wrap xl:flex-nowrap xl:ml-auto relative w-full">
                             {/* Mode Toggle */}
-                            <div className="flex items-center gap-2 whitespace-nowrap">
+                            <div className="flex flex-col gap-1 min-w-[160px] w-full sm:w-auto">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
                                 Mode
                               </span>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="sr-only peer"
-                                  checked={!!s.isLiveMode}
-                                  onChange={(e) =>
-                                    handleStrategyToggleLiveForward(
-                                      brokerItem,
-                                      rawS,
-                                      e.target.checked
-                                    )
-                                  }
-                                  disabled={
-                                    removingDeployment || strategyModePending
-                                  }
-                                />
-                                <span className="w-12 h-6 bg-gray-200 dark:bg-[#2D2F36] rounded-full peer-checked:bg-blue-600 transition"></span>
-                                <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition peer-checked:translate-x-6"></span>
-                              </label>
-                              <span
-                                className={`text-xs font-medium ${
-                                  s.isLiveMode
-                                    ? "text-emerald-600"
-                                    : "text-gray-500 dark:text-gray-300"
-                                }`}
-                              >
-                                {s.isLiveMode ? "Live" : "Forward"}
-                              </span>
+                              <div className="flex bg-[#E4EAF0] dark:bg-[#2D2F36] rounded-full p-0.5 text-xs font-semibold">
+                                {[
+                                  { label: "Paper", value: false },
+                                  { label: "Live", value: true },
+                                ].map(({ label, value }) => {
+                                  const active = !!s.isLiveMode === value;
+                                  return (
+                                    <button
+                                      key={label}
+                                      type="button"
+                                      className={`flex-1 px-3 py-1 rounded-full transition ${
+                                        active
+                                          ? "bg-white dark:bg-[#1B1D22] text-[#1B44FE] shadow"
+                                          : "text-[#718EBF] dark:text-gray-400"
+                                      } ${
+                                        controlDisabled
+                                          ? "cursor-not-allowed opacity-70"
+                                          : "hover:text-[#1B44FE]"
+                                      }`}
+                                      onClick={() => {
+                                        if (controlDisabled || active) return;
+                                        handleStrategyToggleLiveForward(
+                                          brokerItem,
+                                          rawS,
+                                          value
+                                        );
+                                      }}
+                                      disabled={controlDisabled}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
 
                             {/* Run Status Toggle */}
-                            <div className="flex items-center gap-2 whitespace-nowrap">
+                            <div className="flex flex-col gap-1 min-w-[160px] w-full sm:w-auto">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
                                 Status
                               </span>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="sr-only peer"
-                                  checked={!!s.running}
-                                  onChange={(e) =>
-                                    handleStrategyToggleRunning(
-                                      brokerItem,
-                                      rawS,
-                                      e.target.checked
-                                    )
-                                  }
-                                  disabled={
-                                    removingDeployment || strategyModePending
-                                  }
-                                />
-                                <span className="w-12 h-6 bg-gray-200 dark:bg-[#2D2F36] rounded-full peer-checked:bg-green-600 transition"></span>
-                                <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition peer-checked:translate-x-6"></span>
-                              </label>
-                              <span
-                                className={`text-xs font-medium ${
-                                  s.running
-                                    ? "text-green-600"
-                                    : "text-gray-500 dark:text-gray-300"
-                                }`}
-                              >
-                                {s.running ? "Running" : "Paused"}
-                              </span>
+                              <div className="flex bg-[#E4EAF0] dark:bg-[#2D2F36] rounded-full p-0.5 text-xs font-semibold">
+                                {[
+                                  { label: "Paused", value: false },
+                                  { label: "Running", value: true },
+                                ].map(({ label, value }) => {
+                                  const active = !!s.running === value;
+                                  const activeColor = value
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-amber-600 dark:text-amber-400";
+                                  return (
+                                    <button
+                                      key={label}
+                                      type="button"
+                                      className={`flex-1 px-3 py-1 rounded-full transition ${
+                                        active
+                                          ? `bg-white dark:bg-[#1B1D22] ${activeColor} shadow`
+                                          : "text-[#718EBF] dark:text-gray-400"
+                                      } ${
+                                        controlDisabled
+                                          ? "cursor-not-allowed opacity-70"
+                                          : "hover:text-green-600"
+                                      }`}
+                                      onClick={() => {
+                                        if (controlDisabled || active) return;
+                                        handleStrategyToggleRunning(
+                                          brokerItem,
+                                          rawS,
+                                          value
+                                        );
+                                      }}
+                                      disabled={controlDisabled}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
 
                             {/* Square Off Button */}
                             <button
-                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-                              disabled={
-                                strategyModePending ||
-                                squareOffPendingIds.has(compositeKey) ||
-                                removingDeployment
-                              }
+                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
+                              disabled={squareOffDisabled}
                               onClick={() =>
                                 handleStrategySquareOff(brokerItem, rawS)
                               }
+                              title={
+                                !s.running
+                                  ? "Resume the strategy to square off positions"
+                                  : undefined
+                              }
                             >
-                              {squareOffPendingIds.has(compositeKey) && (
+                              {squareOffPending && (
                                 <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
                               )}
-                              {squareOffPendingIds.has(compositeKey)
+                              {squareOffPending
                                 ? "Squaring"
+                                : !s.running
+                                ? "Resume to Square"
                                 : "Square Off"}
                             </button>
 
                             {/* PnL Display */}
-                            <div className="flex items-center gap-2 xl:min-w-[120px]">
+                            <div className="flex items-center gap-2 xl:min-w-[120px] w-full sm:w-auto justify-between sm:justify-end">
                               <div className="text-right">
                                 <p className="text-xs text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
                                   PnL
                                 </p>
                                 <p
-                                  className={`text-sm font-semibold ${
-                                    s.strategyPNL >= 0
-                                      ? "text-green-600"
-                                      : "text-red-500"
-                                  }`}
+                                  className={`text-sm font-semibold ${getPnlTextClass(
+                                    s.strategyPNL
+                                  )}`}
                                 >
                                   <span
                                     className="tabular-nums inline-block text-right whitespace-nowrap min-w-[100px]"
@@ -636,7 +689,11 @@ const DeployedStrategiesList = ({
                                           <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
                                             {p.ExitTimeStamp || "-"}
                                           </td>
-                                          <td className="px-3 py-2 text-right tabular-nums">
+                                          <td
+                                            className={`px-3 py-2 text-right tabular-nums ${getPnlTextClass(
+                                              p.PNL
+                                            )}`}
+                                          >
                                             {Number(p.PNL ?? 0).toFixed(2)}
                                           </td>
                                           <td className="px-3 py-2 whitespace-nowrap">

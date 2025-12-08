@@ -79,7 +79,7 @@ const SubscriptionsPage = () => {
     <div>
       <div className="md:p-6 text-[#2E3A59] dark:text-white space-y-6">
         <div className="text-xl md:text-2xl text-[#2E3A59] dark:text-white font-semibold">
-          My Subscription
+          Subscriptions
         </div>
 
         <div className="flex gap-6 border-b border-[#E6EDF4] dark:border-[#1E2027] text-sm font-medium">
@@ -140,19 +140,37 @@ const SubscriptionsPage = () => {
                       </div>
                     ) : null}
 
-                    <button
-                      onClick={() => {
-                        setSelectedPlan(plan);
-                        setShowConfirm(true);
-                      }}
-                      className={`w-full py-4 rounded-xl text-sm font-semibold ${
-                        plan.planName.toLowerCase() === "unlimited"
-                          ? "bg-[#1B44FE] text-white"
-                          : "border border-[#D5DAE1] dark:border-gray-700 text-[#2E3A59] dark:text-white"
-                      }`}
-                    >
-                      Get Started
-                    </button>
+                    {(() => {
+                      const planName = plan.planName?.toLowerCase?.() || "";
+                      const isFreePlan =
+                        planName.includes("free") ||
+                        Number(plan.Price) === 0 ||
+                        plan.Price === "0";
+
+                      if (isFreePlan) {
+                        return (
+                          <div className="w-full py-4 rounded-xl text-sm font-semibold border border-[#D5DAE1] dark:border-gray-700 text-[#16A34A] dark:text-green-400 text-center bg-[#F0FDF4] dark:bg-transparent">
+                            Plan already active
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => {
+                            setSelectedPlan(plan);
+                            setShowConfirm(true);
+                          }}
+                          className={`w-full py-4 rounded-xl text-sm font-semibold ${
+                            planName === "unlimited"
+                              ? "bg-[#1B44FE] text-white"
+                              : "border border-[#D5DAE1] dark:border-gray-700 text-[#2E3A59] dark:text-white"
+                          }`}
+                        >
+                          Get Started
+                        </button>
+                      );
+                    })()}
 
                     <div>
                       <div className="text-sm font-semibold mb-2 text-[#2E3A59] dark:text-white">
