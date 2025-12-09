@@ -34,7 +34,7 @@ const Leg1 = ({
   const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
   const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
-  const chartType = watch("chartType");
+  const chartTypeCombinedOrOption = watch("chartTypeCombinedOrOption");
   const transactionType = watch("TransactionType") ?? 0;
   const productTypeNum = Number(watch("ProductType")) || 0;
   const isBtSt = watch("isBtSt") || false;
@@ -97,7 +97,7 @@ const Leg1 = ({
 
   // When options chart is enabled for indicator strategy, keep only one leg
   useEffect(() => {
-    if (chartType === "options" && isIndicatorStrategy) {
+    if (chartTypeCombinedOrOption === "options" && isIndicatorStrategy) {
       const scripts = getValues("StrategyScriptList") || [];
       if (scripts.length > 0) {
         const firstScript = scripts[0];
@@ -123,7 +123,7 @@ const Leg1 = ({
         setValue("ActiveLegIndex", 0, { shouldDirty: true });
       }
     }
-  }, [chartType, activeLegIndex, setValue, updatePayload, getValues]);
+  }, [chartTypeCombinedOrOption, activeLegIndex, setValue, updatePayload, getValues]);
 
   const buyWhen = rawBuyWhen || "Low Break";
   const shortWhen = rawShortWhen || "Low Break";
@@ -1599,7 +1599,7 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          {chartType !== "options" && (
+          {chartTypeCombinedOrOption !== "options" && (
             <PrimaryButton
               type="button"
               onClick={handleAddLeg}

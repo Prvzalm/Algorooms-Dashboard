@@ -38,7 +38,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
   const isCombinedChartDisabled =
     strategySegmentType === "equity" || strategySegmentType === "future";
 
-  const chartType = watch("chartType");
+  const chartTypeCombinedOrOption = watch("chartTypeCombinedOrOption");
 
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
@@ -63,23 +63,23 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
   }, [longExit?.length, shortExit?.length]);
 
   useEffect(() => {
-    if (isCombinedChartDisabled && chartType === "combined") {
-      setValue("chartType", "options", { shouldDirty: true });
+    if (isCombinedChartDisabled && chartTypeCombinedOrOption === "combined") {
+      setValue("chartTypeCombinedOrOption", "options", { shouldDirty: true });
     }
-  }, [isCombinedChartDisabled, chartType, setValue]);
+  }, [isCombinedChartDisabled, chartTypeCombinedOrOption, setValue]);
 
   useEffect(() => {
-    setValue("IsChartOnOptionStrike", chartType === "combined", {
+    setValue("IsChartOnOptionStrike", chartTypeCombinedOrOption === "combined", {
       shouldDirty: true,
     });
-    setValue("useCombinedChart", chartType === "combined", {
+    setValue("useCombinedChart", chartTypeCombinedOrOption === "combined", {
       shouldDirty: true,
     });
-  }, [chartType, setValue]);
+  }, [chartTypeCombinedOrOption, setValue]);
 
   useEffect(() => {
-    const initialChartType = null;
-    setValue("chartType", initialChartType);
+    const initialChartType = "";
+    setValue("chartTypeCombinedOrOption", initialChartType);
   }, []);
 
   const combinedChartTooltip = isCombinedChartDisabled
@@ -964,11 +964,11 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
-                checked={chartType === "combined"}
+                checked={chartTypeCombinedOrOption === "combined"}
                 onChange={() => {
                   setValue(
-                    "chartType",
-                    chartType === "combined" ? null : "combined",
+                    "chartTypeCombinedOrOption",
+                    chartTypeCombinedOrOption === "combined" ? null : "combined",
                     {
                       shouldDirty: true,
                     }
@@ -980,11 +980,11 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
-                checked={chartType === "options"}
+                checked={chartTypeCombinedOrOption === "options"}
                 onChange={() => {
                   setValue(
-                    "chartType",
-                    chartType === "options" ? null : "options",
+                    "chartTypeCombinedOrOption",
+                    chartTypeCombinedOrOption === "options" ? null : "options",
                     {
                       shouldDirty: true,
                     }
