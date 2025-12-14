@@ -88,7 +88,7 @@ const TradeSettings = ({
   // Derive display values from form
   const transactionType =
     transactionReverseMap[formTransactionType] || "Both Side";
-  const chartType = chartTypeReverseMap[formChartType] || "Candle";
+  const chartTypeCombinedOrOption = chartTypeReverseMap[formChartType] || "Candle";
   const interval = intervalReverseMap(formInterval);
 
   // Direct handlers without local state
@@ -161,7 +161,7 @@ const TradeSettings = ({
                 key={type}
                 onClick={() => handleChartTypeChange(type)}
                 className={`${baseBtn} ${
-                  chartType === type
+                  chartTypeCombinedOrOption === type
                     ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-[#0F3F62]"
                     : "bg-white text-gray-500 border-gray-300 dark:bg-[#1E2027] dark:text-gray-400 dark:border-[#2C2F36]"
                 }`}
