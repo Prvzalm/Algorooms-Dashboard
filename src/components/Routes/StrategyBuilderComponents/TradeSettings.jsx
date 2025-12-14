@@ -14,7 +14,9 @@ const intervals = [
   "1H",
 ];
 
-const TradeSettings = () => {
+const TradeSettings = ({
+  selectedStrategyTypes: selectedStrategyTypesProp,
+}) => {
   const { setValue, watch } = useFormContext();
 
   // Use form values directly
@@ -22,19 +24,27 @@ const TradeSettings = () => {
   const formChartType = watch("ChartType") ?? 1;
   const formInterval = watch("Interval") ?? 1;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
-  const selectedStrategyTypes = watch("selectedStrategyTypes") || [];
-  const strategyType = selectedStrategyTypes?.[0] ?? "time";
+  const entryChartType = watch("chartTypeCombinedOrOption");
+  const selectedStrategyTypesForm = watch("selectedStrategyTypes") || [];
+  const mergedStrategyTypes = selectedStrategyTypesProp?.length
+    ? selectedStrategyTypesProp
+    : selectedStrategyTypesForm;
+  const strategyType = mergedStrategyTypes?.[0] ?? "time";
   const isIndicatorStrategy = strategyType === "indicator";
 
-  // When indicator strategy is selected, switch from Both Side to Only Long if currently Both Side
+  const forceSingleSide =
+    isIndicatorStrategy &&
+    (entryChartType === "options" || entryChartType === "combined");
+
+  // Only force single side when option/combined chart is enabled for indicator strategies
   React.useEffect(() => {
-    if (isIndicatorStrategy && formTransactionType === 0) {
+    if (forceSingleSide && formTransactionType === 0) {
       setValue("TransactionType", 1, { shouldDirty: true });
     }
-  }, [isIndicatorStrategy, formTransactionType, setValue]);
+  }, [forceSingleSide, formTransactionType, setValue]);
 
-  // Filter transaction options: hide "Both Side" for indicator strategies
-  const availableTransactionOptions = isIndicatorStrategy
+  // Hide "Both Side" only when we actually need single side
+  const availableTransactionOptions = forceSingleSide
     ? transactionOptions.filter((opt) => opt !== "Both Side")
     : transactionOptions;
 

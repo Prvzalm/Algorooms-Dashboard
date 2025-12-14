@@ -24,8 +24,13 @@ export function buildStrategyPayload({
     const showBacktestComponent = ui.showBacktestComponent || false;
     const createdStrategyId = ui.createdStrategyId || null;
 
+    const indicatorSegment =
+        selectedStrategyTypes[0] === "indicator"
+            ? selectedEquityInstruments[0]?.SegmentType || values.StrategySegmentType
+            : values.StrategySegmentType;
+
     const mappedSegment =
-        segmentMap[values.StrategySegmentType] || values.StrategySegmentType;
+        segmentMap[indicatorSegment] || indicatorSegment;
 
     const executionType =
         selectedStrategyTypes[0] === "time"
@@ -86,7 +91,6 @@ export function buildStrategyPayload({
 
     const isIndicatorEquityMulti =
         selectedStrategyTypes[0] === "indicator" &&
-        values.StrategySegmentType === "Equity" &&
         selectedEquityInstruments.length > 0;
 
     let StrategyScriptListFinal;

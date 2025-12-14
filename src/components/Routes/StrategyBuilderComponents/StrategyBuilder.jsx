@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { List as VirtualList } from "react-window";
 import { createPortal } from "react-dom";
 import { FormProvider, useForm } from "react-hook-form";
 import {
@@ -26,9 +25,6 @@ import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import StrategyBuilderSkeleton from "./StrategyBuilderSkeleton";
 import { FiInfo } from "react-icons/fi";
 import PrimaryButton from "../../common/PrimaryButton";
-
-const MAX_VISIBLE_EQUITY_SCRIPTS = 20;
-const EQUITY_ROW_HEIGHT = 250; // accommodates card height plus spacing
 
 const normalizeSegmentType = (segment = "Option") => {
   if (!segment) return "Option";
@@ -120,6 +116,18 @@ const StrategyBuilder = () => {
   // State for instrument quantities
   const watchedScripts = watch("StrategyScriptList") || [];
 
+  const defaultLotQty = (lotSize) => {
+    const parsed = Number(lotSize);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  };
+
+  const resolveQtyValue = (raw, fallback = 1) => {
+    if (raw === "") return "";
+    if (raw === null || raw === undefined) return fallback;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+
   const handleRemoveEquityInstrument = (instrumentToken) => {
     setSelectedEquityInstruments(
       selectedEquityInstruments.filter(
@@ -129,29 +137,70 @@ const StrategyBuilder = () => {
   };
 
   const handleEquityQtyChange = (idx, value) => {
-    const nextQty = Math.max(1, parseInt(value, 10) || 1);
     const current = getValues("StrategyScriptList") || [];
-    if (!current.length) return;
+    if (!current.length || !current[idx]) return;
+    const updated = current.map((script, sIdx) => {
+      if (sIdx !== idx) return script;
+      if (value === "") return { ...script, Qty: "" };
+      const parsed = Number(value);
+      const fallback = defaultLotQty(selectedEquityInstruments[idx]?.LotSize);
+      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+      return { ...script, Qty: qty };
+    });
+    setValue("StrategyScriptList", updated, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: updated });
+  };
+
+  const handleEquityQtyBlur = (idx, lotSize) => {
+    const current = getValues("StrategyScriptList") || [];
+    if (!current.length || !current[idx]) return;
+    const fallback = defaultLotQty(lotSize);
+    const parsed = Number(current[idx].Qty);
+    const safeQty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    if (safeQty === current[idx].Qty) return;
     const updated = current.map((script, sIdx) =>
-      sIdx === idx ? { ...script, Qty: nextQty } : script
+      sIdx === idx ? { ...script, Qty: safeQty } : script
     );
     setValue("StrategyScriptList", updated, { shouldDirty: true });
     updatePayload({ StrategyScriptList: updated });
   };
 
-  const equityListHeight = useMemo(() => {
-    if (!selectedEquityInstruments.length) return EQUITY_ROW_HEIGHT;
-    const visibleCount = Math.min(
-      selectedEquityInstruments.length,
-      MAX_VISIBLE_EQUITY_SCRIPTS
+  const handleSingleQtyChange = (value) => {
+    const current = getValues("StrategyScriptList") || [];
+    if (!current.length) return;
+    const fallback = defaultLotQty(selectedInstrument?.LotSize);
+    const updated = current.map((script, idx) => {
+      if (idx !== 0) return script;
+      if (value === "") return { ...script, Qty: "" };
+      const parsed = Number(value);
+      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+      return { ...script, Qty: qty };
+    });
+    setValue("StrategyScriptList", updated, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: updated });
+  };
+
+  const handleSingleQtyBlur = () => {
+    const current = getValues("StrategyScriptList") || [];
+    if (!current.length) return;
+    const fallback = defaultLotQty(selectedInstrument?.LotSize);
+    const parsed = Number(current[0].Qty);
+    const safeQty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    if (safeQty === current[0].Qty) return;
+    const updated = current.map((script, idx) =>
+      idx === 0 ? { ...script, Qty: safeQty } : script
     );
-    return visibleCount * EQUITY_ROW_HEIGHT;
-  }, [selectedEquityInstruments.length]);
+    setValue("StrategyScriptList", updated, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: updated });
+  };
 
   const renderEquityInstrumentRow = ({ index, style, ariaAttributes }) => {
     const ins = selectedEquityInstruments[index];
     if (!ins) return null;
-    const qtyValue = Number(watchedScripts[index]?.Qty ?? 1) || 1;
+    const qtyValue = resolveQtyValue(
+      watchedScripts[index]?.Qty,
+      defaultLotQty(ins.LotSize)
+    );
 
     return (
       <div style={style} className="px-1" {...ariaAttributes}>
@@ -206,6 +255,7 @@ const StrategyBuilder = () => {
                 min="1"
                 value={qtyValue}
                 onChange={(e) => handleEquityQtyChange(index, e.target.value)}
+                onBlur={() => handleEquityQtyBlur(index, ins.LotSize)}
                 className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -300,11 +350,12 @@ const StrategyBuilder = () => {
 
     const existingScripts = getValues("StrategyScriptList") || [];
     const previous = existingScripts[0] || {};
+    const lotQty = defaultLotQty(selectedInstrument.LotSize);
     const scriptData = {
       ...previous,
       InstrumentToken: selectedInstrument.InstrumentToken || "",
       InstrumentName: selectedInstrument.Name || "",
-      Qty: previous.Qty ?? (selectedInstrument.LotSize || 0),
+      Qty: resolveQtyValue(previous.Qty, lotQty),
       LongEquationoptionStrikeList: previous.LongEquationoptionStrikeList || [],
       ShortEquationoptionStrikeList:
         previous.ShortEquationoptionStrikeList || [],
@@ -377,10 +428,11 @@ const StrategyBuilder = () => {
     const existingScripts = getValues("StrategyScriptList") || [];
     const scripts = selectedEquityInstruments.map((ins, idx) => {
       const previous = existingScripts[idx] || {};
+      const lotQty = defaultLotQty(ins.LotSize);
       return {
         InstrumentToken: ins.InstrumentToken || "",
         InstrumentName: ins.Name || "",
-        Qty: previous.Qty || 1,
+        Qty: resolveQtyValue(previous.Qty, lotQty),
         LongEquationoptionStrikeList: (previous.LongEquationoptionStrikeList &&
         previous.LongEquationoptionStrikeList.length > 0
           ? previous.LongEquationoptionStrikeList
@@ -394,11 +446,16 @@ const StrategyBuilder = () => {
       };
     });
 
-    setValue("StrategySegmentType", "Equity", { shouldDirty: true });
+    const segmentForSelection =
+      selectedEquityInstruments[0]?.SegmentType || "Equity";
+
+    setValue("StrategySegmentType", segmentForSelection, {
+      shouldDirty: true,
+    });
     setValue("StrategyScriptList", scripts, { shouldDirty: true });
 
     updatePayload({
-      StrategySegmentType: "Equity",
+      StrategySegmentType: segmentForSelection,
       StrategyScriptList: scripts,
     });
   }, [
@@ -658,6 +715,11 @@ const StrategyBuilder = () => {
         clone.StrategyScriptList = clone.StrategyScriptList.map(
           (script, sIdx) => {
             const sc = { ...script };
+            const qtyParsed = Number(sc.Qty);
+            if (!Number.isFinite(qtyParsed) || qtyParsed <= 0) {
+              sc.Qty = 1;
+              errors.push(`Quantity auto-set to 1 (script ${sIdx + 1}).`);
+            }
             const fixStrikes = (list, sideLabel) =>
               Array.isArray(list)
                 ? list.map((st, i) => {
@@ -1010,29 +1072,14 @@ const StrategyBuilder = () => {
                             <input
                               type="number"
                               min="1"
-                              value={
-                                Number(watchedScripts?.[0]?.Qty) > 0
-                                  ? watchedScripts[0].Qty
-                                  : 1
+                              value={resolveQtyValue(
+                                watchedScripts?.[0]?.Qty,
+                                defaultLotQty(selectedInstrument.LotSize)
+                              )}
+                              onChange={(e) =>
+                                handleSingleQtyChange(e.target.value)
                               }
-                              onChange={(e) => {
-                                const nextQty = Math.max(
-                                  1,
-                                  parseInt(e.target.value, 10) || 1
-                                );
-                                const current =
-                                  getValues("StrategyScriptList") || [];
-                                if (!current.length) return;
-                                const updated = current.map((script, idx) =>
-                                  idx === 0
-                                    ? { ...script, Qty: nextQty }
-                                    : script
-                                );
-                                setValue("StrategyScriptList", updated, {
-                                  shouldDirty: true,
-                                });
-                                updatePayload({ StrategyScriptList: updated });
-                              }}
+                              onBlur={handleSingleQtyBlur}
                               className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           </div>
@@ -1042,16 +1089,19 @@ const StrategyBuilder = () => {
                   )}
 
                   {selectedEquityInstruments.length > 0 && (
-                    <div className="mt-2">
-                      <VirtualList
-                        className="pr-2"
-                        rowComponent={renderEquityInstrumentRow}
-                        rowCount={selectedEquityInstruments.length}
-                        rowHeight={EQUITY_ROW_HEIGHT}
-                        overscanCount={5}
-                        rowProps={{}}
-                        style={{ height: equityListHeight, width: "100%" }}
-                      />
+                    <div className="mt-2 space-y-3 pr-2">
+                      {selectedEquityInstruments.map((ins, idx) => (
+                        <div
+                          key={ins.InstrumentToken || ins.Name || idx}
+                          className="w-full"
+                        >
+                          {renderEquityInstrumentRow({
+                            index: idx,
+                            style: {},
+                            ariaAttributes: {},
+                          })}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

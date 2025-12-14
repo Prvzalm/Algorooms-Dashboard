@@ -244,7 +244,9 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
           </div>
         </div>
 
-        {selectedStrategyTypes?.[0] === "indicator" && <TradeSettings />}
+        {selectedStrategyTypes?.[0] === "indicator" && (
+          <TradeSettings selectedStrategyTypes={selectedStrategyTypes} />
+        )}
       </div>
       {comingSoon && <ComingSoonOverlay />}
     </div>

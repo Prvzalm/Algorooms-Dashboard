@@ -34,7 +34,8 @@ const Leg1 = ({
   const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
   const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
-  const chartType = watch("chartType");
+  const chartType =
+    watch("chartTypeCombinedOrOption") ?? watch("chartType") ?? null;
   const transactionType = watch("TransactionType") ?? 0;
   const productTypeNum = Number(watch("ProductType")) || 0;
   const isBtSt = watch("isBtSt") || false;

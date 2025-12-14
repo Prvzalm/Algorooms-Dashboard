@@ -38,7 +38,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
   const isCombinedChartDisabled =
     strategySegmentType === "equity" || strategySegmentType === "future";
 
-  const chartType = watch("chartType");
+  const chartType = watch("chartTypeCombinedOrOption");
 
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
@@ -64,7 +64,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
 
   useEffect(() => {
     if (isCombinedChartDisabled && chartType === "combined") {
-      setValue("chartType", "options", { shouldDirty: true });
+      setValue("chartTypeCombinedOrOption", "options", { shouldDirty: true });
     }
   }, [isCombinedChartDisabled, chartType, setValue]);
 
@@ -77,9 +77,19 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
     });
   }, [chartType, setValue]);
 
+  // When options/combined chart is enabled, force single-side (Only Long by default)
+  useEffect(() => {
+    if (
+      (chartType === "options" || chartType === "combined") &&
+      transactionType === 0
+    ) {
+      setValue("TransactionType", 1, { shouldDirty: true });
+    }
+  }, [chartType, transactionType, setValue]);
+
   useEffect(() => {
     const initialChartType = null;
-    setValue("chartType", initialChartType);
+    setValue("chartTypeCombinedOrOption", initialChartType);
   }, []);
 
   const combinedChartTooltip = isCombinedChartDisabled
@@ -101,6 +111,8 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
     });
     return `${meta.IndicatorName} ${parts.join(" ")}`.trim();
   };
+
+  const operatorValue = (eq) => Number(eq?.OperatorId ?? 0);
 
   const ensureArray = (key) => {
     const arr = watch(key) || [];
@@ -193,11 +205,6 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
       },
       comparerId: getOppositeComparator(longEq.comparerId),
       comparerName:
-        comparers.find(
-          (c) => c.ComparerId === getOppositeComparator(longEq.comparerId)
-        )?.ComparerName || longEq.comparerName,
-      OperatorId: getOppositeComparator(longEq.comparerId),
-      OperatorName:
         comparers.find(
           (c) => c.ComparerId === getOppositeComparator(longEq.comparerId)
         )?.ComparerName || longEq.comparerName,
@@ -329,11 +336,33 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
 
   const setOperator = (key, index, operatorId) => {
     const operatorName = operatorId == 0 ? "AND" : "OR";
-    updateEq(key, index, (eq) => ({
-      ...eq,
+    const arr = [...(watch(key) || [])];
+    const current = arr[index] || createDefaultEquation();
+    arr[index] = {
+      ...current,
       OperatorId: Number(operatorId),
-      OperatorName,
-    }));
+      OperatorName: operatorName,
+    };
+    setValue(key, arr, { shouldDirty: true, shouldTouch: true });
+
+    // Keep paired side in sync for paired layouts (transactionType === 0)
+    if (transactionType === 0) {
+      const counterpartKey = key.includes("Long")
+        ? key.replace("Long", "Short")
+        : key.replace("Short", "Long");
+      const counterpartArr = [...(watch(counterpartKey) || [])];
+      if (counterpartArr[index]) {
+        counterpartArr[index] = {
+          ...counterpartArr[index],
+          OperatorId: Number(operatorId),
+          OperatorName: operatorName,
+        };
+        setValue(counterpartKey, counterpartArr, {
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+      }
+    }
   };
 
   const addPair = () => {
@@ -555,7 +584,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                   type="button"
                   onClick={() => setOperator(key, idx, 0)}
                   className={`px-3 py-1 text-sm rounded-l-md ${
-                    (eq.OperatorId || 0) === 0
+                    operatorValue(eq) === 0
                       ? "bg-blue-500 text-white"
                       : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                   } border-r border-gray-300 dark:border-gray-600`}
@@ -566,7 +595,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                   type="button"
                   onClick={() => setOperator(key, idx, 1)}
                   className={`px-3 py-1 text-sm rounded-r-md ${
-                    (eq.OperatorId || 0) === 1
+                    operatorValue(eq) === 1
                       ? "bg-blue-500 text-white"
                       : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                   }`}
@@ -735,7 +764,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                       type="button"
                       onClick={() => setOperator("LongEntryEquation", idx, 0)}
                       className={`px-3 py-1 text-sm rounded-l-md ${
-                        (longArr[idx]?.OperatorId || 0) === 0
+                        operatorValue(longArr[idx]) === 0
                           ? "bg-blue-500 text-white"
                           : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                       } border-r border-gray-300 dark:border-gray-600`}
@@ -746,7 +775,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                       type="button"
                       onClick={() => setOperator("LongEntryEquation", idx, 1)}
                       className={`px-3 py-1 text-sm rounded-r-md ${
-                        (longArr[idx]?.OperatorId || 0) === 1
+                        operatorValue(longArr[idx]) === 1
                           ? "bg-blue-500 text-white"
                           : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                       }`}
@@ -916,7 +945,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                       type="button"
                       onClick={() => setOperator("Long_ExitEquation", idx, 0)}
                       className={`px-3 py-1 text-sm rounded-l-md ${
-                        (longArr[idx]?.OperatorId || 0) === 0
+                        operatorValue(longArr[idx]) === 0
                           ? "bg-blue-500 text-white"
                           : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                       } border-r border-gray-300 dark:border-gray-600`}
@@ -927,7 +956,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                       type="button"
                       onClick={() => setOperator("Long_ExitEquation", idx, 1)}
                       className={`px-3 py-1 text-sm rounded-r-md ${
-                        (longArr[idx]?.OperatorId || 0) === 1
+                        operatorValue(longArr[idx]) === 1
                           ? "bg-blue-500 text-white"
                           : "bg-white dark:bg-[#15171C] text-gray-700 dark:text-gray-300"
                       }`}
@@ -967,7 +996,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                 checked={chartType === "combined"}
                 onChange={() => {
                   setValue(
-                    "chartType",
+                    "chartTypeCombinedOrOption",
                     chartType === "combined" ? null : "combined",
                     {
                       shouldDirty: true,
@@ -983,7 +1012,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                 checked={chartType === "options"}
                 onChange={() => {
                   setValue(
-                    "chartType",
+                    "chartTypeCombinedOrOption",
                     chartType === "options" ? null : "options",
                     {
                       shouldDirty: true,
