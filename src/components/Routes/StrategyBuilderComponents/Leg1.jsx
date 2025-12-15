@@ -98,7 +98,7 @@ const Leg1 = ({
 
   // When options chart is enabled for indicator strategy, keep only one leg
   useEffect(() => {
-    if (chartTypeCombinedOrOption === "options" && isIndicatorStrategy) {
+    if (chartType === "options" && isIndicatorStrategy) {
       const scripts = getValues("StrategyScriptList") || [];
       if (scripts.length > 0) {
         const firstScript = scripts[0];
@@ -124,13 +124,7 @@ const Leg1 = ({
         setValue("ActiveLegIndex", 0, { shouldDirty: true });
       }
     }
-  }, [
-    chartTypeCombinedOrOption,
-    activeLegIndex,
-    setValue,
-    updatePayload,
-    getValues,
-  ]);
+  }, [chartType, activeLegIndex, setValue, updatePayload, getValues]);
 
   const buyWhen = rawBuyWhen || "Low Break";
   const shortWhen = rawShortWhen || "Low Break";
@@ -1606,7 +1600,7 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          {chartTypeCombinedOrOption !== "options" && (
+          {chartType !== "options" && (
             <PrimaryButton
               type="button"
               onClick={handleAddLeg}
