@@ -47,7 +47,8 @@ const PaymentDetailsModal = ({
     data?.CouponDiscountPercentage ?? data?.CouponPercent ?? data?.couponPercent
   );
   const couponPercent =
-    couponPercentApi || (discountedBase > 0 ? (couponAmount / discountedBase) * 100 : 0);
+    couponPercentApi ||
+    (discountedBase > 0 ? (couponAmount / discountedBase) * 100 : 0);
 
   const walletAmount = toNumber(data?.WalletAmount ?? data?.wallet);
 
@@ -72,9 +73,7 @@ const PaymentDetailsModal = ({
     data?.GstBaseAmount ?? (netPayable > 0 ? netPayable - gstAmount : 0)
   );
   const derivedGstBase = gstBase || Math.max(0, discountedBase - couponAmount);
-  const gstPercent = derivedGstBase
-    ? (gstAmount / derivedGstBase) * 100
-    : 0;
+  const gstPercent = derivedGstBase ? (gstAmount / derivedGstBase) * 100 : 0;
 
   const formatMoney = (v) => `₹${toNumber(v).toFixed(2)}`;
   const formatPct = (v) => `${v.toFixed(2)}%`;
@@ -215,9 +214,7 @@ const PaymentDetailsModal = ({
           <hr className="border-gray-200 dark:border-gray-700" />
           <div className="flex justify-between font-medium text-base text-[#2E3A59] dark:text-white">
             <span>Net Payable</span>
-            <span>
-              {formatMoney(netPayable)}
-            </span>
+            <span>{formatMoney(netPayable)}</span>
           </div>
           <hr className="border-gray-200 dark:border-gray-700" />
         </div>
