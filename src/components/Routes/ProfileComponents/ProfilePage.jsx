@@ -41,6 +41,24 @@ const isApiStatusSuccess = (response) => {
   return false;
 };
 
+const normalizeIndianMobileNumber = (mobileNumber) => {
+  const digitsOnly = (mobileNumber || "").replace(/\D/g, "");
+  if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) {
+    return digitsOnly.slice(2);
+  }
+  if (digitsOnly.length === 11 && digitsOnly.startsWith("0")) {
+    return digitsOnly.slice(1);
+  }
+  return digitsOnly;
+};
+
+const isValidIndianMobileNumber = (mobileNumber) => {
+  const normalized = normalizeIndianMobileNumber(mobileNumber);
+  // Accepts plain 10-digit numbers starting 6-9, optionally prefixed with +91/91/0 in raw input
+  const pattern = /^[6-9]\d{9}$/;
+  return pattern.test(normalized);
+};
+
 const safeNumber = (value, fallback = 0) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
@@ -118,10 +136,19 @@ const ProfilePage = () => {
   };
 
   const handleSave = () => {
+    const normalizedMobile = normalizeIndianMobileNumber(form.Mobile_Number);
+    const normalizedProfileMobile = normalizeIndianMobileNumber(
+      profile?.Mobile_Number
+    );
     const mobileChanged =
-      form.Mobile_Number && form.Mobile_Number !== profile?.Mobile_Number;
+      normalizedMobile && normalizedMobile !== normalizedProfileMobile;
 
-    if (mobileChanged && otpVerifiedFor !== form.Mobile_Number) {
+    if (mobileChanged && !isValidIndianMobileNumber(normalizedMobile)) {
+      toast.info("Enter a valid Indian mobile number");
+      return;
+    }
+
+    if (mobileChanged && otpVerifiedFor !== normalizedMobile) {
       toast.info("Verify the new mobile number via OTP before saving");
       return;
     }
@@ -130,7 +157,9 @@ const ProfilePage = () => {
       {
         Name: form.Name || profile?.Name,
         EmailAddress: form.EmailAddress || profile?.EmailAddress,
-        Mobile_Number: form.Mobile_Number || profile?.Mobile_Number,
+        Mobile_Number: mobileChanged
+          ? normalizedMobile
+          : normalizedProfileMobile,
         Address: profile?.Address,
         ProfileDescription: profile?.ProfileDescription,
       },
@@ -179,23 +208,26 @@ const ProfilePage = () => {
   };
 
   const handleSendMobileOtp = () => {
-    const mobileNumber = form.Mobile_Number;
-    if (!mobileNumber) {
+    const normalizedMobile = normalizeIndianMobileNumber(form.Mobile_Number);
+    if (!normalizedMobile) {
       toast.info("Enter a mobile number");
       return;
     }
-    if (mobileNumber === profile?.Mobile_Number) {
+    const normalizedProfileMobile = normalizeIndianMobileNumber(
+      profile?.Mobile_Number
+    );
+    if (normalizedMobile === normalizedProfileMobile) {
       toast.info("Enter a new mobile number to update");
       return;
     }
-    if (mobileNumber.length < 10) {
-      toast.info("Enter a valid 10-digit mobile number");
+    if (!isValidIndianMobileNumber(normalizedMobile)) {
+      toast.info("Enter a valid Indian mobile number");
       return;
     }
 
     requestMobileOtp(
       {
-        MobileNumber: mobileNumber,
+        MobileNumber: normalizedMobile,
         OTPType: MOBILE_OTP_TYPE,
         ApiKey: MOBILE_OTP_API_KEY,
       },
@@ -203,7 +235,7 @@ const ProfilePage = () => {
         onSuccess: (res) => {
           if (isApiStatusSuccess(res)) {
             toast.success("OTP sent to the entered mobile number");
-            setOtpRequestedFor(mobileNumber);
+            setOtpRequestedFor(normalizedMobile);
             setMobileOtp("");
           } else {
             toast.error(res?.data?.Message || "Failed to send mobile OTP");
@@ -217,16 +249,19 @@ const ProfilePage = () => {
   };
 
   const handleVerifyMobileOtp = () => {
-    const mobileNumber = form.Mobile_Number;
-    if (!mobileNumber) {
+    const normalizedMobile = normalizeIndianMobileNumber(form.Mobile_Number);
+    if (!normalizedMobile) {
       toast.info("Enter a mobile number");
       return;
     }
-    if (mobileNumber === profile?.Mobile_Number) {
+    const normalizedProfileMobile = normalizeIndianMobileNumber(
+      profile?.Mobile_Number
+    );
+    if (normalizedMobile === normalizedProfileMobile) {
       toast.info("Mobile number is unchanged");
       return;
     }
-    if (otpRequestedFor !== mobileNumber) {
+    if (otpRequestedFor !== normalizedMobile) {
       toast.info("Send OTP to this mobile number first");
       return;
     }
@@ -237,7 +272,7 @@ const ProfilePage = () => {
 
     validateMobileOtp(
       {
-        MobileNumber: mobileNumber,
+        MobileNumber: normalizedMobile,
         OTP: Number(mobileOtp),
         ApiKey: MOBILE_OTP_API_KEY,
       },
@@ -245,7 +280,7 @@ const ProfilePage = () => {
         onSuccess: (res) => {
           if (isApiStatusSuccess(res)) {
             toast.success("Mobile number verified");
-            setOtpVerifiedFor(mobileNumber);
+            setOtpVerifiedFor(normalizedMobile);
             setMobileOtp("");
           } else {
             toast.error(res?.data?.Message || "Invalid mobile OTP");
@@ -277,14 +312,18 @@ const ProfilePage = () => {
     : subscriptionStatus.hasValidDate
     ? "text-sm text-green-600"
     : "text-sm text-gray-500 dark:text-gray-400";
+  const normalizedFormMobile = normalizeIndianMobileNumber(form.Mobile_Number);
+  const normalizedProfileMobile = normalizeIndianMobileNumber(
+    profile?.Mobile_Number
+  );
   const mobileChanged =
     isEditing &&
-    form.Mobile_Number &&
-    form.Mobile_Number !== profile?.Mobile_Number;
+    normalizedFormMobile &&
+    normalizedFormMobile !== normalizedProfileMobile;
   const hasOtpForCurrentMobile =
-    mobileChanged && otpRequestedFor === form.Mobile_Number;
+    mobileChanged && otpRequestedFor === normalizedFormMobile;
   const isOtpVerifiedForCurrentMobile =
-    mobileChanged && otpVerifiedFor === form.Mobile_Number;
+    mobileChanged && otpVerifiedFor === normalizedFormMobile;
 
   return (
     <div className="text-sm text-gray-800 dark:text-white space-y-6">

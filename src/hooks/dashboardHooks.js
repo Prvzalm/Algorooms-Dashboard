@@ -9,9 +9,11 @@ export const useUserBrokerData = () => {
   return useQuery({
     queryKey: ["user-broker-data"],
     queryFn: getUserBrokerData,
-    staleTime: 300000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -19,7 +21,11 @@ export const useBrokerwiseStrategies = (orderBy = "Name") => {
   return useQuery({
     queryKey: ["brokerwise-strategies", orderBy],
     queryFn: () => getBrokerwiseDeployedStrategies(orderBy),
-    staleTime: 300000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 

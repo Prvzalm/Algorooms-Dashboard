@@ -205,7 +205,7 @@ const StrategyDeployed = ({
           </div>
 
           <PrimaryButton
-            onClick={() => navigate("/strategies")}
+            onClick={() => navigate("/trading/strategy-builder")}
             className="text-sm px-5 py-2"
           >
             Create Strategy

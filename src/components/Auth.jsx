@@ -20,7 +20,7 @@ import PrimaryButton from "./common/PrimaryButton";
 import { auth, googleProvider } from "../firebase";
 
 export default function Auth() {
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -290,8 +290,7 @@ export default function Auth() {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const oauthToken = credential?.accessToken;
+      // Firebase ID token is the bearer JWT we need to send (without the "Bearer" prefix)
       const idToken = await result.user.getIdToken();
 
       const gEmail = result.user.email;
@@ -307,18 +306,21 @@ export default function Auth() {
       googleLoginUser(
         {
           EmailID: gEmail,
-          Token: oauthToken || idToken,
+          // Send the bearer token string as-is (no "Bearer " prefix)
+          Token: idToken,
           AvtarUrl: gPicture,
-          CreatedBy: gName,
+          CreatedBy: "Google",
           ApiKey: "abc",
         },
         {
-          onSuccess: (res) => {
+          onSuccess: async (res) => {
             if (res.data.Status === "Success") {
-              localStorage.setItem("token", res.data.Data.AccessToken);
-              axiosInstance.defaults.headers.common[
-                "Authorization"
-              ] = `Bearer ${res.data.Data.AccessToken}`;
+              const accessToken = res.data.Data.AccessToken;
+              const result = await loginWithToken(accessToken);
+              if (!result?.success) {
+                toast.error(result?.message || "Google login failed");
+                return;
+              }
               toast.success("Logged in with Google");
               navigate("/");
             } else {

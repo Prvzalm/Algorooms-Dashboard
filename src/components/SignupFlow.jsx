@@ -124,10 +124,11 @@ export default function SignupFlow({ email, setEmail, setMode }) {
           if (res.data.Status === "Success") {
             toast.success("Registration successful!");
 
+            // Registration now returns an AccessToken; apply it immediately so the user is logged in
             const tokenFromResponse =
               res?.data?.Data?.AccessToken ||
-              res?.data?.Data?.Token ||
               res?.data?.AccessToken ||
+              res?.data?.Data?.Token ||
               res?.data?.token;
 
             if (tokenFromResponse) {

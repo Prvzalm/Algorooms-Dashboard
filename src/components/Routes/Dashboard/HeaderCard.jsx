@@ -47,11 +47,11 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
           </>
         ) : (
           <div className="flex flex-col sm:flex-row items-center sm:gap-8 gap-4">
-            <img
+            {/* <img
               src={emptyHeaderCard}
               alt="Empty state"
               className="w-24 sm:w-32 md:w-40"
-            />
+            /> */}
             <div className="flex flex-col space-y-2 text-center sm:text-left">
               <h1 className="text-xl md:text-2xl font-semibold">
                 Connect to your broker

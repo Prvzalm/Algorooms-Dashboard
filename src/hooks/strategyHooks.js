@@ -49,8 +49,12 @@ export const useUserStrategies = ({
         queryText,
         orderBy,
       }),
-    keepPreviousData: true,
-    staleTime: 1000 * 60 * 2,
+    keepPreviousData: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -164,7 +168,11 @@ export const useStrategyDetailsById = (strategyId, enabled = true) => {
     queryKey: ["strategy-details-by-id", strategyId],
     queryFn: () => getStrategyDetailsById(strategyId),
     enabled: !!strategyId && enabled,
-    staleTime: 1000 * 60,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 

@@ -42,6 +42,7 @@ const StrategiesPage = () => {
     isLoading: deployedLoading,
     isError: deployedError,
     isFetching: deployedFetching,
+    refetch: refetchDeployed,
   } = useBrokerwiseStrategies("Date");
 
   const { data: userBrokers = [], isFetching: userBrokersFetching } =
@@ -113,6 +114,13 @@ const StrategiesPage = () => {
   };
 
   const deployedRefreshing = deployedFetching && !deployedLoading;
+
+  // Force fresh fetch whenever the Deployed tab becomes active
+  useEffect(() => {
+    if (activeTab === "Deployed Strategies") {
+      refetchDeployed();
+    }
+  }, [activeTab, refetchDeployed]);
 
   const getEffectiveTradeEngineStatus = (brokerItem) => {
     const override = engineStatusOverrides[brokerItem.broker.code];

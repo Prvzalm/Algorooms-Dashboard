@@ -16,6 +16,69 @@ const PaymentDetailsModal = ({
 
   if (!isOpen) return null;
 
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const planType = data?.PlanType || data?.SubscriptionType || "N/A";
+  const planDays =
+    data?.PlanDays ||
+    data?.PlanDuration ||
+    data?.PlanDurationInDays ||
+    data?.SubscriptionDays ||
+    data?.DurationInDays ||
+    null;
+
+  const basePrice = toNumber(data?.BasePrice ?? data?.Price);
+  const discountedBase = toNumber(
+    data?.DiscountedBasePrice ??
+      data?.DiscountedPrice ??
+      data?.DiscountedAmount ??
+      data?.discountedBase ??
+      basePrice
+  );
+  const baseDiscount = Math.max(0, basePrice - discountedBase);
+
+  const couponAmount = toNumber(
+    data?.CouponDiscountAmount ?? data?.coupon ?? data?.CouponAmount
+  );
+  const couponPercentApi = toNumber(
+    data?.CouponDiscountPercentage ?? data?.CouponPercent ?? data?.couponPercent
+  );
+  const couponPercent =
+    couponPercentApi || (discountedBase > 0 ? (couponAmount / discountedBase) * 100 : 0);
+
+  const walletAmount = toNumber(data?.WalletAmount ?? data?.wallet);
+
+  const gstAmount = toNumber(
+    data?.GstTaxationCharge ?? data?.GSTAmount ?? data?.gstAmount
+  );
+
+  const netPayableApi = toNumber(
+    data?.NetPaybleAmount ??
+      data?.NetPayableAmount ??
+      data?.NetPaymentAmount ??
+      data?.NetPay
+  );
+
+  const fallbackNetPayable = Math.max(
+    0,
+    discountedBase - couponAmount - walletAmount + gstAmount
+  );
+  const netPayable = netPayableApi || fallbackNetPayable;
+
+  const gstBase = toNumber(
+    data?.GstBaseAmount ?? (netPayable > 0 ? netPayable - gstAmount : 0)
+  );
+  const derivedGstBase = gstBase || Math.max(0, discountedBase - couponAmount);
+  const gstPercent = derivedGstBase
+    ? (gstAmount / derivedGstBase) * 100
+    : 0;
+
+  const formatMoney = (v) => `₹${toNumber(v).toFixed(2)}`;
+  const formatPct = (v) => `${v.toFixed(2)}%`;
+
   const handleOutsideClick = (e) => {
     if (e.target.id === "modal-overlay") onClose();
   };
@@ -93,57 +156,67 @@ const PaymentDetailsModal = ({
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
             <span className="text-[#707070] dark:text-gray-400">
-              Subscription Type
+              Subscription Type / Days
             </span>
             <span>
-              {data?.PlanType
-                ? data.PlanType.charAt(0).toUpperCase() +
-                  data.PlanType.slice(1).toLowerCase()
+              {planType !== "N/A"
+                ? `${planType.charAt(0).toUpperCase()}${planType
+                    .slice(1)
+                    .toLowerCase()}`
                 : "N/A"}
+              {planDays ? ` • ${planDays} days` : ""}
             </span>
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
             <span className="text-[#707070] dark:text-gray-400">
               Base Price
             </span>
-            <span>₹{data?.BasePrice?.toFixed(2) || "0.00"}</span>
+            <span>{formatMoney(basePrice)}</span>
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
             <span className="text-[#707070] dark:text-gray-400">
-              Wallet Balance
+              Discounted Base Price
+            </span>
+            <span>{formatMoney(discountedBase)}</span>
+          </div>
+          <div className="flex justify-between text-[#2E3A59] dark:text-white">
+            <span className="text-[#707070] dark:text-gray-400">
+              Discount (Base - Discounted)
             </span>
             <span className="text-green-600 dark:text-green-400">
-              -₹{data?.WalletAmount?.toFixed(2) || "0.00"}
+              -{formatMoney(baseDiscount)}
             </span>
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
-            <span className="text-[#707070] dark:text-gray-400">Discount</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Coupon Discount
+            </span>
             <span className="text-green-600 dark:text-green-400">
-              -₹{data?.discount || "0.00"}
+              -{formatMoney(couponAmount)}
+              {couponPercent ? ` (${formatPct(couponPercent)})` : ""}
             </span>
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
-            <span className="text-[#707070] dark:text-gray-400">Coupon</span>
-            <span>-₹{data?.coupon || "0.00"}</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              Wallet Transaction
+            </span>
+            <span className="text-green-600 dark:text-green-400">
+              -{formatMoney(walletAmount)}
+            </span>
           </div>
           <div className="flex justify-between text-[#2E3A59] dark:text-white">
-            <span className="text-[#707070] dark:text-gray-400">IGST 18%</span>
+            <span className="text-[#707070] dark:text-gray-400">
+              GST {gstPercent ? `(${formatPct(gstPercent)})` : ""}
+            </span>
             <span className="text-red-500 dark:text-red-400">
-              +₹{data?.GstTaxationCharge?.toFixed(2) || "0.00"}
+              +{formatMoney(gstAmount)}
             </span>
           </div>
           <hr className="border-gray-200 dark:border-gray-700" />
           <div className="flex justify-between font-medium text-base text-[#2E3A59] dark:text-white">
             <span>Net Payable</span>
             <span>
-              ₹
-              {(
-                data?.NetPaybleAmount ??
-                (data?.BasePrice || 0) -
-                  (data?.WalletAmount || 0) -
-                  (data?.CouponDiscountAmount || 0) +
-                  (data?.GstTaxationCharge || 0)
-              ).toFixed(2)}
+              {formatMoney(netPayable)}
             </span>
           </div>
           <hr className="border-gray-200 dark:border-gray-700" />
