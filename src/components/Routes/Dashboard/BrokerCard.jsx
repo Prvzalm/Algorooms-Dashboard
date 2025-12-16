@@ -14,9 +14,16 @@ const BrokerCard = ({ brokers = [] }) => {
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   useEffect(() => {
-    if (brokers.length > 0) {
-      setSelectedBroker(brokers[0]);
+    if (!brokers || brokers.length === 0) {
+      setSelectedBroker(null);
+      return;
     }
+
+    setSelectedBroker((prev) => {
+      if (!prev) return brokers[0];
+      const stillExists = brokers.find((b) => b.code === prev.code);
+      return stillExists || brokers[0];
+    });
   }, [brokers]);
 
   useEffect(() => {
