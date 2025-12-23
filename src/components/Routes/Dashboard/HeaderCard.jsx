@@ -14,6 +14,8 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
     negative: "text-red-300",
     neutral: "text-white/80",
   });
+  const hasTradeHighlights =
+    totalPnlValue !== 0 && (Boolean(topGainer) || Boolean(topLoser));
   return (
     <div className="flex flex-col">
       <div className="bg-gradient-to-r from-[#4C49ED] to-[#0096FF] text-white p-6 rounded-t-3xl flex flex-col justify-between">
@@ -26,24 +28,28 @@ const HeaderCard = ({ totalPnl, topGainer, topLoser, accountImg, brokers }) => {
                 maximumFractionDigits: 2,
               })}
             </div>
-            <div className="flex text-sm justify-between gap-4">
-              <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                <span className="text-gray-300 text-xs mb-0.5">
-                  Top Gainer Strategy
-                </span>
-                <strong className="truncate block" title={topGainer || "-"}>
-                  {topGainer || "-"}
-                </strong>
+            {hasTradeHighlights ? (
+              <div className="flex text-sm justify-between gap-4">
+                <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                  <span className="text-gray-300 text-xs mb-0.5">
+                    Top Gainer Strategy
+                  </span>
+                  <strong className="truncate block" title={topGainer || "-"}>
+                    {topGainer || "-"}
+                  </strong>
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                  <span className="text-gray-300 text-xs mb-0.5">
+                    Top Loss Strategy
+                  </span>
+                  <strong className="truncate block" title={topLoser || "-"}>
+                    {topLoser || "-"}
+                  </strong>
+                </div>
               </div>
-              <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                <span className="text-gray-300 text-xs mb-0.5">
-                  Top Loss Strategy
-                </span>
-                <strong className="truncate block" title={topLoser || "-"}>
-                  {topLoser || "-"}
-                </strong>
-              </div>
-            </div>
+            ) : (
+              <div className="text-sm text-white/80">No trades found yet.</div>
+            )}
           </>
         ) : (
           <div className="flex flex-col sm:flex-row items-center sm:gap-8 gap-4">

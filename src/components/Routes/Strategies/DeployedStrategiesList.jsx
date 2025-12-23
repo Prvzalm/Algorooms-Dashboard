@@ -81,7 +81,7 @@ const DeployedStrategiesList = ({
     );
 
   return (
-    <div className="space-y-4 relative">
+    <div className="space-y-4 relative w-full overflow-hidden">
       <ConfirmModal
         open={!!confirmForBrokerId}
         title="Start Trade Engine?"
@@ -119,7 +119,7 @@ const DeployedStrategiesList = ({
           return (
             <div
               key={brokerItem.broker.code}
-              className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C]"
+              className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] w-full overflow-hidden"
             >
               <div className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 relative">
                 <div className="flex items-start justify-between gap-3 w-full lg:w-auto">
@@ -284,7 +284,7 @@ const DeployedStrategiesList = ({
               </div>
 
               {expanded && brokerItem.strategies.length > 0 && (
-                <div className="border-t border-[#E4EAF0] dark:border-[#2D2F36] px-5 py-4 space-y-4">
+                <div className="border-t border-[#E4EAF0] dark:border-[#2D2F36] px-5 py-4 space-y-4 overflow-x-auto">
                   {brokerItem.strategies.map((rawS) => {
                     const s = getStrategyEffective(brokerItem, rawS);
                     const compositeKey = `${brokerItem.broker.code}_${rawS.id}`;
@@ -302,9 +302,12 @@ const DeployedStrategiesList = ({
                       squareOffPending ||
                       removingDeployment;
                     return (
-                      <div key={compositeKey} className="space-y-2">
+                      <div
+                        key={compositeKey}
+                        className="space-y-2 w-full max-w-full"
+                      >
                         {/* Strategy Card */}
-                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22]">
+                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22] w-full">
                           {/* Strategy Name & Badge */}
                           <div className="flex items-center justify-between gap-3 xl:min-w-[280px]">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -352,7 +355,7 @@ const DeployedStrategiesList = ({
                           </div>
 
                           {/* Max Profit/Loss */}
-                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px] w-full sm:w-auto">
+                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px] w-full sm:w-auto min-w-0">
                             <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Profit</p>
                               <p className="font-semibold text-[#2E3A59] dark:text-white">
@@ -368,7 +371,7 @@ const DeployedStrategiesList = ({
                           </div>
 
                           {/* Controls Section */}
-                          <div className="flex items-stretch gap-3 flex-wrap xl:flex-nowrap xl:ml-auto relative w-full">
+                          <div className="flex items-stretch gap-3 flex-wrap xl:flex-wrap xl:items-center xl:ml-auto relative w-full max-w-full">
                             {/* Mode Toggle */}
                             <div className="flex flex-col gap-1 min-w-[160px] w-full sm:w-auto">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">

@@ -1346,9 +1346,14 @@ const Leg1 = ({
           ? [...base.ShortEquationoptionStrikeList]
           : [];
 
+        const isIndicator = selectedStrategyTypes?.[0] === "indicator";
         const newStrike = createDefaultStrike();
 
-        const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+        // Auto-set the new leg's option type opposite to the previous leg (CE/PE pairing)
+        const prevStrikeType = longArr[longArr.length - 1]?.StrikeType;
+        if (!isIndicator && prevStrikeType) {
+          newStrike.StrikeType = prevStrikeType === "CE" ? "PE" : "CE";
+        }
         longArr.push(newStrike);
 
         if (isIndicator) {

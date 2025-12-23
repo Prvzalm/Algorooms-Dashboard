@@ -395,7 +395,7 @@ const ProfilePage = () => {
                       onChange={(e) =>
                         setForm((prev) => ({
                           ...prev,
-                          Mobile_Number: e.target.value.replace(/\D/g, ""),
+                          Mobile_Number: e.target.value,
                         }))
                       }
                       className="flex-1 rounded-lg border border-[#DFEAF2] dark:border-[#2D2F36] bg-white dark:bg-[#1E2027] px-3 py-2 text-sm"
