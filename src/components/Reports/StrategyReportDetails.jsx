@@ -121,6 +121,40 @@ const StrategyReportDetails = ({
     [strategy]
   );
 
+  const tradeOutcomeCounts = useMemo(() => {
+    const txns = strategy?.ListOfTransactionsPerStrategy;
+    if (!Array.isArray(txns) || txns.length === 0) {
+      return { profitCount: 0, lossCount: 0 };
+    }
+
+    return txns.reduce(
+      (acc, t) => {
+        const pnl = Number(t.pnlPerTransaction) || 0;
+        if (pnl >= 0) {
+          acc.profitCount += 1;
+        } else {
+          acc.lossCount += 1;
+        }
+        return acc;
+      },
+      { profitCount: 0, lossCount: 0 }
+    );
+  }, [strategy]);
+
+  const totalBreakdownPnl = useMemo(() => {
+    if (
+      !strategy?.DateWiseReportList ||
+      !Array.isArray(strategy.DateWiseReportList)
+    ) {
+      return strategy?.pnlStrategyWise || 0;
+    }
+
+    return strategy.DateWiseReportList.reduce(
+      (sum, d) => sum + (Number(d.pnlDayWise) || 0),
+      0
+    );
+  }, [strategy]);
+
   const donutSegments =
     strategy?.DateWiseReportList && Array.isArray(strategy.DateWiseReportList)
       ? strategy.DateWiseReportList.map((d, i) => ({
@@ -194,7 +228,12 @@ const StrategyReportDetails = ({
             <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
               Strategy Breakdown
             </h4>
-            <DonutChart size={140} stroke={20} segments={donutSegments} />
+            <DonutChart
+              size={140}
+              stroke={20}
+              segments={donutSegments}
+              totalValue={totalBreakdownPnl}
+            />
           </div>
           <ul className="space-y-2 text-sm font-medium max-h-[160px] overflow-y-auto pr-2 w-44">
             {strategy?.DateWiseReportList &&
@@ -261,7 +300,7 @@ const StrategyReportDetails = ({
               <div className="flex gap-6 text-sm font-medium">
                 <div className="flex items-center gap-1">
                   <span className="text-slate-500 dark:text-slate-400">
-                    Total Traders
+                    Total Trades
                   </span>
                   <span className="text-slate-800 dark:text-slate-200">
                     {strategy.TotalTrade || 0}
@@ -269,20 +308,16 @@ const StrategyReportDetails = ({
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-green-600 dark:text-green-400">
-                    P&L
+                    Profits
                   </span>
-                  <span
-                    className={`font-semibold ${getPnlTextClass(
-                      strategy.pnlStrategyWise || 0
-                    )}`}
-                  >
-                    {formatCurrency(strategy.pnlStrategyWise || 0)}
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    {tradeOutcomeCounts.profitCount}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-rose-600">Losses</span>
-                  <span className="text-rose-600">
-                    {formatCurrency(strategy.AvgLoss || 0)}
+                  <span className="text-rose-600 font-semibold">
+                    {tradeOutcomeCounts.lossCount}
                   </span>
                 </div>
               </div>

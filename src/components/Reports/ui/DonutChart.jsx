@@ -6,10 +6,17 @@ export const DonutChart = ({
   stroke = 14,
   segments = [],
   showCenterTotal = true,
+  totalValue,
 }) => {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const total = segments.reduce((s, seg) => s + Math.max(0, seg.value), 0) || 1;
+  const chartTotal =
+    segments.reduce((s, seg) => s + Math.max(0, Math.abs(seg.value || 0)), 0) ||
+    1;
+  const displayTotal =
+    typeof totalValue === "number"
+      ? totalValue
+      : segments.reduce((s, seg) => s + (seg.value || 0), 0);
   let offset = 0;
 
   return (
@@ -29,8 +36,8 @@ export const DonutChart = ({
           fill="none"
         />
         {segments.map((seg, i) => {
-          const safeVal = Math.max(0, seg.value);
-          const dash = (safeVal / total) * circumference;
+          const safeVal = Math.max(0, Math.abs(seg.value || 0));
+          const dash = (safeVal / chartTotal) * circumference;
           const circle = (
             <circle
               key={seg.id || i}
@@ -56,7 +63,7 @@ export const DonutChart = ({
             Total P&L
           </div>
           <div className="text-[13px] font-semibold text-slate-700">
-            {total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+            {displayTotal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
           </div>
         </div>
       )}

@@ -307,9 +307,9 @@ const DeployedStrategiesList = ({
                         className="space-y-2 w-full max-w-full"
                       >
                         {/* Strategy Card */}
-                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22] w-full">
+                        <div className="flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap items-start lg:items-center gap-3 lg:gap-4 xl:gap-3 lg:justify-between rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22] w-full">
                           {/* Strategy Name & Badge */}
-                          <div className="flex items-center justify-between gap-3 xl:min-w-[280px]">
+                          <div className="flex items-center justify-between gap-3 min-w-0 flex-1 lg:min-w-[200px]">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <span className="text-sm font-medium truncate text-[#2E3A59] dark:text-white">
                                 {s.name}
@@ -355,23 +355,23 @@ const DeployedStrategiesList = ({
                           </div>
 
                           {/* Max Profit/Loss */}
-                          <div className="flex gap-6 text-xs text-[#718EBF] dark:text-gray-400 xl:min-w-[180px] w-full sm:w-auto min-w-0">
+                          <div className="grid grid-cols-2 gap-4 text-xs text-[#718EBF] dark:text-gray-400 min-w-[160px] lg:min-w-[200px] flex-shrink-0 lg:flex-1 lg:max-w-[260px]">
                             <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Profit</p>
-                              <p className="font-semibold text-[#2E3A59] dark:text-white">
+                              <p className="font-semibold text-[#2E3A59] dark:text-white truncate">
                                 {s.maxProfit ?? "-"}
                               </p>
                             </div>
                             <div className="min-w-[80px]">
                               <p className="mb-0.5">Max Loss</p>
-                              <p className="font-semibold text-[#2E3A59] dark:text-white">
+                              <p className="font-semibold text-[#2E3A59] dark:text-white truncate">
                                 {s.maxLoss ?? "-"}
                               </p>
                             </div>
                           </div>
 
                           {/* Controls Section */}
-                          <div className="flex items-stretch gap-3 flex-wrap xl:flex-wrap xl:items-center xl:ml-auto relative w-full max-w-full">
+                          <div className="flex items-stretch gap-3 flex-wrap xl:flex-nowrap xl:items-center xl:ml-auto relative w-full max-w-full lg:flex-1 lg:justify-end">
                             {/* Mode Toggle */}
                             <div className="flex flex-col gap-1 min-w-[160px] w-full sm:w-auto">
                               <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
@@ -458,77 +458,75 @@ const DeployedStrategiesList = ({
                             </div>
 
                             {/* Square Off Button */}
-                            <button
-                              className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
-                              disabled={squareOffDisabled}
-                              onClick={() =>
-                                handleStrategySquareOff(brokerItem, rawS)
-                              }
-                              title={
-                                !s.running
-                                  ? "Resume the strategy to square off positions"
-                                  : undefined
-                              }
-                            >
-                              {squareOffPending && (
-                                <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
-                              )}
-                              {squareOffPending
-                                ? "Squaring"
-                                : !s.running
-                                ? "Resume to Square"
-                                : "Square Off"}
-                            </button>
-
-                            {/* PnL Display */}
-                            <div className="flex items-center gap-2 xl:min-w-[120px] w-full sm:w-auto justify-between sm:justify-end">
-                              <div className="text-right">
-                                <p className="text-xs text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
-                                  PnL
-                                </p>
-                                <p
-                                  className={`text-sm font-semibold ${getPnlTextClass(
-                                    s.strategyPNL
-                                  )}`}
-                                >
-                                  <span
-                                    className="tabular-nums inline-block text-right whitespace-nowrap min-w-[100px]"
-                                    title={`₹${s.strategyPNL.toFixed(2)}`}
-                                  >
-                                    ₹{s.strategyPNL.toFixed(2)}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Expand/Collapse Positions */}
-                            <div className="hidden xl:flex items-center gap-2">
+                            <div className="flex items-center gap-3 justify-start xl:justify-end">
                               <button
+                                className="px-4 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
+                                disabled={squareOffDisabled}
                                 onClick={() =>
-                                  toggleStrategyExpand(compositeKey)
+                                  handleStrategySquareOff(brokerItem, rawS)
                                 }
-                                className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
-                                  strategyExpanded ? "rotate-180" : ""
-                                }`}
-                                aria-label={
-                                  strategyExpanded
-                                    ? "Collapse positions"
-                                    : "Expand positions"
+                                title={
+                                  !s.running
+                                    ? "Resume the strategy to square off positions"
+                                    : undefined
                                 }
-                                disabled={removingDeployment}
                               >
-                                <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                                {squareOffPending && (
+                                  <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
+                                )}
+                                {squareOffPending ? "Squaring" : "Square Off"}
                               </button>
-                              <button
-                                onClick={(event) =>
-                                  toggleStrategyMenu(compositeKey, event)
-                                }
-                                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0"
-                                aria-label="Strategy actions"
-                                disabled={removingDeployment}
-                              >
-                                <FiMoreVertical className="text-gray-500 dark:text-gray-400" />
-                              </button>
+
+                              {/* PnL Display */}
+                              <div className="flex items-center gap-2 xl:min-w-[120px] w-full sm:w-auto justify-between sm:justify-end">
+                                <div className="text-right">
+                                  <p className="text-xs text-[#718EBF] dark:text-gray-400 whitespace-nowrap">
+                                    PnL
+                                  </p>
+                                  <p
+                                    className={`text-sm font-semibold ${getPnlTextClass(
+                                      s.strategyPNL
+                                    )}`}
+                                  >
+                                    <span
+                                      className="tabular-nums inline-block text-right whitespace-nowrap min-w-[100px]"
+                                      title={`₹${s.strategyPNL.toFixed(2)}`}
+                                    >
+                                      ₹{s.strategyPNL.toFixed(2)}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Expand/Collapse Positions */}
+                              <div className="hidden xl:flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    toggleStrategyExpand(compositeKey)
+                                  }
+                                  className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0 ${
+                                    strategyExpanded ? "rotate-180" : ""
+                                  }`}
+                                  aria-label={
+                                    strategyExpanded
+                                      ? "Collapse positions"
+                                      : "Expand positions"
+                                  }
+                                  disabled={removingDeployment}
+                                >
+                                  <FiChevronDown className="text-gray-500 dark:text-gray-400" />
+                                </button>
+                                <button
+                                  onClick={(event) =>
+                                    toggleStrategyMenu(compositeKey, event)
+                                  }
+                                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#2F2F35] transition flex-shrink-0"
+                                  aria-label="Strategy actions"
+                                  disabled={removingDeployment}
+                                >
+                                  <FiMoreVertical className="text-gray-500 dark:text-gray-400" />
+                                </button>
+                              </div>
                             </div>
                             {openStrategyMenu === compositeKey && (
                               <div

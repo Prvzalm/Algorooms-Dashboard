@@ -88,6 +88,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     "Trail SL": false,
   });
 
+  // Wait & Trade modal state
+  const [showWaitTradeModal, setShowWaitTradeModal] = useState(false);
+  const [waitTradeTempData, setWaitTradeTempData] = useState({
+    type: "% ↑",
+    movement: "0",
+  });
+
   // Sync advState with actual form data to keep checkboxes in sync
   useEffect(() => {
     const scripts = strategyScripts || [];
@@ -155,32 +162,42 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
   };
   const onToggleAdvance = (label, checked) => {
-    setAdvState((prev) => ({ ...prev, [label]: checked }));
+    const modalFeatures = new Set([
+      "Wait & Trade",
+      "Premium Difference",
+      "Re Entry/Execute",
+      "Trail SL",
+    ]);
+    const requiresModal = modalFeatures.has(label);
+    const turningOnWithModal = requiresModal && checked;
+
+    // Keep checkbox state in sync; only mark true after confirmation for modal features
+    if (!turningOnWithModal) {
+      setAdvState((prev) => ({ ...prev, [label]: checked }));
+    }
+
     // enforce mutual exclusions when turning ON
     if (checked) {
       if (label === "Move SL to Cost") {
-        // turning on Move SL to Cost should turn off others except allowed
         setAdvState((prev) => ({
           ...prev,
           "Move SL to Cost": true,
           "Wait & Trade": false,
           "Pre Punch SL": false,
           "Trail SL": false,
-          "Exit All on SL/Tgt": false, // ✅ Disable Exit All when Move SL to Cost is enabled
+          "Exit All on SL/Tgt": false,
           "Re Entry/Execute": prev["Re Entry/Execute"],
           "Premium Difference": prev["Premium Difference"],
         }));
       }
       if (label === "Exit All on SL/Tgt") {
-        // exit all -> disable re entry and Move SL to Cost
         setAdvState((prev) => ({
           ...prev,
           "Re Entry/Execute": false,
-          "Move SL to Cost": false, // ✅ Disable Move SL to Cost when Exit All is enabled
+          "Move SL to Cost": false,
         }));
       }
       if (label === "Wait & Trade") {
-        // wait & trade disables move SL to cost
         setAdvState((prev) => ({ ...prev, "Move SL to Cost": false }));
       }
       if (label === "Re Entry/Execute") {
@@ -196,16 +213,19 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         }));
       }
     }
-    // Update a consolidated AdvanceFeatures map in form for simpler consumption in Leg1
-    const currentAf = getValues("AdvanceFeatures") || {};
-    const nextAf = { ...currentAf, [label]: checked };
-    if (label === "Re Entry/Execute" && checked) {
-      nextAf["Exit All on SL/Tgt"] = false;
+
+    // Update AdvanceFeatures immediately only when not waiting for modal confirmation or when turning OFF
+    if (!turningOnWithModal || !checked) {
+      const currentAf = getValues("AdvanceFeatures") || {};
+      const nextAf = { ...currentAf, [label]: checked };
+      if (label === "Re Entry/Execute" && checked) {
+        nextAf["Exit All on SL/Tgt"] = false;
+      }
+      if (label === "Trail SL" && checked) {
+        nextAf["Pre Punch SL"] = false;
+      }
+      setValue("AdvanceFeatures", nextAf, { shouldDirty: true });
     }
-    if (label === "Trail SL" && checked) {
-      nextAf["Pre Punch SL"] = false;
-    }
-    setValue("AdvanceFeatures", nextAf, { shouldDirty: true });
 
     switch (label) {
       case "Move SL to Cost":
@@ -225,17 +245,55 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         });
         break;
       case "Wait & Trade":
-        updateFirstStrike((s) => {
-          s.waitNTrade = {
-            ...(s.waitNTrade || {}),
-            isWaitnTrade: !!checked,
-            isPerPt: s.waitNTrade?.isPerPt || "wt_eq",
-            typeId: s.waitNTrade?.typeId || "wt_eq",
-            MovementValue: s.waitNTrade?.MovementValue ?? "0",
+        if (checked) {
+          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
+          const scripts = strategyScripts || [];
+          const firstScript = scripts[0] || {};
+          const longs = firstScript.LongEquationoptionStrikeList || [];
+          const currentStrike = longs[activeLegIndex] || {};
+          const wtMapRev = {
+            wt_eq: "% ↑",
+            "wtpt_+": "pt ↑",
+            "wtpt_-": "pt ↓",
+            "wtpr_-": "% ↓",
           };
-        });
-        // Update per-leg store
-        setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", !!checked);
+
+          setWaitTradeTempData({
+            type:
+              legFeatures.waitTradeType ||
+              wtMapRev[currentStrike.waitNTrade?.typeId] ||
+              "% ↑",
+            movement:
+              String(
+                legFeatures.waitTradeMovement ??
+                  currentStrike.waitNTrade?.MovementValue ??
+                  "0"
+              ) || "0",
+          });
+          setShowWaitTradeModal(true);
+        } else {
+          updateFirstStrike((s) => {
+            s.waitNTrade = {
+              ...(s.waitNTrade || {}),
+              isWaitnTrade: false,
+              isPerPt: s.waitNTrade?.isPerPt || "wt_eq",
+              typeId: s.waitNTrade?.typeId || "wt_eq",
+              MovementValue: s.waitNTrade?.MovementValue ?? "0",
+            };
+          });
+          setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", false);
+          setLegAdvanceFeature(activeLegIndex, "waitTradeMovement", 0);
+          setLegAdvanceFeature(activeLegIndex, "waitTradeType", "% ↑");
+          const currentAf = getValues("AdvanceFeatures") || {};
+          setValue(
+            "AdvanceFeatures",
+            {
+              ...currentAf,
+              "Wait & Trade": false,
+            },
+            { shouldDirty: true }
+          );
+        }
         break;
       case "Premium Difference":
         if (checked) {
@@ -264,6 +322,16 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           // Clear per-leg store
           setLegAdvanceFeature(activeLegIndex, "premiumDiffEnabled", false);
           setLegAdvanceFeature(activeLegIndex, "premiumDiffValue", 0);
+          const currentAf = getValues("AdvanceFeatures") || {};
+          setValue(
+            "AdvanceFeatures",
+            {
+              ...currentAf,
+              "Premium Difference": false,
+              PremiumDifferenceValue: "0",
+            },
+            { shouldDirty: true }
+          );
         }
         break;
       case "Re Entry/Execute":
@@ -388,6 +456,67 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     }
   };
 
+  const saveWaitTrade = () => {
+    const mapWaitTradeType = (label) => {
+      const meta = {
+        "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
+        "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
+        "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
+        "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
+        Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
+      };
+      return meta[label] || meta["% ↑"];
+    };
+
+    const meta = mapWaitTradeType(waitTradeTempData.type);
+    const movementVal = String(
+      Math.max(0, Number(waitTradeTempData.movement) || 0)
+    );
+
+    updateFirstStrike((s) => {
+      s.IsMoveSLCTC = false;
+      s.waitNTrade = {
+        ...(s.waitNTrade || {}),
+        isWaitnTrade: true,
+        isPerPt: meta.isPerPt,
+        typeId: meta.typeId,
+        MovementValue: movementVal,
+      };
+    });
+
+    setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", true);
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "waitTradeMovement",
+      Number(movementVal)
+    );
+    setLegAdvanceFeature(
+      activeLegIndex,
+      "waitTradeType",
+      waitTradeTempData.type
+    );
+
+    const currentAf = getValues("AdvanceFeatures") || {};
+    setValue(
+      "AdvanceFeatures",
+      {
+        ...currentAf,
+        "Move SL to Cost": false,
+        "Wait & Trade": true,
+        WaitTradeType: meta.typeId,
+        WaitTradeMovement: movementVal,
+      },
+      { shouldDirty: true }
+    );
+
+    setAdvState((prev) => ({
+      ...prev,
+      "Wait & Trade": true,
+      "Move SL to Cost": false,
+    }));
+    setShowWaitTradeModal(false);
+  };
+
   // Premium Difference Modal state & handler
   const [showPremiumDiffModal, setShowPremiumDiffModal] = useState(false);
   const [premiumDiffTempValue, setPremiumDiffTempValue] = useState("0");
@@ -427,6 +556,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
 
     if (!isEnabled) {
       setAdvState((prev) => ({ ...prev, "Premium Difference": false }));
+    } else {
+      setAdvState((prev) => ({ ...prev, "Premium Difference": true }));
     }
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -1099,6 +1230,75 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
             />
           </div>
         )}
+        {showWaitTradeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white dark:bg-[#15171C] rounded-xl p-6 w-[90%] max-w-sm space-y-4">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
+                Wait &amp; Trade
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="space-y-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400">
+                    Type
+                  </label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                    value={waitTradeTempData.type}
+                    onChange={(e) =>
+                      setWaitTradeTempData((prev) => ({
+                        ...prev,
+                        type: e.target.value,
+                      }))
+                    }
+                  >
+                    {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map((o) => (
+                      <option key={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400">
+                    Movement
+                  </label>
+                  <input
+                    type="number"
+                    value={waitTradeTempData.movement}
+                    min={0}
+                    onChange={(e) =>
+                      setWaitTradeTempData((prev) => ({
+                        ...prev,
+                        movement: String(
+                          Math.max(0, Number(e.target.value) || 0)
+                        ),
+                      }))
+                    }
+                    className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
+                    placeholder="Enter value"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowWaitTradeModal(false);
+                    setAdvState((prev) => ({ ...prev, "Wait & Trade": false }));
+                  }}
+                  className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
+                >
+                  Cancel
+                </button>
+                <PrimaryButton
+                  type="button"
+                  onClick={saveWaitTrade}
+                  className="px-4 py-2 text-sm"
+                >
+                  Save
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
+        )}
         {showPremiumDiffModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white dark:bg-[#15171C] rounded-xl p-6 w-[90%] max-w-sm space-y-4">
@@ -1124,17 +1324,25 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                   type="button"
                   onClick={() => {
                     setShowPremiumDiffModal(false);
-                    // if user cancels without value, also uncheck
-                    if (premiumDiffTempValue === 0) {
-                      setAdvState((prev) => ({
-                        ...prev,
+                    // Always leave unchecked on cancel
+                    setAdvState((prev) => ({
+                      ...prev,
+                      "Premium Difference": false,
+                    }));
+                    updateFirstStrike((s) => {
+                      s.IsPriceDiffrenceConstrant = false;
+                      s.PriceDiffrenceConstrantValue = 0;
+                    });
+                    const currentAf = getValues("AdvanceFeatures") || {};
+                    setValue(
+                      "AdvanceFeatures",
+                      {
+                        ...currentAf,
                         "Premium Difference": false,
-                      }));
-                      updateFirstStrike((s) => {
-                        s.IsPriceDiffrenceConstrant = false;
-                        s.PriceDiffrenceConstrantValue = 0;
-                      });
-                    }
+                        PremiumDifferenceValue: "0",
+                      },
+                      { shouldDirty: true }
+                    );
                   }}
                   className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
                 >
@@ -1159,6 +1367,15 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
             setShowReEntryModal(false);
             // Uncheck the checkbox if user cancels
             setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
+            const currentAf = getValues("AdvanceFeatures") || {};
+            setValue(
+              "AdvanceFeatures",
+              {
+                ...currentAf,
+                "Re Entry/Execute": false,
+              },
+              { shouldDirty: true }
+            );
           }}
           onSave={saveReEntryExecute}
           initialData={reEntryTempData}
@@ -1171,6 +1388,15 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
             setShowTrailSlModal(false);
             // Uncheck the checkbox if user cancels
             setAdvState((prev) => ({ ...prev, "Trail SL": false }));
+            const currentAf = getValues("AdvanceFeatures") || {};
+            setValue(
+              "AdvanceFeatures",
+              {
+                ...currentAf,
+                "Trail SL": false,
+              },
+              { shouldDirty: true }
+            );
           }}
           onSave={saveTrailStopLoss}
           initialData={trailSlTempData}
