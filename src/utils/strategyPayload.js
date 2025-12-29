@@ -14,11 +14,51 @@ const toNullIfEmpty = (val) => {
     return val === "" ? null : val ?? null;
 };
 
+const normalizeEntryOperators = (equations) => {
+    if (!Array.isArray(equations)) return [];
+    return equations.map((eq, idx) => {
+        const isLast = idx === equations.length - 1;
+        const opIdRaw = eq?.OperatorId;
+        const opId = Number.isFinite(Number(opIdRaw)) ? Number(opIdRaw) : 0;
+        const opName = eq?.OperatorName;
+
+        if (isLast) {
+            return {
+                ...eq,
+                OperatorId: opId,
+                OperatorName: opName || "End",
+            };
+        }
+
+        // For non-last rows, default to AND when operator missing
+        return {
+            ...eq,
+            OperatorId: opId,
+            OperatorName: opName || "AND",
+        };
+    });
+};
+
 export function buildStrategyPayload({
     values,
     ui,
 }) {
+    const {
+        AdvanceFeatures: _omitAdvanceFeatures,
+        ActiveLegIndex: _omitActiveLegIndex,
+        useCombinedChart: _omitUseCombinedChart,
+        TargetOnEachScript: _omitTargetOnEachScript,
+        StopLossOnEachScript: _omitStopLossOnEachScript,
+        ...cleanValues
+    } = values || {};
+
     const selectedStrategyTypes = ui.selectedStrategyTypes || ["time"]; // ["time"|"indicator"|"price"]
+    const txType = Number(cleanValues.TransactionType ?? 0); // 0 both, 1 long, 2 short
+    const onlyLong = txType === 1;
+    const onlyShort = txType === 2;
+    const chartTypeSelection = cleanValues.chartTypeCombinedOrOption ?? false;
+    const isOptionOrCombinedChart =
+        chartTypeSelection === "combined" || chartTypeSelection === "options";
     const selectedInstrument = ui.selectedInstrument || null;
     const selectedEquityInstruments = ui.selectedEquityInstruments || [];
     const showBacktestComponent = ui.showBacktestComponent || false;
@@ -26,8 +66,8 @@ export function buildStrategyPayload({
 
     const indicatorSegment =
         selectedStrategyTypes[0] === "indicator"
-            ? selectedEquityInstruments[0]?.SegmentType || values.StrategySegmentType
-            : values.StrategySegmentType;
+            ? selectedEquityInstruments[0]?.SegmentType || cleanValues.StrategySegmentType
+            : cleanValues.StrategySegmentType;
 
     const mappedSegment =
         segmentMap[indicatorSegment] || indicatorSegment;
@@ -39,11 +79,21 @@ export function buildStrategyPayload({
                 ? "ib"
                 : "pa";
 
-    const currentScripts = Array.isArray(values.StrategyScriptList)
-        ? values.StrategyScriptList
+    const currentScripts = Array.isArray(cleanValues.StrategyScriptList)
+        ? cleanValues.StrategyScriptList
         : [];
     const firstScript = currentScripts[0] || {};
     const lotSizeVal = selectedInstrument?.LotSize || firstScript.Qty || 0;
+
+    const defaultScriptTarget = firstScript.Target ?? cleanValues.Target ?? 0;
+    const defaultScriptSl = firstScript.SL ?? cleanValues.SL ?? 0;
+
+    const applyScriptStops = (scripts) =>
+        (Array.isArray(scripts) ? scripts : []).map((script) => ({
+            ...script,
+            Target: script?.Target ?? defaultScriptTarget,
+            SL: script?.SL ?? defaultScriptSl,
+        }));
 
     const enrichStrike = (item) => ({
         ...item,
@@ -95,9 +145,9 @@ export function buildStrategyPayload({
 
     let StrategyScriptListFinal;
     if (isIndicatorEquityMulti) {
-        StrategyScriptListFinal = values.StrategyScriptList;
+        StrategyScriptListFinal = applyScriptStops(cleanValues.StrategyScriptList);
     } else {
-        StrategyScriptListFinal = [
+        StrategyScriptListFinal = applyScriptStops([
             {
                 InstrumentToken:
                     selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
@@ -109,11 +159,11 @@ export function buildStrategyPayload({
                     ? firstScript.ShortEquationoptionStrikeList.map(enrichStrike)
                     : [],
             },
-        ];
+        ]);
     }
 
     const normalizeTpSlType = () => {
-        const raw = values.TpSLType;
+        const raw = cleanValues.TpSLType;
         if (typeof raw === "number" && Number.isFinite(raw)) {
             return raw;
         }
@@ -129,31 +179,51 @@ export function buildStrategyPayload({
         return 0;
     };
 
-    const strategyIdForPayload = values.StrategyId || (showBacktestComponent && createdStrategyId ? createdStrategyId : 0);
+    const strategyIdForPayload = cleanValues.StrategyId || (showBacktestComponent && createdStrategyId ? createdStrategyId : 0);
     const tpSlTypeValue = normalizeTpSlType();
 
     const payloadBase = {
-        ...values,
+        ...cleanValues,
         StrategyType: null,
         StrategySegmentType:
             selectedStrategyTypes[0] === "time" ? "OPTION" : mappedSegment,
         StrategyExecutionType: executionType,
         StrategyScriptList: StrategyScriptListFinal,
-        TradeStopTime: values.TradeStopTime || "15:15",
-        AutoSquareOffTime: values.AutoSquareOffTime || "15:15",
+        TradeStopTime: cleanValues.TradeStopTime || "15:15",
+        AutoSquareOffTime: cleanValues.AutoSquareOffTime || "15:15",
         EntryRule: null,
         ExitRule: null,
-        Long_ExitEquation: toNullIfEmpty(values.Long_ExitEquation),
-        Short_ExitEquation: toNullIfEmpty(values.Short_ExitEquation),
+        chartTypeCombinedOrOption: chartTypeSelection ?? false,
+        IsChartOnOptionStrike: Boolean(
+            isOptionOrCombinedChart || cleanValues?.IsChartOnOptionStrike
+        ),
         StrategyId: strategyIdForPayload,
-        ExitWhenTotalLoss: String(values.ExitWhenTotalLoss || 0),
-        ExitWhenTotalProfit: String(values.ExitWhenTotalProfit || 0),
+        ExitWhenTotalLoss: String(cleanValues.ExitWhenTotalLoss || 0),
+        ExitWhenTotalProfit: String(cleanValues.ExitWhenTotalProfit || 0),
         TpSLType: tpSlTypeValue,
     };
 
+    const normalizedLongExit = normalizeEntryOperators(cleanValues.Long_ExitEquation || []);
+    const normalizedShortExit = normalizeEntryOperators(cleanValues.Short_ExitEquation || []);
+
+    payloadBase.Long_ExitEquation = onlyShort
+        ? []
+        : toNullIfEmpty(normalizedLongExit);
+    payloadBase.Short_ExitEquation = onlyLong
+        ? []
+        : toNullIfEmpty(normalizedShortExit);
+
     if (selectedStrategyTypes[0] === "indicator") {
-        payloadBase.LongEntryEquation = toNullIfEmpty(values.LongEntryEquation);
-        payloadBase.ShortEntryEquation = toNullIfEmpty(values.ShortEntryEquation);
+        // When user selects single side, send the other side as an empty array
+        const normalizedLong = normalizeEntryOperators(cleanValues.LongEntryEquation || []);
+        const normalizedShort = normalizeEntryOperators(cleanValues.ShortEntryEquation || []);
+
+        payloadBase.LongEntryEquation = onlyShort
+            ? []
+            : toNullIfEmpty(normalizedLong);
+        payloadBase.ShortEntryEquation = onlyLong
+            ? []
+            : toNullIfEmpty(normalizedShort);
     } else {
         payloadBase.LongEntryEquation = null;
         payloadBase.ShortEntryEquation = null;

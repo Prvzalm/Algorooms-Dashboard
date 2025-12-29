@@ -4,26 +4,18 @@ import { infoIcon } from "../../../assets";
 import ReEntryExecuteModal from "./ReEntryExecuteModal";
 import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
-import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import PrimaryButton from "../../common/PrimaryButton";
 
 const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
-  // Select stable store actions individually to avoid unnecessary rerenders
-  const setLegAdvanceFeature = useStrategyBuilderStore(
-    (s) => s.setLegAdvanceFeature
-  );
-  const getLegAdvanceFeatures = useStrategyBuilderStore(
-    (s) => s.getLegAdvanceFeatures
-  );
   const tradeStopTimeValue = watch("TradeStopTime") || "15:15";
   const autoSquareOffTimeValue = watch("AutoSquareOffTime") || "15:15";
   const noTradeAfter = autoSquareOffTimeValue;
 
   // Watch reactive values to avoid infinite loops
   const strategyScripts = watch("StrategyScriptList");
-  const activeLegIndex = watch("ActiveLegIndex");
+  const activeLegIndex = watch("ActiveLegIndex") || 0;
 
   // Check if equity instruments are selected in indicator-based mode
   const isIndicatorEquityMode =
@@ -33,16 +25,12 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const targetSlTypeRaw = watch("TargetSlType");
   const tpSlTypeRaw = watch("TpSLType");
   const targetSlType = targetSlTypeRaw || "Percentage(%)";
-  const rawTargetOnEachScript = watch("TargetOnEachScript");
-  const rawStopLossOnEachScript = watch("StopLossOnEachScript");
+  const rawTarget = watch("Target");
+  const rawStopLoss = watch("SL");
   const targetOnEachScript =
-    rawTargetOnEachScript === null || rawTargetOnEachScript === undefined
-      ? ""
-      : String(rawTargetOnEachScript);
+    rawTarget === null || rawTarget === undefined ? "" : String(rawTarget);
   const stopLossOnEachScript =
-    rawStopLossOnEachScript === null || rawStopLossOnEachScript === undefined
-      ? ""
-      : String(rawStopLossOnEachScript);
+    rawStopLoss === null || rawStopLoss === undefined ? "" : String(rawStopLoss);
 
   useEffect(() => {
     if (!isIndicatorEquityMode) return;
@@ -95,6 +83,32 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     movement: "0",
   });
 
+  // Reset advance toggles when strategy type changes
+  useEffect(() => {
+    setAdvState({
+      "Move SL to Cost": false,
+      "Exit All on SL/Tgt": false,
+      "Pre Punch SL": false,
+      "Wait & Trade": false,
+      "Premium Difference": false,
+      "Re Entry/Execute": false,
+      "Trail SL": false,
+    });
+    setWaitTradeTempData({ type: "% ↑", movement: "0" });
+    setPremiumDiffTempValue("0");
+    setReEntryTempData({
+      executionType: "ReExecute",
+      cycles: "1",
+      actionType: "IMMDT",
+    });
+    setTrailSlTempData({
+      trailingType: "%",
+      priceMovement: "0",
+      trailingValue: "0",
+    });
+    setValue("AdvanceFeatures", {}, { shouldDirty: true });
+  }, [selectedStrategyTypes?.[0], setValue]);
+
   // Sync advState with actual form data to keep checkboxes in sync
   useEffect(() => {
     const scripts = strategyScripts || [];
@@ -142,23 +156,36 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     return false;
   };
 
-  const updateFirstStrike = (updater) => {
+  const updateActiveStrikes = (updater) => {
     const scripts = strategyScripts || [];
     if (!Array.isArray(scripts) || scripts.length === 0) return;
-    const firstScript = { ...scripts[0] };
-    const longs = Array.isArray(firstScript.LongEquationoptionStrikeList)
-      ? [...firstScript.LongEquationoptionStrikeList]
-      : [];
-    if (longs.length === 0) return;
 
-    // Use the watched active leg index to update the correct leg
-    const targetIndex = Math.min(activeLegIndex || 0, longs.length - 1);
+    const nextScripts = scripts.map((script) => {
+      const longs = Array.isArray(script.LongEquationoptionStrikeList)
+        ? [...script.LongEquationoptionStrikeList]
+        : [];
+      const shorts = Array.isArray(script.ShortEquationoptionStrikeList)
+        ? [...script.ShortEquationoptionStrikeList]
+        : [];
 
-    const strike = { ...longs[targetIndex] };
-    updater(strike);
-    longs[targetIndex] = strike;
-    const nextScripts = [...scripts];
-    nextScripts[0] = { ...firstScript, LongEquationoptionStrikeList: longs };
+      if (longs[activeLegIndex]) {
+        const copy = { ...longs[activeLegIndex] };
+        updater(copy);
+        longs[activeLegIndex] = copy;
+      }
+      if (shorts[activeLegIndex]) {
+        const copy = { ...shorts[activeLegIndex] };
+        updater(copy);
+        shorts[activeLegIndex] = copy;
+      }
+
+      return {
+        ...script,
+        LongEquationoptionStrikeList: longs,
+        ShortEquationoptionStrikeList: shorts,
+      };
+    });
+
     setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
   };
   const onToggleAdvance = (label, checked) => {
@@ -229,28 +256,27 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
 
     switch (label) {
       case "Move SL to Cost":
-        updateFirstStrike((s) => {
+        updateActiveStrikes((s) => {
           s.IsMoveSLCTC = !!checked;
         });
         break;
       case "Exit All on SL/Tgt":
         setValue("SquareOffAllOptionLegOnSl", !!checked, { shouldDirty: true });
-        updateFirstStrike((s) => {
+        updateActiveStrikes((s) => {
           s.isExitAll = !!checked;
         });
         break;
       case "Pre Punch SL":
-        updateFirstStrike((s) => {
+        updateActiveStrikes((s) => {
           s.isPrePunchSL = !!checked;
         });
         break;
       case "Wait & Trade":
         if (checked) {
-          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[activeLegIndex] || {};
+          const currentStrike = longs[0] || {};
           const wtMapRev = {
             wt_eq: "% ↑",
             "wtpt_+": "pt ↑",
@@ -259,20 +285,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           };
 
           setWaitTradeTempData({
-            type:
-              legFeatures.waitTradeType ||
-              wtMapRev[currentStrike.waitNTrade?.typeId] ||
-              "% ↑",
+            type: wtMapRev[currentStrike.waitNTrade?.typeId] || "% ↑",
             movement:
-              String(
-                legFeatures.waitTradeMovement ??
-                  currentStrike.waitNTrade?.MovementValue ??
-                  "0"
-              ) || "0",
+              String(currentStrike.waitNTrade?.MovementValue ?? "0") || "0",
           });
           setShowWaitTradeModal(true);
         } else {
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.waitNTrade = {
               ...(s.waitNTrade || {}),
               isWaitnTrade: false,
@@ -281,9 +300,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
               MovementValue: s.waitNTrade?.MovementValue ?? "0",
             };
           });
-          setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", false);
-          setLegAdvanceFeature(activeLegIndex, "waitTradeMovement", 0);
-          setLegAdvanceFeature(activeLegIndex, "waitTradeType", "% ↑");
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -297,17 +313,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         break;
       case "Premium Difference":
         if (checked) {
-          // Get existing values to populate modal - from per-leg store
-          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[activeLegIndex] || {};
+          const currentStrike = longs[0] || {};
 
           const currentPremValue =
-            legFeatures.premiumDiffValue ||
-            currentStrike.PriceDiffrenceConstrantValue ||
-            "0";
+            currentStrike.PriceDiffrenceConstrantValue || "0";
 
           // Initialize temp value with existing value
           setPremiumDiffTempValue(currentPremValue);
@@ -315,13 +327,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           // Open modal for value input
           setShowPremiumDiffModal(true);
         } else {
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.IsPriceDiffrenceConstrant = false;
             s.PriceDiffrenceConstrantValue = "0";
           });
-          // Clear per-leg store
-          setLegAdvanceFeature(activeLegIndex, "premiumDiffEnabled", false);
-          setLegAdvanceFeature(activeLegIndex, "premiumDiffValue", 0);
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -336,12 +345,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         break;
       case "Re Entry/Execute":
         if (checked) {
-          // Get existing values from per-leg store or strike data
-          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[activeLegIndex] || {};
+          const currentStrike = longs[0] || {};
 
           // Map backend RentryType to UI executionType
           const rentryTypeToUI = (rentryType) => {
@@ -355,13 +362,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
 
           // Initialize temp data with existing values (prefer leg store)
           setReEntryTempData({
-            executionType:
-              legFeatures.reEntryExecutionType ||
-              rentryTypeToUI(currentStrike.reEntry?.RentryType),
-            cycles:
-              legFeatures.reEntryCycles ||
-              currentStrike.reEntry?.TradeCycle ||
-              "1",
+            executionType: rentryTypeToUI(currentStrike.reEntry?.RentryType),
+            cycles: currentStrike.reEntry?.TradeCycle || "1",
             actionType: currentStrike.reEntry?.RentryActionTypeId || "IMMDT",
           });
 
@@ -369,13 +371,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           setShowReEntryModal(true);
 
           // Ensure conflicting exit-all state is cleared
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.isExitAll = false;
           });
           setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
         } else {
           // Directly disable when unchecking
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.reEntry = {
               ...(s.reEntry || {}),
               isRentry: false,
@@ -384,8 +386,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
               RentryActionTypeId: "IMMDT",
             };
           });
-          // Clear per-leg store
-          setLegAdvanceFeature(activeLegIndex, "reEntryEnabled", false);
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -399,38 +399,30 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         break;
       case "Trail SL":
         if (checked) {
-          // Get existing values from per-leg store or strike data
-          const legFeatures = getLegAdvanceFeatures(activeLegIndex);
           const scripts = strategyScripts || [];
           const firstScript = scripts[0] || {};
           const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[activeLegIndex] || {};
+          const currentStrike = longs[0] || {};
 
           // Initialize temp data with existing values (prefer leg store)
           setTrailSlTempData({
             trailingType:
-              legFeatures.trailSlType ||
-              (currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%"),
+              currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%",
             priceMovement:
-              legFeatures.trailSlPriceMovement ||
-              currentStrike.TrailingSL?.InstrumentMovementValue ||
-              "0",
-            trailingValue:
-              legFeatures.trailSlTrailingValue ||
-              currentStrike.TrailingSL?.TrailingValue ||
-              "0",
+              currentStrike.TrailingSL?.InstrumentMovementValue || "0",
+            trailingValue: currentStrike.TrailingSL?.TrailingValue || "0",
           });
 
           // Show modal to configure Trail SL
           setShowTrailSlModal(true);
 
           // Ensure Pre Punch SL is cleared when Trail SL is enabled
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.isPrePunchSL = false;
           });
         } else {
           // Directly disable when unchecking
-          updateFirstStrike((s) => {
+          updateActiveStrikes((s) => {
             s.isTrailSL = false;
             s.TrailingSL = {
               TrailingType: "tslpr",
@@ -438,8 +430,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
               TrailingValue: "0",
             };
           });
-          // Clear per-leg store
-          setLegAdvanceFeature(activeLegIndex, "trailSlEnabled", false);
           const currentAf = getValues("AdvanceFeatures") || {};
           setValue(
             "AdvanceFeatures",
@@ -473,7 +463,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       Math.max(0, Number(waitTradeTempData.movement) || 0)
     );
 
-    updateFirstStrike((s) => {
+    updateActiveStrikes((s) => {
       s.IsMoveSLCTC = false;
       s.waitNTrade = {
         ...(s.waitNTrade || {}),
@@ -483,18 +473,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         MovementValue: movementVal,
       };
     });
-
-    setLegAdvanceFeature(activeLegIndex, "waitTradeEnabled", true);
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "waitTradeMovement",
-      Number(movementVal)
-    );
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "waitTradeType",
-      waitTradeTempData.type
-    );
 
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -538,21 +516,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   });
 
   const savePremiumDifference = () => {
-    updateFirstStrike((s) => {
+    updateActiveStrikes((s) => {
       s.IsPriceDiffrenceConstrant = Number(premiumDiffTempValue) > 0;
       s.PriceDiffrenceConstrantValue =
         Number(premiumDiffTempValue) > 0 ? premiumDiffTempValue : "0";
     });
     setShowPremiumDiffModal(false);
-
-    // Update per-leg store
     const isEnabled = Number(premiumDiffTempValue) > 0;
-    setLegAdvanceFeature(activeLegIndex, "premiumDiffEnabled", isEnabled);
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "premiumDiffValue",
-      Number(premiumDiffTempValue)
-    );
 
     if (!isEnabled) {
       setAdvState((prev) => ({ ...prev, "Premium Difference": false }));
@@ -589,7 +559,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       finalActionType = "IMMDT";
     }
 
-    updateFirstStrike((s) => {
+    updateActiveStrikes((s) => {
       s.reEntry = {
         ...(s.reEntry || {}),
         isRentry: true,
@@ -598,17 +568,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         RentryActionTypeId: finalActionType,
       };
     });
-
-    // Update per-leg store
-    setLegAdvanceFeature(activeLegIndex, "reEntryEnabled", true);
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "reEntryExecutionType",
-      data.executionType
-    );
-    setLegAdvanceFeature(activeLegIndex, "reEntryCycles", Number(data.cycles));
-    setLegAdvanceFeature(activeLegIndex, "reEntryActionType", finalActionType);
-
     setAdvState((prev) => ({ ...prev, "Re Entry/Execute": true }));
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -626,7 +585,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   };
 
   const saveTrailStopLoss = (data) => {
-    updateFirstStrike((s) => {
+    updateActiveStrikes((s) => {
       s.isTrailSL = true;
       s.TrailingSL = {
         TrailingType: data.trailingType === "%" ? "tslpr" : "tslpt",
@@ -634,21 +593,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         TrailingValue: data.trailingValue,
       };
     });
-
-    // Update per-leg store
-    setLegAdvanceFeature(activeLegIndex, "trailSlEnabled", true);
-    setLegAdvanceFeature(activeLegIndex, "trailSlType", data.trailingType);
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "trailSlPriceMovement",
-      Number(data.priceMovement)
-    );
-    setLegAdvanceFeature(
-      activeLegIndex,
-      "trailSlTrailingValue",
-      Number(data.trailingValue)
-    );
-
     setAdvState((prev) => ({ ...prev, "Trail SL": true }));
     const currentAf = getValues("AdvanceFeatures") || {};
     setValue(
@@ -766,16 +710,12 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === "") {
-                        setValue("TargetOnEachScript", "", {
-                          shouldDirty: true,
-                        });
+                        setValue("Target", "", { shouldDirty: true });
                         return;
                       }
                       const num = Number(val);
                       if (!Number.isNaN(num)) {
-                        setValue("TargetOnEachScript", num, {
-                          shouldDirty: true,
-                        });
+                        setValue("Target", num, { shouldDirty: true });
                       }
                     }}
                     className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
@@ -787,16 +727,12 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === "") {
-                        setValue("StopLossOnEachScript", "", {
-                          shouldDirty: true,
-                        });
+                        setValue("SL", "", { shouldDirty: true });
                         return;
                       }
                       const num = Number(val);
                       if (!Number.isNaN(num)) {
-                        setValue("StopLossOnEachScript", num, {
-                          shouldDirty: true,
-                        });
+                        setValue("SL", num, { shouldDirty: true });
                       }
                     }}
                     className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"

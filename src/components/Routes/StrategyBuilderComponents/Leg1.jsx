@@ -19,12 +19,6 @@ const Leg1 = ({
   const { setValue, getValues, watch } = useFormContext();
   // Select stable store actions individually to avoid unnecessary rerenders
   const updatePayload = useStrategyBuilderStore((s) => s.updatePayload);
-  const setLegAdvanceFeature = useStrategyBuilderStore(
-    (s) => s.setLegAdvanceFeature
-  );
-  const getLegAdvanceFeatures = useStrategyBuilderStore(
-    (s) => s.getLegAdvanceFeatures
-  );
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
@@ -584,69 +578,43 @@ const Leg1 = ({
     ]
   );
 
-  // ✅ Per-leg advance features using Zustand store
-  const getPerLegFeature = (featureName, defaultValue) => {
-    const legFeatures = getLegAdvanceFeatures(activeLegIndex);
-    return legFeatures[featureName] !== undefined
-      ? legFeatures[featureName]
-      : defaultValue;
-  };
+  // Advance feature UI state (global across legs)
+  const [waitTradeEnabled, setWaitTradeEnabled] = useState(false);
+  const [waitTradeMovement, setWaitTradeMovement] = useState(0);
+  const [waitTradeType, setWaitTradeType] = useState("% ↑");
 
-  const setPerLegFeature = (featureName, value) => {
-    const current = getPerLegFeature(featureName, undefined);
-    // Avoid redundant store updates if value is unchanged
-    if (Object.is(current, value)) return;
-    setLegAdvanceFeature(activeLegIndex, featureName, value);
-  };
+  const [premiumDiffEnabled, setPremiumDiffEnabled] = useState(false);
+  const [premiumDiffValue, setPremiumDiffValue] = useState(0);
 
-  // Wait & Trade states (per-leg)
-  const waitTradeEnabled = getPerLegFeature("waitTradeEnabled", false);
-  const waitTradeMovement = getPerLegFeature("waitTradeMovement", 0);
-  const waitTradeType = getPerLegFeature("waitTradeType", "% ↑");
+  const [reEntryEnabled, setReEntryEnabled] = useState(false);
+  const [reEntryExecutionType, setReEntryExecutionType] = useState("ReExecute");
+  const [reEntryCycles, setReEntryCycles] = useState(1);
+  const [reEntryActionType, setReEntryActionType] = useState("IMMDT");
 
-  const setWaitTradeEnabled = (val) =>
-    setPerLegFeature("waitTradeEnabled", val);
-  const setWaitTradeMovement = (val) =>
-    setPerLegFeature("waitTradeMovement", val);
-  const setWaitTradeType = (val) => setPerLegFeature("waitTradeType", val);
+  const [trailSlEnabled, setTrailSlEnabled] = useState(false);
+  const [trailSlType, setTrailSlType] = useState("%");
+  const [trailSlPriceMovement, setTrailSlPriceMovement] = useState(0);
+  const [trailSlTrailingValue, setTrailSlTrailingValue] = useState(0);
 
-  // Premium Difference states (per-leg)
-  const premiumDiffEnabled = getPerLegFeature("premiumDiffEnabled", false);
-  const premiumDiffValue = getPerLegFeature("premiumDiffValue", 0);
+  // Reset advance feature UI state when strategy type changes
+  useEffect(() => {
+    setWaitTradeEnabled(false);
+    setWaitTradeMovement(0);
+    setWaitTradeType("% ↑");
 
-  const setPremiumDiffEnabled = (val) =>
-    setPerLegFeature("premiumDiffEnabled", val);
-  const setPremiumDiffValue = (val) =>
-    setPerLegFeature("premiumDiffValue", val);
+    setPremiumDiffEnabled(false);
+    setPremiumDiffValue(0);
 
-  // Re-Entry/Execute states (per-leg)
-  const reEntryEnabled = getPerLegFeature("reEntryEnabled", false);
-  const reEntryExecutionType = getPerLegFeature(
-    "reEntryExecutionType",
-    "ReExecute"
-  );
-  const reEntryCycles = getPerLegFeature("reEntryCycles", 1);
-  const reEntryActionType = getPerLegFeature("reEntryActionType", "IMMDT");
+    setReEntryEnabled(false);
+    setReEntryExecutionType("ReExecute");
+    setReEntryCycles(1);
+    setReEntryActionType("IMMDT");
 
-  const setReEntryEnabled = (val) => setPerLegFeature("reEntryEnabled", val);
-  const setReEntryExecutionType = (val) =>
-    setPerLegFeature("reEntryExecutionType", val);
-  const setReEntryCycles = (val) => setPerLegFeature("reEntryCycles", val);
-  const setReEntryActionType = (val) =>
-    setPerLegFeature("reEntryActionType", val);
-
-  // Trail SL states (per-leg)
-  const trailSlEnabled = getPerLegFeature("trailSlEnabled", false);
-  const trailSlType = getPerLegFeature("trailSlType", "%");
-  const trailSlPriceMovement = getPerLegFeature("trailSlPriceMovement", 0);
-  const trailSlTrailingValue = getPerLegFeature("trailSlTrailingValue", 0);
-
-  const setTrailSlEnabled = (val) => setPerLegFeature("trailSlEnabled", val);
-  const setTrailSlType = (val) => setPerLegFeature("trailSlType", val);
-  const setTrailSlPriceMovement = (val) =>
-    setPerLegFeature("trailSlPriceMovement", val);
-  const setTrailSlTrailingValue = (val) =>
-    setPerLegFeature("trailSlTrailingValue", val);
+    setTrailSlEnabled(false);
+    setTrailSlType("%");
+    setTrailSlPriceMovement(0);
+    setTrailSlTrailingValue(0);
+  }, [selectedStrategyTypes?.[0]]);
 
   useEffect(() => {
     const scripts = getValues("StrategyScriptList") || [];

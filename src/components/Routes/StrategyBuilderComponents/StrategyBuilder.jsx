@@ -107,10 +107,10 @@ const StrategyBuilder = () => {
     showBacktest,
     createdStrategyId,
     setCreatedStrategyId,
-    resetPayload,
     setPayload,
     strategyPayload,
     updatePayload,
+    resetAll,
   } = useStrategyBuilderStore();
 
   // State for instrument quantities
@@ -267,28 +267,29 @@ const StrategyBuilder = () => {
 
   const handleStrategyChange = (id) => {
     if (selectedStrategyTypes.includes(id)) return;
-
-    // ✅ Reset complete payload via Zustand when strategy type changes
-    resetPayload(id);
-
-    // ✅ Sync with form
-    const baseDefaults = initialFormValuesRef.current;
-    const currentValues = getValues();
-    const preservedName = currentValues?.StrategyName || "";
-    reset({
-      ...baseDefaults,
+    // Build fresh defaults for the selected strategy type
+    const freshDefaults = {
+      ...getDefaultPayload(),
       StrategyType: id,
       StrategySegmentType: id === "time" ? "Option" : "",
-      ActiveLegIndex: 0, // Reset to first leg
-      AdvanceFeatures: {}, // Clear advance features
-      StrategyName: preservedName,
-    });
-    updatePayload({ StrategyName: preservedName });
+      StrategyExecutionType:
+        id === "time" ? "tb" : id === "indicator" ? "ib" : "pa",
+      AdvanceFeatures: {},
+      ActiveLegIndex: 0,
+    };
 
-    // Clear instrument selections
+    // Reset all shared state and form to a clean slate
+    resetAll();
+    setPayload(freshDefaults);
+    initialFormValuesRef.current = freshDefaults;
+    reset(freshDefaults);
+
+    // Clear selections/backtest flags and set the new type
     setSelectedInstrument("");
     setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([id]);
+    showBacktest(false);
+    setCreatedStrategyId(null);
   };
 
   useEffect(() => {
@@ -388,7 +389,7 @@ const StrategyBuilder = () => {
       SLActionTypeId: "ONPRICE",
       TargetActionTypeId: "ONPRICE",
       isTrailSL: true,
-      IsRecursive: true,
+      IsRecursive: false,
       IsMoveSLCTC: true,
       isExitAll: true,
       TargetType: "tgpr",
@@ -1130,6 +1131,7 @@ const StrategyBuilder = () => {
           <div className="overflow-x-hidden">
             {!hideLeg1 && (
               <Leg1
+                key={selectedStrategyTypes?.[0] || "leg1"}
                 selectedStrategyTypes={selectedStrategyTypes}
                 selectedInstrument={selectedInstrument}
                 comingSoon={isPriceBased}
@@ -1154,6 +1156,7 @@ const StrategyBuilder = () => {
 
         <div className="overflow-x-hidden">
           <RiskAndAdvance
+            key={selectedStrategyTypes?.[0] || "risk"}
             selectedStrategyTypes={selectedStrategyTypes}
             comingSoon={isPriceBased}
           />

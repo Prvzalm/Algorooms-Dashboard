@@ -9,7 +9,7 @@ export const createDefaultStrike = () => ({
     SLActionTypeId: "ONPRICE",
     TargetActionTypeId: "ONPRICE",
     isTrailSL: false,
-    IsRecursive: true,
+    IsRecursive: false,
     IsMoveSLCTC: false,
     isExitAll: false,
     TargetType: "tgpr",
@@ -76,6 +76,7 @@ const createDefaultEquation = () => ({
 export const getDefaultPayload = () => ({
     StrategyName: "",
     StrategyId: 0,
+    ActiveLegIndex: 0,
     Interval: 1,
     SL: 0,
     Target: 0,
@@ -105,7 +106,7 @@ export const getDefaultPayload = () => ({
     subscriptiondays: 0,
     ProductType: 0,
     AutoSquareOffTime: "15:15",
-    MaxTrade: 0,
+    MaxTrade: 1,
     MaxDD: 0,
     Roi: 0,
     isTradeOnTriggerCandle: false,
@@ -135,6 +136,7 @@ export const getDefaultPayload = () => ({
         },
     ],
     IsChartOnOptionStrike: false,
+    AdvanceFeatures: {},
 });
 
 // Centralized store for Strategy Builder shared state
@@ -152,10 +154,6 @@ export const useStrategyBuilderStore = create((set, get) => ({
 
     // Centralized strategy payload (complete default)
     strategyPayload: getDefaultPayload(),
-
-    // ✅ NEW: Per-leg advance features state
-    // Structure: { [legIndex]: { waitTradeType, reEntryExecutionType, trailSlType, etc. } }
-    perLegAdvanceFeatures: {},
 
     // Actions
     setSelectedStrategyTypes: (arr) => set({ selectedStrategyTypes: arr }),
@@ -184,7 +182,6 @@ export const useStrategyBuilderStore = create((set, get) => ({
         newPayload.StrategyExecutionType = strategyType === "time" ? "tb" : strategyType === "indicator" ? "ib" : "pa";
         set({
             strategyPayload: newPayload,
-            perLegAdvanceFeatures: {}, // Clear per-leg features
         });
     },
 
@@ -260,32 +257,6 @@ export const useStrategyBuilderStore = create((set, get) => ({
         }));
     },
 
-    // ✅ Per-leg advance features management
-    setLegAdvanceFeature: (legIndex, featureName, value) => {
-        set((state) => ({
-            perLegAdvanceFeatures: {
-                ...state.perLegAdvanceFeatures,
-                [legIndex]: {
-                    ...(state.perLegAdvanceFeatures[legIndex] || {}),
-                    [featureName]: value,
-                },
-            },
-        }));
-    },
-
-    getLegAdvanceFeatures: (legIndex) => {
-        const state = get();
-        return state.perLegAdvanceFeatures[legIndex] || {};
-    },
-
-    clearLegAdvanceFeatures: (legIndex) => {
-        set((state) => {
-            const updated = { ...state.perLegAdvanceFeatures };
-            delete updated[legIndex];
-            return { perLegAdvanceFeatures: updated };
-        });
-    },
-
     // Reset everything
     resetAll: () => {
         set({
@@ -295,7 +266,6 @@ export const useStrategyBuilderStore = create((set, get) => ({
             showBacktestComponent: false,
             createdStrategyId: null,
             strategyPayload: getDefaultPayload(),
-            perLegAdvanceFeatures: {},
         });
     },
 }));
