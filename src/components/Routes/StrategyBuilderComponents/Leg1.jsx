@@ -535,6 +535,17 @@ const Leg1 = ({
         }
       }
 
+      // Ensure indicator defaults keep long/short opposite when initializing
+      if (isIndicatorStrategy) {
+        const longDefault = longArr[activeLegIndex]?.StrikeType || "CE";
+        longArr[activeLegIndex].StrikeType = longDefault;
+        if (!isTimeStrategy) {
+          const shortDefault = longDefault === "CE" ? "PE" : "CE";
+          shortArr[activeLegIndex].StrikeType =
+            shortArr[activeLegIndex]?.StrikeType || shortDefault;
+        }
+      }
+
       const longStrike = { ...longArr[activeLegIndex] };
       const shortStrike = !isTimeStrategy
         ? { ...shortArr[activeLegIndex] }
@@ -1035,13 +1046,10 @@ const Leg1 = ({
   );
 
   const handleIndicatorConditionChange = useCallback(
-    (next) => {
-      const shortValue = next === "CE" ? "PE" : "CE";
+    ({ long, short }) => {
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
-        longStrike.StrikeType = next;
-        if (shortStrike) {
-          shortStrike.StrikeType = shortValue;
-        }
+        if (long) longStrike.StrikeType = long;
+        if (shortStrike && short) shortStrike.StrikeType = short;
       });
     },
     [applyStrikeUpdate]
@@ -1659,7 +1667,10 @@ const Leg1 = ({
                               disabled={isDisabled}
                               value={longCondition}
                               onChange={(e) =>
-                                handleIndicatorConditionChange(e.target.value)
+                                handleIndicatorConditionChange({
+                                  long: e.target.value,
+                                  short: e.target.value === "CE" ? "PE" : "CE",
+                                })
                               }
                             >
                               {conditionOptions.map((opt) => (
@@ -1678,9 +1689,10 @@ const Leg1 = ({
                               disabled={isDisabled}
                               value={shortCondition}
                               onChange={(e) =>
-                                handleIndicatorConditionChange(
-                                  e.target.value === "CE" ? "PE" : "CE"
-                                )
+                                handleIndicatorConditionChange({
+                                  long: e.target.value === "CE" ? "PE" : "CE",
+                                  short: e.target.value,
+                                })
                               }
                             >
                               {conditionOptions.map((opt) => (

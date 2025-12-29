@@ -50,6 +50,16 @@ const normalizeSegmentType = (segment = "Option") => {
   return segment;
 };
 
+const defaultExchangeForSegment = (segment) => {
+  const normalized = normalizeSegmentType(segment);
+  if (normalized === "Equity") return "NSE";
+  if (normalized === "Future" || normalized === "Option") return "NFO";
+  if (normalized === "Indices") return "NSE";
+  if (normalized === "MCX") return "MCX";
+  if (normalized === "CDS") return "CDS";
+  return normalized || "";
+};
+
 const StrategyBuilder = () => {
   const { strategyId } = useParams();
   const editing = !!strategyId;
@@ -352,14 +362,42 @@ const StrategyBuilder = () => {
     const existingScripts = getValues("StrategyScriptList") || [];
     const previous = existingScripts[0] || {};
     const lotQty = defaultLotQty(selectedInstrument.LotSize);
+    const isIndicator = selectedStrategyTypes[0] === "indicator";
+
+    // Initialize opposite strike types for indicator strategies
+    const hydratedLongList = previous.LongEquationoptionStrikeList || [];
+    const hydratedShortList = previous.ShortEquationoptionStrikeList || [];
+
+    if (isIndicator) {
+      if (!hydratedLongList.length) {
+        hydratedLongList.push({
+          ...getDefaultPayload().StrategyScriptList[0]
+            .LongEquationoptionStrikeList[0],
+          StrikeType: "CE",
+        });
+      }
+      if (!hydratedShortList.length) {
+        hydratedShortList.push({
+          ...getDefaultPayload().StrategyScriptList[0]
+            .ShortEquationoptionStrikeList[0],
+          StrikeType: "PE",
+        });
+      }
+      // Ensure first pair stays opposite
+      if (hydratedLongList[0])
+        hydratedLongList[0].StrikeType = hydratedLongList[0].StrikeType || "CE";
+      if (hydratedShortList[0])
+        hydratedShortList[0].StrikeType =
+          hydratedLongList[0].StrikeType === "CE" ? "PE" : "CE";
+    }
+
     const scriptData = {
       ...previous,
       InstrumentToken: selectedInstrument.InstrumentToken || "",
       InstrumentName: selectedInstrument.Name || "",
       Qty: resolveQtyValue(previous.Qty, lotQty),
-      LongEquationoptionStrikeList: previous.LongEquationoptionStrikeList || [],
-      ShortEquationoptionStrikeList:
-        previous.ShortEquationoptionStrikeList || [],
+      LongEquationoptionStrikeList: hydratedLongList,
+      ShortEquationoptionStrikeList: hydratedShortList,
       StrikeTickValue: previous.StrikeTickValue || 0,
     };
 
@@ -491,6 +529,19 @@ const StrategyBuilder = () => {
           ? "indicator"
           : "time";
 
+      const parsedTpSlType = (() => {
+        const raw = d.TpSLType;
+        if (typeof raw === "string") {
+          const upper = raw.toUpperCase();
+          if (upper.includes("POINT")) return 1;
+          if (upper.includes("PERCENT")) return 0;
+          const num = Number(raw);
+          if (!Number.isNaN(num)) return num;
+        }
+        const num = Number(raw);
+        return Number.isFinite(num) ? num : 0;
+      })();
+
       const mapped = {
         StrategyName: d.StrategyName || "",
         StrategyType: detectedStrategyType,
@@ -524,7 +575,7 @@ const StrategyBuilder = () => {
         StrategyExecuterId: d.StrategyExecuterId || 0,
         OrderType: d.OrderType || 0,
         TransactionType: Number(d.TransactionType) || 0,
-        TpSLType: d.TpSLType || 0,
+        TpSLType: parsedTpSlType,
         MinimumCapital: d.MinimumCapital || 0,
         ProfitTranches: d.ProfitTranches || 0,
         strategyTag: d.strategyTag || "any",
@@ -564,7 +615,10 @@ const StrategyBuilder = () => {
           InstrumentToken: script.InstrumentToken,
           SegmentType: normalizedSegment === "future" ? "Future" : "Equity",
           LotSize: script.Qty || 1,
-          Exchange: script.Exchange || script.Segment || "",
+          Exchange:
+            script.Exchange ||
+            script.Segment ||
+            defaultExchangeForSegment(mapped.StrategySegmentType),
         }));
         setSelectedInstrument("");
         setSelectedEquityInstruments(multiSelection);
@@ -601,7 +655,10 @@ const StrategyBuilder = () => {
         InstrumentToken: matchedInstrument.InstrumentToken,
         SegmentType: editInstrumentSearch.segmentType,
         LotSize: matchedInstrument.LotSize || 0,
-        Exchange: matchedInstrument.Exchange || matchedInstrument.Segment || "",
+        Exchange:
+          matchedInstrument.Exchange ||
+          matchedInstrument.Segment ||
+          defaultExchangeForSegment(editInstrumentSearch.segmentType),
       });
     }
 

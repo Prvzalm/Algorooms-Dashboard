@@ -11,7 +11,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
   const tradeStopTimeValue = watch("TradeStopTime") || "15:15";
   const autoSquareOffTimeValue = watch("AutoSquareOffTime") || "15:15";
-  const noTradeAfter = autoSquareOffTimeValue;
+  const noTradeAfter = tradeStopTimeValue;
 
   // Watch reactive values to avoid infinite loops
   const strategyScripts = watch("StrategyScriptList");
@@ -22,15 +22,16 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     selectedStrategyTypes?.[0] === "indicator" &&
     getValues("StrategySegmentType") === "Equity";
 
-  const targetSlTypeRaw = watch("TargetSlType");
   const tpSlTypeRaw = watch("TpSLType");
-  const targetSlType = targetSlTypeRaw || "Percentage(%)";
+  const targetSlType = Number(tpSlTypeRaw) === 1 ? "Points" : "Percentage(%)";
   const rawTarget = watch("Target");
   const rawStopLoss = watch("SL");
   const targetOnEachScript =
     rawTarget === null || rawTarget === undefined ? "" : String(rawTarget);
   const stopLossOnEachScript =
-    rawStopLoss === null || rawStopLoss === undefined ? "" : String(rawStopLoss);
+    rawStopLoss === null || rawStopLoss === undefined
+      ? ""
+      : String(rawStopLoss);
 
   useEffect(() => {
     if (!isIndicatorEquityMode) return;
@@ -39,15 +40,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
 
     if (Number.isNaN(numericTpSl)) {
       setValue("TpSLType", 0, { shouldDirty: false });
-      setValue("TargetSlType", "Percentage(%)", { shouldDirty: false });
       return;
     }
-
-    const expectedLabel = numericTpSl === 1 ? "Points" : "Percentage(%)";
-    if (targetSlTypeRaw !== expectedLabel) {
-      setValue("TargetSlType", expectedLabel, { shouldDirty: false });
-    }
-  }, [isIndicatorEquityMode, targetSlTypeRaw, tpSlTypeRaw, setValue]);
+  }, [isIndicatorEquityMode, tpSlTypeRaw, setValue]);
 
   const trailingOptions = [
     "No Trailing",
@@ -691,9 +686,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     setValue("TradeStopTime", e.target.value, {
                       shouldDirty: true,
                     });
-                    setValue("AutoSquareOffTime", e.target.value, {
-                      shouldDirty: true,
-                    });
                   }}
                   className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                 />
@@ -745,7 +737,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                       value={targetSlType}
                       onChange={(e) => {
                         const v = e.target.value;
-                        setValue("TargetSlType", v, { shouldDirty: true });
                         // Map: % => 0, pts => 1
                         setValue("TpSLType", v === "Percentage(%)" ? 0 : 1, {
                           shouldDirty: true,

@@ -214,9 +214,6 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                 setValue("AutoSquareOffTime", e.target.value, {
                   shouldDirty: true,
                 });
-                setValue("TradeStopTime", e.target.value, {
-                  shouldDirty: true,
-                });
               }}
               className="border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#2C2F36]"
             />

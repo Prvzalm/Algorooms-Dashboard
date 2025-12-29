@@ -518,8 +518,8 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
         </button>
       )}
       {(arr || []).map((eq, idx) => (
-        <>
-          <div key={idx} className="mb-4 last:mb-0">
+        <React.Fragment key={idx}>
+          <div className="mb-4 last:mb-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
               <button
                 type="button"
@@ -605,7 +605,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
               </div>
             </div>
           ) : null}
-        </>
+        </React.Fragment>
       ))}
 
       <div className="mt-2 text-right">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { FiRefreshCw } from "react-icons/fi";
 import StrategyTemplates from "../Dashboard/StrategyTemplates";
 import {
   useChangeDeployedStrategyTradeMode,
@@ -115,12 +116,9 @@ const StrategiesPage = () => {
 
   const deployedRefreshing = deployedFetching && !deployedLoading;
 
-  // Force fresh fetch whenever the Deployed tab becomes active
-  useEffect(() => {
-    if (activeTab === "Deployed Strategies") {
-      refetchDeployed();
-    }
-  }, [activeTab, refetchDeployed]);
+  const handleManualRefreshDeployed = () => {
+    refetchDeployed();
+  };
 
   const getEffectiveTradeEngineStatus = (brokerItem) => {
     const override = engineStatusOverrides[brokerItem.broker.code];
@@ -448,20 +446,36 @@ const StrategiesPage = () => {
 
   return (
     <div className="w-full h-full md:p-6 text-[#2E3A59] dark:text-white">
-      <div className="flex mb-6 border-b border-gray-200 dark:border-[#2D2F36] overflow-x-auto whitespace-nowrap no-scrollbar">
-        {mainTabs.map((tab) => (
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex border-b border-gray-200 dark:border-[#2D2F36] overflow-x-auto whitespace-nowrap no-scrollbar flex-1">
+          {mainTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 pb-2 font-medium md:text-base text-sm flex-shrink-0 ${
+                activeTab === tab
+                  ? "text-[#1B44FE] border-b-2 border-[#1B44FE]"
+                  : "text-[#718EBF] dark:text-gray-400"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "Deployed Strategies" ? (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 pb-2 font-medium md:text-base text-sm flex-shrink-0 ${
-              activeTab === tab
-                ? "text-[#1B44FE] border-b-2 border-[#1B44FE]"
-                : "text-[#718EBF] dark:text-gray-400"
-            }`}
+            type="button"
+            onClick={handleManualRefreshDeployed}
+            className="inline-flex items-center gap-2 px-2 py-2 text-sm font-medium text-[#1B44FE] hover:text-[#1636c8] disabled:opacity-60 flex-shrink-0"
+            disabled={deployedRefreshing || deployedLoading}
+            aria-label="Refresh deployed strategies"
+            title="Refresh deployed strategies"
           >
-            {tab}
+            <FiRefreshCw className={deployedRefreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
-        ))}
+        ) : null}
       </div>
 
       {activeTab === "My Strategies" && (
@@ -497,6 +511,7 @@ const StrategiesPage = () => {
           removingBrokerIds={removingBrokerIds}
           refreshing={deployedRefreshing}
           userBrokersFetching={userBrokersFetching}
+          onRefresh={handleManualRefreshDeployed}
         />
       )}
       {activeTab === "Strategy Templates" && (
