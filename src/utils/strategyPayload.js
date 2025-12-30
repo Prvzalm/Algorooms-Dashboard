@@ -45,13 +45,13 @@ const normalizeIndicatorParams = (indicator) => {
 
     const list = Array.isArray(indicator.IndicatorParamList)
         ? indicator.IndicatorParamList.map((p) => ({
-              ...p,
-              ParamId: Number(p?.ParamId) || 0,
-              IndicatorParamValue:
-                  p?.IndicatorParamValue === undefined || p?.IndicatorParamValue === null
-                      ? ""
-                      : p.IndicatorParamValue,
-          }))
+            ...p,
+            ParamId: Number(p?.ParamId) || 0,
+            IndicatorParamValue:
+                p?.IndicatorParamValue === undefined || p?.IndicatorParamValue === null
+                    ? ""
+                    : p.IndicatorParamValue,
+        }))
         : [];
 
     return {
