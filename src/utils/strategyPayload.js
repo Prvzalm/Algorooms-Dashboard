@@ -25,8 +25,8 @@ const normalizeEntryOperators = (equations) => {
         if (isLast) {
             return {
                 ...eq,
-                OperatorId: opId,
-                OperatorName: opName || "End",
+                OperatorId: 0,
+                OperatorName: "End",
             };
         }
 
@@ -38,6 +38,37 @@ const normalizeEntryOperators = (equations) => {
         };
     });
 };
+
+// Ensure indicator params carry numeric ParamId for API contract
+const normalizeIndicatorParams = (indicator) => {
+    if (!indicator) return { indicatorId: 0, IndicatorParamList: [] };
+
+    const list = Array.isArray(indicator.IndicatorParamList)
+        ? indicator.IndicatorParamList.map((p) => ({
+              ...p,
+              ParamId: Number(p?.ParamId) || 0,
+              IndicatorParamValue:
+                  p?.IndicatorParamValue === undefined || p?.IndicatorParamValue === null
+                      ? ""
+                      : p.IndicatorParamValue,
+          }))
+        : [];
+
+    return {
+        ...indicator,
+        indicatorId: Number(indicator.indicatorId) || 0,
+        IndicatorParamList: list,
+    };
+};
+
+const normalizeEquationIndicators = (eq) => ({
+    ...eq,
+    indicator: normalizeIndicatorParams(eq?.indicator),
+    comparerIndicator: normalizeIndicatorParams(eq?.comparerIndicator),
+});
+
+const normalizeIndicatorEquations = (equations) =>
+    normalizeEntryOperators(equations).map(normalizeEquationIndicators);
 
 export function buildStrategyPayload({
     values,
@@ -203,8 +234,8 @@ export function buildStrategyPayload({
         TpSLType: tpSlTypeValue,
     };
 
-    const normalizedLongExit = normalizeEntryOperators(cleanValues.Long_ExitEquation || []);
-    const normalizedShortExit = normalizeEntryOperators(cleanValues.Short_ExitEquation || []);
+    const normalizedLongExit = normalizeIndicatorEquations(cleanValues.Long_ExitEquation || []);
+    const normalizedShortExit = normalizeIndicatorEquations(cleanValues.Short_ExitEquation || []);
 
     payloadBase.Long_ExitEquation = onlyShort
         ? []
@@ -215,8 +246,8 @@ export function buildStrategyPayload({
 
     if (selectedStrategyTypes[0] === "indicator") {
         // When user selects single side, send the other side as an empty array
-        const normalizedLong = normalizeEntryOperators(cleanValues.LongEntryEquation || []);
-        const normalizedShort = normalizeEntryOperators(cleanValues.ShortEntryEquation || []);
+        const normalizedLong = normalizeIndicatorEquations(cleanValues.LongEntryEquation || []);
+        const normalizedShort = normalizeIndicatorEquations(cleanValues.ShortEntryEquation || []);
 
         payloadBase.LongEntryEquation = onlyShort
             ? []

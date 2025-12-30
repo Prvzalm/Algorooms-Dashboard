@@ -448,7 +448,6 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
         "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
         "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
-        Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
       };
       return meta[label] || meta["% ↑"];
     };
@@ -1178,7 +1177,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                       }))
                     }
                   >
-                    {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map((o) => (
+                    {["% ↓", "% ↑", "pt ↑", "pt ↓"].map((o) => (
                       <option key={o}>{o}</option>
                     ))}
                   </select>

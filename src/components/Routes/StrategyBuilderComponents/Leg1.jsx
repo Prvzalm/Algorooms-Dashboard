@@ -9,6 +9,9 @@ import {
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import PrimaryButton from "../../common/PrimaryButton";
 
+const createDefaultStrikeBySide = (side) =>
+  createDefaultStrike(side === "long" ? "PE" : "CE");
+
 const Leg1 = ({
   selectedStrategyTypes,
   selectedInstrument,
@@ -526,12 +529,12 @@ const Leg1 = ({
         : [];
 
       while (longArr.length <= activeLegIndex) {
-        longArr.push(createDefaultStrike());
+        longArr.push(createDefaultStrikeBySide("long"));
       }
 
       if (!isTimeStrategy) {
         while (shortArr.length <= activeLegIndex) {
-          shortArr.push(createDefaultStrike());
+          shortArr.push(createDefaultStrikeBySide("short"));
         }
       }
 
@@ -642,13 +645,13 @@ const Leg1 = ({
     let updated = false;
 
     while (longArr.length <= activeLegIndex) {
-      longArr.push(createDefaultStrike());
+      longArr.push(createDefaultStrikeBySide("long"));
       updated = true;
     }
 
     if (!isTimeStrategy) {
       while (shortArr.length <= activeLegIndex) {
-        shortArr.push(createDefaultStrike());
+        shortArr.push(createDefaultStrikeBySide("short"));
         updated = true;
       }
     }
@@ -1323,7 +1326,7 @@ const Leg1 = ({
           : [];
 
         const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-        const newStrike = createDefaultStrike();
+        const newStrike = createDefaultStrikeBySide("long");
 
         // Auto-set the new leg's option type opposite to the previous leg (CE/PE pairing)
         const prevStrikeType = longArr[longArr.length - 1]?.StrikeType;
@@ -1333,7 +1336,8 @@ const Leg1 = ({
         longArr.push(newStrike);
 
         if (isIndicator) {
-          shortArr.push({ ...newStrike });
+          const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
+          shortArr.push({ ...newStrike, StrikeType: opposite });
         }
 
         base.LongEquationoptionStrikeList = longArr;
@@ -1376,13 +1380,14 @@ const Leg1 = ({
             ? [...base.ShortEquationoptionStrikeList]
             : [];
 
-          const newStrike = createDefaultStrike();
+          const newStrike = createDefaultStrikeBySide("long");
 
           const isIndicator = selectedStrategyTypes?.[0] === "indicator";
           longArr.push(newStrike);
 
           if (isIndicator) {
-            shortArr.push({ ...newStrike });
+            const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
+            shortArr.push({ ...newStrike, StrikeType: opposite });
           }
 
           base.LongEquationoptionStrikeList = longArr;
@@ -1445,9 +1450,9 @@ const Leg1 = ({
         // Edge case: ensure at least one leg remains
         const isIndicator = selectedStrategyTypes?.[0] === "indicator";
         if (longArr.length === 0) {
-          longArr.push(createDefaultStrike());
+          longArr.push(createDefaultStrikeBySide("long"));
           if (isIndicator) {
-            shortArr.push(createDefaultStrike());
+            shortArr.push(createDefaultStrikeBySide("short"));
           }
         }
 

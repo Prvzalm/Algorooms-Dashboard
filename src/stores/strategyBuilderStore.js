@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
 // Helper: Create default strike object
-export const createDefaultStrike = () => ({
+export const createDefaultStrike = (strikeType = "CE") => ({
     TransactionType: "SELL",
-    StrikeType: "CE",
+    StrikeType: strikeType,
     StrikeValueType: 0,
     StrikeValue: 0,
     SLActionTypeId: "ONPRICE",
@@ -196,12 +196,12 @@ export const useStrategyBuilderStore = create((set, get) => ({
         if (side === "long") {
             script.LongEquationoptionStrikeList = [
                 ...(script.LongEquationoptionStrikeList || []),
-                { ...createDefaultStrike(), ...strikeData },
+                { ...createDefaultStrike("PE"), ...strikeData },
             ];
         } else {
             script.ShortEquationoptionStrikeList = [
                 ...(script.ShortEquationoptionStrikeList || []),
-                { ...createDefaultStrike(), ...strikeData },
+                { ...createDefaultStrike("CE"), ...strikeData },
             ];
         }
 
