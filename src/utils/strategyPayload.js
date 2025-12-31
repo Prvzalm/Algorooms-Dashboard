@@ -126,6 +126,21 @@ export function buildStrategyPayload({
             SL: script?.SL ?? defaultScriptSl,
         }));
 
+    const pruneSidesByTransaction = (scripts) =>
+        (Array.isArray(scripts) ? scripts : []).map((script) => ({
+            ...script,
+            LongEquationoptionStrikeList: onlyShort
+                ? []
+                : Array.isArray(script.LongEquationoptionStrikeList)
+                    ? script.LongEquationoptionStrikeList
+                    : [],
+            ShortEquationoptionStrikeList: onlyLong
+                ? []
+                : Array.isArray(script.ShortEquationoptionStrikeList)
+                    ? script.ShortEquationoptionStrikeList
+                    : [],
+        }));
+
     const enrichStrike = (item) => ({
         ...item,
         Qty: item?.Qty || lotSizeVal,
@@ -176,21 +191,25 @@ export function buildStrategyPayload({
 
     let StrategyScriptListFinal;
     if (isIndicatorEquityMulti) {
-        StrategyScriptListFinal = applyScriptStops(cleanValues.StrategyScriptList);
+        StrategyScriptListFinal = applyScriptStops(
+            pruneSidesByTransaction(cleanValues.StrategyScriptList)
+        );
     } else {
-        StrategyScriptListFinal = applyScriptStops([
-            {
-                InstrumentToken:
-                    selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
-                Qty: lotSizeVal,
-                LongEquationoptionStrikeList: longOptionStrikes,
-                ShortEquationoptionStrikeList: Array.isArray(
-                    firstScript.ShortEquationoptionStrikeList
-                )
-                    ? firstScript.ShortEquationoptionStrikeList.map(enrichStrike)
-                    : [],
-            },
-        ]);
+        StrategyScriptListFinal = applyScriptStops(
+            pruneSidesByTransaction([
+                {
+                    InstrumentToken:
+                        selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
+                    Qty: lotSizeVal,
+                    LongEquationoptionStrikeList: longOptionStrikes,
+                    ShortEquationoptionStrikeList: Array.isArray(
+                        firstScript.ShortEquationoptionStrikeList
+                    )
+                        ? firstScript.ShortEquationoptionStrikeList.map(enrichStrike)
+                        : [],
+                },
+            ])
+        );
     }
 
     const normalizeTpSlType = () => {

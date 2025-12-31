@@ -11,6 +11,8 @@ const segmentTypes = [
   // "Indices", "CDS", "MCX"
 ];
 
+const equityQueryTabs = ["ALL", "NIFTY50", "NIFTY100", "NIFTY200"];
+
 const EQUITY_MULTI_LIMIT = 50;
 
 const InstrumentModal = ({
@@ -105,6 +107,12 @@ const InstrumentModal = ({
     };
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible) {
+      setSearchQuery("");
+    }
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
@@ -148,6 +156,29 @@ const InstrumentModal = ({
             </label>
           ))}
         </div>
+
+        {segmentType === "Equity" && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {equityQueryTabs.map((label) => {
+              const isActive =
+                searchQuery.trim().toLowerCase() === label.toLowerCase();
+              return (
+                <button
+                  type="button"
+                  key={label}
+                  onClick={() => setSearchQuery(label)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition border ${
+                    isActive
+                      ? "bg-[#E8EDFF] text-[#1B44FE] border-[#1B44FE]/60"
+                      : "bg-[#F5F8FA] text-gray-700 border-transparent hover:border-[#1B44FE]/50 dark:bg-[#1E2027] dark:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {segmentType === "Future" && (
           <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">

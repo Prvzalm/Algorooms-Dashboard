@@ -25,6 +25,7 @@ import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import StrategyBuilderSkeleton from "./StrategyBuilderSkeleton";
 import { FiInfo } from "react-icons/fi";
 import PrimaryButton from "../../common/PrimaryButton";
+import { createDefaultStrike } from "../../../stores/strategyBuilderStore";
 
 const normalizeSegmentType = (segment = "Option") => {
   if (!segment) return "Option";
@@ -364,55 +365,55 @@ const StrategyBuilder = () => {
     const lotQty = defaultLotQty(selectedInstrument.LotSize);
     const isIndicator = selectedStrategyTypes[0] === "indicator";
 
-    // Initialize opposite strike types for indicator strategies
-    const hydratedLongList = previous.LongEquationoptionStrikeList || [];
-    const hydratedShortList = previous.ShortEquationoptionStrikeList || [];
+    const legCount = Math.max(
+      1,
+      (previous.LongEquationoptionStrikeList || []).length,
+      (previous.ShortEquationoptionStrikeList || []).length
+    );
 
+    const makeDefaultStrike = (side = "long") =>
+      createDefaultStrike(side === "long" ? "CE" : "PE");
+
+    const longList = Array.from({ length: legCount }, () =>
+      makeDefaultStrike("long")
+    );
+    const shortList = isIndicator
+      ? Array.from({ length: legCount }, () => makeDefaultStrike("short"))
+      : [];
+
+    // Keep opposite CE/PE pairing for indicator strategies
     if (isIndicator) {
-      if (!hydratedLongList.length) {
-        hydratedLongList.push({
-          ...getDefaultPayload().StrategyScriptList[0]
-            .LongEquationoptionStrikeList[0],
-          StrikeType: "CE",
-        });
-      }
-      if (!hydratedShortList.length) {
-        hydratedShortList.push({
-          ...getDefaultPayload().StrategyScriptList[0]
-            .ShortEquationoptionStrikeList[0],
-          StrikeType: "PE",
-        });
-      }
-      // Ensure first pair stays opposite
-      if (hydratedLongList[0])
-        hydratedLongList[0].StrikeType = hydratedLongList[0].StrikeType || "CE";
-      if (hydratedShortList[0])
-        hydratedShortList[0].StrikeType =
-          hydratedLongList[0].StrikeType === "CE" ? "PE" : "CE";
+      longList.forEach((strike, idx) => {
+        const opposite = strike.StrikeType === "CE" ? "PE" : "CE";
+        shortList[idx].StrikeType = opposite;
+      });
     }
 
     const scriptData = {
-      ...previous,
       InstrumentToken: selectedInstrument.InstrumentToken || "",
       InstrumentName: selectedInstrument.Name || "",
       Qty: resolveQtyValue(previous.Qty, lotQty),
-      LongEquationoptionStrikeList: hydratedLongList,
-      ShortEquationoptionStrikeList: hydratedShortList,
-      StrikeTickValue: previous.StrikeTickValue || 0,
+      LongEquationoptionStrikeList: longList,
+      ShortEquationoptionStrikeList: shortList,
+      StrikeTickValue: 0,
     };
 
-    if (existingScripts.length === 0 || !previous.InstrumentName) {
-      setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
-      updatePayload({
-        StrategySegmentType: selectedInstrument.SegmentType,
-        StrategyScriptList: [scriptData],
-      });
-    } else {
-      const nextScripts = [{ ...scriptData }];
-      setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
-      updatePayload({ StrategyScriptList: nextScripts });
-    }
-  }, [selectedInstrument, setValue, getValues, updatePayload]);
+    setValue("StrategyScriptList", [scriptData], { shouldDirty: true });
+    setValue("ActiveLegIndex", 0, { shouldDirty: true });
+    setValue("AdvanceFeatures", {}, { shouldDirty: true });
+    updatePayload({
+      StrategySegmentType: selectedInstrument.SegmentType,
+      StrategyScriptList: [scriptData],
+      ActiveLegIndex: 0,
+      AdvanceFeatures: {},
+    });
+  }, [
+    selectedInstrument,
+    setValue,
+    getValues,
+    updatePayload,
+    selectedStrategyTypes,
+  ]);
 
   // ✅ OPTIMIZED: Handle equity instruments for indicator-based strategies
   useEffect(() => {

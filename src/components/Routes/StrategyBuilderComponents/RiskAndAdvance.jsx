@@ -18,6 +18,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   // Watch reactive values to avoid infinite loops
   const strategyScripts = watch("StrategyScriptList");
   const activeLegIndex = watch("ActiveLegIndex") || 0;
+  const advanceFeatures = watch("AdvanceFeatures") || {};
 
   // Check if equity instruments are selected in indicator-based mode
   const isIndicatorEquityMode =
@@ -106,31 +107,27 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     setValue("AdvanceFeatures", {}, { shouldDirty: true });
   }, [selectedStrategyTypes?.[0], setValue]);
 
-  // Sync advState with actual form data to keep checkboxes in sync
+  // Keep checkboxes in sync with shared toggle flags (not per-leg values)
   useEffect(() => {
-    const scripts = strategyScripts || [];
-    const firstScript = scripts[0] || {};
-    const longs = firstScript.LongEquationoptionStrikeList || [];
-    const currentStrike = longs[activeLegIndex] || {};
-
     setAdvState((prev) => ({
       ...prev,
-      "Move SL to Cost": currentStrike.IsMoveSLCTC || false,
-      "Exit All on SL/Tgt": currentStrike.isExitAll || false,
-      "Pre Punch SL": currentStrike.isPrePunchSL || false,
-      "Wait & Trade": currentStrike.waitNTrade?.isWaitnTrade || false,
-      "Premium Difference": currentStrike.IsPriceDiffrenceConstrant || false,
-      "Re Entry/Execute": currentStrike.reEntry?.isRentry || false,
-      "Trail SL": currentStrike.isTrailSL || false,
+      "Move SL to Cost": !!advanceFeatures["Move SL to Cost"],
+      "Exit All on SL/Tgt": !!advanceFeatures["Exit All on SL/Tgt"],
+      "Pre Punch SL": !!advanceFeatures["Pre Punch SL"],
+      "Wait & Trade": !!advanceFeatures["Wait & Trade"],
+      "Premium Difference": !!advanceFeatures["Premium Difference"],
+      "Re Entry/Execute": !!advanceFeatures["Re Entry/Execute"],
+      "Trail SL": !!advanceFeatures["Trail SL"],
     }));
-  }, [strategyScripts, activeLegIndex]);
+  }, [advanceFeatures]);
 
   const isDisabledAdvance = (label) => {
     // Rule 1: Move SL to Cost active -> disable all except Premium Difference (Exit All also disabled)
     if (
       advState["Move SL to Cost"] &&
       label !== "Premium Difference" &&
-      label !== "Move SL to Cost"
+      label !== "Move SL to Cost" &&
+      label !== "Re Entry/Execute"
     ) {
       return true;
     }
@@ -139,6 +136,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       if (label === "Re Entry/Execute" || label === "Move SL to Cost") {
         return true;
       }
+    }
+    // Rule 2b: Re Entry/Execute disables Move SL to Cost
+    if (advState["Re Entry/Execute"] && label === "Move SL to Cost") {
+      return true;
     }
     // Rule 3: Wait & Trade disables Move SL to Cost
     if (advState["Wait & Trade"] && label === "Move SL to Cost") {
@@ -186,6 +187,96 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
     updatePayload({ StrategyScriptList: nextScripts });
   };
+
+  const setAdvanceFeatureFlags = (updates) => {
+    const currentAf = getValues("AdvanceFeatures") || {};
+    const nextAf = { ...currentAf, ...updates };
+    setValue("AdvanceFeatures", nextAf, { shouldDirty: true });
+    setAdvState((prev) => {
+      const nextState = { ...prev };
+      Object.entries(updates).forEach(([key, val]) => {
+        nextState[key] = !!val;
+      });
+      return nextState;
+    });
+  };
+
+  const resetAdvanceFeature = (label) => {
+    switch (label) {
+      case "Move SL to Cost":
+        updateActiveStrikes((s) => {
+          s.IsMoveSLCTC = false;
+        });
+        break;
+      case "Exit All on SL/Tgt":
+        setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
+        updateActiveStrikes((s) => {
+          s.isExitAll = false;
+        });
+        break;
+      case "Pre Punch SL":
+        updateActiveStrikes((s) => {
+          s.isPrePunchSL = false;
+        });
+        break;
+      case "Wait & Trade":
+        updateActiveStrikes((s) => {
+          s.waitNTrade = {
+            ...(s.waitNTrade || {}),
+            isWaitnTrade: false,
+            isPerPt: "wt_eq",
+            typeId: "wt_eq",
+            MovementValue: "0",
+          };
+          s.IsMoveSLCTC = false;
+        });
+        setWaitTradeTempData({ type: "% ↑", movement: "0" });
+        break;
+      case "Premium Difference":
+        updateActiveStrikes((s) => {
+          s.IsPriceDiffrenceConstrant = false;
+          s.PriceDiffrenceConstrantValue = "0";
+        });
+        setPremiumDiffTempValue("0");
+        break;
+      case "Re Entry/Execute":
+        updateActiveStrikes((s) => {
+          s.reEntry = {
+            ...(s.reEntry || {}),
+            isRentry: false,
+            RentryType: "REX",
+            TradeCycle: "0",
+            RentryActionTypeId: "IMMDT",
+          };
+          s.IsMoveSLCTC = false;
+        });
+        setReEntryTempData({
+          executionType: "ReExecute",
+          cycles: "1",
+          actionType: "IMMDT",
+        });
+        break;
+      case "Trail SL":
+        updateActiveStrikes((s) => {
+          s.isTrailSL = false;
+          s.TrailingSL = {
+            TrailingType: "tslpr",
+            InstrumentMovementValue: "0",
+            TrailingValue: "0",
+          };
+        });
+        setTrailSlTempData({
+          trailingType: "%",
+          priceMovement: "0",
+          trailingValue: "0",
+        });
+        break;
+      default:
+        break;
+    }
+
+    setAdvanceFeatureFlags({ [label]: false });
+  };
   const onToggleAdvance = (label, checked) => {
     const modalFeatures = new Set([
       "Wait & Trade",
@@ -193,254 +284,129 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       "Re Entry/Execute",
       "Trail SL",
     ]);
-    const requiresModal = modalFeatures.has(label);
-    const turningOnWithModal = requiresModal && checked;
 
-    // Keep checkbox state in sync; only mark true after confirmation for modal features
-    if (!turningOnWithModal) {
-      setAdvState((prev) => ({ ...prev, [label]: checked }));
+    if (!checked) {
+      resetAdvanceFeature(label);
+      return;
     }
 
-    // enforce mutual exclusions when turning ON
-    if (checked) {
-      if (label === "Move SL to Cost") {
-        setAdvState((prev) => ({
-          ...prev,
-          "Move SL to Cost": true,
-          "Wait & Trade": false,
-          "Pre Punch SL": false,
-          "Trail SL": false,
-          "Exit All on SL/Tgt": false,
-          "Re Entry/Execute": prev["Re Entry/Execute"],
-          "Premium Difference": prev["Premium Difference"],
-        }));
-      }
-      if (label === "Exit All on SL/Tgt") {
-        setAdvState((prev) => ({
-          ...prev,
-          "Re Entry/Execute": false,
-          "Move SL to Cost": false,
-        }));
-      }
-      if (label === "Wait & Trade") {
-        setAdvState((prev) => ({ ...prev, "Move SL to Cost": false }));
-      }
-      if (label === "Re Entry/Execute") {
-        setAdvState((prev) => ({
-          ...prev,
-          "Exit All on SL/Tgt": false,
-        }));
-      }
-      if (label === "Trail SL") {
-        setAdvState((prev) => ({
-          ...prev,
-          "Pre Punch SL": false,
-        }));
-      }
+    if (label === "Move SL to Cost") {
+      resetAdvanceFeature("Wait & Trade");
+      resetAdvanceFeature("Pre Punch SL");
+      resetAdvanceFeature("Trail SL");
+      resetAdvanceFeature("Exit All on SL/Tgt");
+      setAdvanceFeatureFlags({ "Move SL to Cost": true });
+      updateActiveStrikes((s) => {
+        s.IsMoveSLCTC = true;
+      });
+      return;
     }
 
-    // Update AdvanceFeatures immediately only when not waiting for modal confirmation or when turning OFF
-    if (!turningOnWithModal || !checked) {
-      const currentAf = getValues("AdvanceFeatures") || {};
-      const nextAf = { ...currentAf, [label]: checked };
-      if (label === "Re Entry/Execute" && checked) {
-        nextAf["Exit All on SL/Tgt"] = false;
-      }
-      if (label === "Trail SL" && checked) {
-        nextAf["Pre Punch SL"] = false;
-      }
-      setValue("AdvanceFeatures", nextAf, { shouldDirty: true });
+    if (label === "Exit All on SL/Tgt") {
+      resetAdvanceFeature("Re Entry/Execute");
+      resetAdvanceFeature("Move SL to Cost");
+      setAdvanceFeatureFlags({ "Exit All on SL/Tgt": true });
+      setValue("SquareOffAllOptionLegOnSl", true, { shouldDirty: true });
+      updateActiveStrikes((s) => {
+        s.isExitAll = true;
+      });
+      return;
     }
 
-    switch (label) {
-      case "Move SL to Cost":
-        updateActiveStrikes((s) => {
-          s.IsMoveSLCTC = !!checked;
-        });
-        break;
-      case "Exit All on SL/Tgt":
-        setValue("SquareOffAllOptionLegOnSl", !!checked, { shouldDirty: true });
-        updateActiveStrikes((s) => {
-          s.isExitAll = !!checked;
-        });
-        break;
-      case "Pre Punch SL":
-        updateActiveStrikes((s) => {
-          s.isPrePunchSL = !!checked;
-        });
-        break;
-      case "Wait & Trade":
-        if (checked) {
-          const scripts = strategyScripts || [];
-          const firstScript = scripts[0] || {};
-          const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[0] || {};
-          const wtMapRev = {
-            wt_eq: "% ↑",
-            "wtpt_+": "pt ↑",
-            "wtpt_-": "pt ↓",
-            "wtpr_-": "% ↓",
-          };
+    if (label === "Pre Punch SL") {
+      setAdvanceFeatureFlags({ "Pre Punch SL": true });
+      updateActiveStrikes((s) => {
+        s.isPrePunchSL = true;
+      });
+      return;
+    }
 
-          setWaitTradeTempData({
-            type: wtMapRev[currentStrike.waitNTrade?.typeId] || "% ↑",
-            movement:
-              String(currentStrike.waitNTrade?.MovementValue ?? "0") || "0",
-          });
-          setShowWaitTradeModal(true);
-        } else {
-          updateActiveStrikes((s) => {
-            s.waitNTrade = {
-              ...(s.waitNTrade || {}),
-              isWaitnTrade: false,
-              isPerPt: s.waitNTrade?.isPerPt || "wt_eq",
-              typeId: s.waitNTrade?.typeId || "wt_eq",
-              MovementValue: s.waitNTrade?.MovementValue ?? "0",
-            };
-          });
-          const currentAf = getValues("AdvanceFeatures") || {};
-          setValue(
-            "AdvanceFeatures",
-            {
-              ...currentAf,
-              "Wait & Trade": false,
-            },
-            { shouldDirty: true }
-          );
-        }
-        break;
-      case "Premium Difference":
-        if (checked) {
-          const scripts = strategyScripts || [];
-          const firstScript = scripts[0] || {};
-          const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[0] || {};
+    if (label === "Wait & Trade") {
+      resetAdvanceFeature("Move SL to Cost");
+      setAdvanceFeatureFlags({ "Wait & Trade": true });
+      const scripts = strategyScripts || [];
+      const firstScript = scripts[0] || {};
+      const longs = firstScript.LongEquationoptionStrikeList || [];
+      const currentStrike = longs[0] || {};
+      const wtMapRev = {
+        wt_eq: "% ↑",
+        "wtpt_+": "pt ↑",
+        "wtpt_-": "pt ↓",
+        "wtpr_-": "% ↓",
+      };
+      setWaitTradeTempData({
+        type: wtMapRev[currentStrike.waitNTrade?.typeId] || "% ↑",
+        movement: String(currentStrike.waitNTrade?.MovementValue ?? "0") || "0",
+      });
+      setShowWaitTradeModal(true);
+      return;
+    }
 
-          const currentPremValue =
-            currentStrike.PriceDiffrenceConstrantValue || "0";
+    if (label === "Premium Difference") {
+      setAdvanceFeatureFlags({ "Premium Difference": true });
+      const scripts = strategyScripts || [];
+      const firstScript = scripts[0] || {};
+      const longs = firstScript.LongEquationoptionStrikeList || [];
+      const currentStrike = longs[0] || {};
+      const currentPremValue =
+        currentStrike.PriceDiffrenceConstrantValue || "0";
+      setPremiumDiffTempValue(currentPremValue);
+      setShowPremiumDiffModal(true);
+      return;
+    }
 
-          // Initialize temp value with existing value
-          setPremiumDiffTempValue(currentPremValue);
+    if (label === "Re Entry/Execute") {
+      resetAdvanceFeature("Exit All on SL/Tgt");
+      resetAdvanceFeature("Move SL to Cost");
+      setAdvanceFeatureFlags({ "Re Entry/Execute": true });
+      const scripts = strategyScripts || [];
+      const firstScript = scripts[0] || {};
+      const longs = firstScript.LongEquationoptionStrikeList || [];
+      const currentStrike = longs[0] || {};
+      const rentryTypeToUI = (rentryType) => {
+        const map = {
+          REX: "ReExecute",
+          REN: "ReEntry On Close",
+          RENC: "ReEntry On Cost",
+        };
+        return map[rentryType] || "ReExecute";
+      };
+      setReEntryTempData({
+        executionType: rentryTypeToUI(currentStrike.reEntry?.RentryType),
+        cycles: currentStrike.reEntry?.TradeCycle || "1",
+        actionType: currentStrike.reEntry?.RentryActionTypeId || "IMMDT",
+      });
+      setShowReEntryModal(true);
+      updateActiveStrikes((s) => {
+        s.isExitAll = false;
+        s.IsMoveSLCTC = false;
+      });
+      setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
+      return;
+    }
 
-          // Open modal for value input
-          setShowPremiumDiffModal(true);
-        } else {
-          updateActiveStrikes((s) => {
-            s.IsPriceDiffrenceConstrant = false;
-            s.PriceDiffrenceConstrantValue = "0";
-          });
-          const currentAf = getValues("AdvanceFeatures") || {};
-          setValue(
-            "AdvanceFeatures",
-            {
-              ...currentAf,
-              "Premium Difference": false,
-              PremiumDifferenceValue: "0",
-            },
-            { shouldDirty: true }
-          );
-        }
-        break;
-      case "Re Entry/Execute":
-        if (checked) {
-          const scripts = strategyScripts || [];
-          const firstScript = scripts[0] || {};
-          const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[0] || {};
+    if (label === "Trail SL") {
+      resetAdvanceFeature("Pre Punch SL");
+      setAdvanceFeatureFlags({ "Trail SL": true });
+      const scripts = strategyScripts || [];
+      const firstScript = scripts[0] || {};
+      const longs = firstScript.LongEquationoptionStrikeList || [];
+      const currentStrike = longs[0] || {};
+      setTrailSlTempData({
+        trailingType:
+          currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%",
+        priceMovement: currentStrike.TrailingSL?.InstrumentMovementValue || "0",
+        trailingValue: currentStrike.TrailingSL?.TrailingValue || "0",
+      });
+      setShowTrailSlModal(true);
+      updateActiveStrikes((s) => {
+        s.isPrePunchSL = false;
+      });
+      return;
+    }
 
-          // Map backend RentryType to UI executionType
-          const rentryTypeToUI = (rentryType) => {
-            const map = {
-              REX: "ReExecute",
-              REN: "ReEntry On Close",
-              RENC: "ReEntry On Cost",
-            };
-            return map[rentryType] || "ReExecute";
-          };
-
-          // Initialize temp data with existing values (prefer leg store)
-          setReEntryTempData({
-            executionType: rentryTypeToUI(currentStrike.reEntry?.RentryType),
-            cycles: currentStrike.reEntry?.TradeCycle || "1",
-            actionType: currentStrike.reEntry?.RentryActionTypeId || "IMMDT",
-          });
-
-          // Show modal to configure Re-Entry/Execute
-          setShowReEntryModal(true);
-
-          // Ensure conflicting exit-all state is cleared
-          updateActiveStrikes((s) => {
-            s.isExitAll = false;
-          });
-          setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
-        } else {
-          // Directly disable when unchecking
-          updateActiveStrikes((s) => {
-            s.reEntry = {
-              ...(s.reEntry || {}),
-              isRentry: false,
-              RentryType: "REX",
-              TradeCycle: "0",
-              RentryActionTypeId: "IMMDT",
-            };
-          });
-          const currentAf = getValues("AdvanceFeatures") || {};
-          setValue(
-            "AdvanceFeatures",
-            {
-              ...currentAf,
-              "Re Entry/Execute": false,
-            },
-            { shouldDirty: true }
-          );
-        }
-        break;
-      case "Trail SL":
-        if (checked) {
-          const scripts = strategyScripts || [];
-          const firstScript = scripts[0] || {};
-          const longs = firstScript.LongEquationoptionStrikeList || [];
-          const currentStrike = longs[0] || {};
-
-          // Initialize temp data with existing values (prefer leg store)
-          setTrailSlTempData({
-            trailingType:
-              currentStrike.TrailingSL?.TrailingType === "tslpt" ? "Pt" : "%",
-            priceMovement:
-              currentStrike.TrailingSL?.InstrumentMovementValue || "0",
-            trailingValue: currentStrike.TrailingSL?.TrailingValue || "0",
-          });
-
-          // Show modal to configure Trail SL
-          setShowTrailSlModal(true);
-
-          // Ensure Pre Punch SL is cleared when Trail SL is enabled
-          updateActiveStrikes((s) => {
-            s.isPrePunchSL = false;
-          });
-        } else {
-          // Directly disable when unchecking
-          updateActiveStrikes((s) => {
-            s.isTrailSL = false;
-            s.TrailingSL = {
-              TrailingType: "tslpr",
-              InstrumentMovementValue: "0",
-              TrailingValue: "0",
-            };
-          });
-          const currentAf = getValues("AdvanceFeatures") || {};
-          setValue(
-            "AdvanceFeatures",
-            {
-              ...currentAf,
-              "Trail SL": false,
-            },
-            { shouldDirty: true }
-          );
-        }
-        break;
-      default:
-        break;
+    if (!modalFeatures.has(label)) {
+      setAdvanceFeatureFlags({ [label]: true });
     }
   };
 
@@ -471,24 +437,10 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       };
     });
 
-    const currentAf = getValues("AdvanceFeatures") || {};
-    setValue(
-      "AdvanceFeatures",
-      {
-        ...currentAf,
-        "Move SL to Cost": false,
-        "Wait & Trade": true,
-        WaitTradeType: meta.typeId,
-        WaitTradeMovement: movementVal,
-      },
-      { shouldDirty: true }
-    );
-
-    setAdvState((prev) => ({
-      ...prev,
+    setAdvanceFeatureFlags({
       "Wait & Trade": true,
       "Move SL to Cost": false,
-    }));
+    });
     setShowWaitTradeModal(false);
   };
 
@@ -521,21 +473,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     setShowPremiumDiffModal(false);
     const isEnabled = Number(premiumDiffTempValue) > 0;
 
-    if (!isEnabled) {
-      setAdvState((prev) => ({ ...prev, "Premium Difference": false }));
-    } else {
-      setAdvState((prev) => ({ ...prev, "Premium Difference": true }));
-    }
-    const currentAf = getValues("AdvanceFeatures") || {};
-    setValue(
-      "AdvanceFeatures",
-      {
-        ...currentAf,
-        "Premium Difference": isEnabled,
-        PremiumDifferenceValue: premiumDiffTempValue,
-      },
-      { shouldDirty: true }
-    );
+    setAdvanceFeatureFlags({ "Premium Difference": isEnabled });
   };
 
   const saveReEntryExecute = (data) => {
@@ -564,21 +502,14 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         TradeCycle: data.cycles,
         RentryActionTypeId: finalActionType,
       };
+      s.IsMoveSLCTC = false;
     });
-    setAdvState((prev) => ({ ...prev, "Re Entry/Execute": true }));
-    const currentAf = getValues("AdvanceFeatures") || {};
-    setValue(
-      "AdvanceFeatures",
-      {
-        ...currentAf,
-        "Re Entry/Execute": true,
-        ReEntryExecutionType: data.executionType,
-        ReEntryCycles: data.cycles,
-        ReEntryActionType: finalActionType,
-      },
-      { shouldDirty: true }
-    );
+    setAdvanceFeatureFlags({
+      "Re Entry/Execute": true,
+      "Move SL to Cost": false,
+    });
     setReEntryTempData(data);
+    setShowReEntryModal(false);
   };
 
   const saveTrailStopLoss = (data) => {
@@ -590,20 +521,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         TrailingValue: data.trailingValue,
       };
     });
-    setAdvState((prev) => ({ ...prev, "Trail SL": true }));
-    const currentAf = getValues("AdvanceFeatures") || {};
-    setValue(
-      "AdvanceFeatures",
-      {
-        ...currentAf,
-        "Trail SL": true,
-        TrailSlType: data.trailingType,
-        TrailSlPriceMovement: data.priceMovement,
-        TrailSlTrailingValue: data.trailingValue,
-      },
-      { shouldDirty: true }
-    );
+    setAdvanceFeatureFlags({ "Trail SL": true, "Pre Punch SL": false });
     setTrailSlTempData(data);
+    setShowTrailSlModal(false);
   };
 
   return (
@@ -1211,7 +1131,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                   type="button"
                   onClick={() => {
                     setShowWaitTradeModal(false);
-                    setAdvState((prev) => ({ ...prev, "Wait & Trade": false }));
+                    resetAdvanceFeature("Wait & Trade");
                   }}
                   className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
                 >
@@ -1253,25 +1173,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                   type="button"
                   onClick={() => {
                     setShowPremiumDiffModal(false);
-                    // Always leave unchecked on cancel
-                    setAdvState((prev) => ({
-                      ...prev,
-                      "Premium Difference": false,
-                    }));
-                    updateFirstStrike((s) => {
-                      s.IsPriceDiffrenceConstrant = false;
-                      s.PriceDiffrenceConstrantValue = 0;
-                    });
-                    const currentAf = getValues("AdvanceFeatures") || {};
-                    setValue(
-                      "AdvanceFeatures",
-                      {
-                        ...currentAf,
-                        "Premium Difference": false,
-                        PremiumDifferenceValue: "0",
-                      },
-                      { shouldDirty: true }
-                    );
+                    resetAdvanceFeature("Premium Difference");
                   }}
                   className="px-4 py-2 rounded-lg border text-sm dark:border-[#333] dark:text-gray-300"
                 >
@@ -1294,17 +1196,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           isOpen={showReEntryModal}
           onClose={() => {
             setShowReEntryModal(false);
-            // Uncheck the checkbox if user cancels
-            setAdvState((prev) => ({ ...prev, "Re Entry/Execute": false }));
-            const currentAf = getValues("AdvanceFeatures") || {};
-            setValue(
-              "AdvanceFeatures",
-              {
-                ...currentAf,
-                "Re Entry/Execute": false,
-              },
-              { shouldDirty: true }
-            );
+            resetAdvanceFeature("Re Entry/Execute");
           }}
           onSave={saveReEntryExecute}
           initialData={reEntryTempData}
@@ -1315,17 +1207,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
           isOpen={showTrailSlModal}
           onClose={() => {
             setShowTrailSlModal(false);
-            // Uncheck the checkbox if user cancels
-            setAdvState((prev) => ({ ...prev, "Trail SL": false }));
-            const currentAf = getValues("AdvanceFeatures") || {};
-            setValue(
-              "AdvanceFeatures",
-              {
-                ...currentAf,
-                "Trail SL": false,
-              },
-              { shouldDirty: true }
-            );
+            resetAdvanceFeature("Trail SL");
           }}
           onSave={saveTrailStopLoss}
           initialData={trailSlTempData}

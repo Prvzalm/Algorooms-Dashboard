@@ -304,14 +304,11 @@ const Leg1 = ({
       : existingActiveLong || existingActiveShort;
 
   const position = existingActiveStrike?.TransactionType || "BUY";
-  const firstScript = strategyScripts?.[0];
-  const sharedExpiryFromScripts =
-    firstScript?.LongEquationoptionStrikeList?.[0]?.ExpiryType ||
-    firstScript?.ShortEquationoptionStrikeList?.[0]?.ExpiryType ||
+  const expiryType =
     existingActiveStrike?.ExpiryType ||
+    existingActiveLong?.ExpiryType ||
+    existingActiveShort?.ExpiryType ||
     "WEEKLY";
-
-  const expiryType = sharedExpiryFromScripts || "WEEKLY";
   const slTypeSel = existingActiveStrike?.SLType === "slpt" ? "SL pt" : "SL%";
   const tpTypeSel =
     existingActiveStrike?.TargetType === "tgpt" ? "TP pt" : "TP%";
@@ -432,8 +429,11 @@ const Leg1 = ({
           : "");
 
       const qtyValue = (() => {
-        if (selectedInstrument?.LotSize) return String(qtyDisplay || "");
-        if (sourceStrike?.Qty) return String(sourceStrike.Qty);
+        const numericQty = Number(sourceStrike?.Qty);
+        if (Number.isFinite(numericQty) && numericQty > 0)
+          return String(numericQty);
+        if (sourceStrike?.Qty !== undefined && sourceStrike?.Qty !== null)
+          return String(sourceStrike.Qty);
         return "";
       })();
 
@@ -638,6 +638,68 @@ const Leg1 = ({
     setTrailSlTrailingValue("0");
   }, [selectedStrategyTypes?.[0]]);
 
+  // Reset advanced feature UI state whenever instrument changes
+  useEffect(() => {
+    setWaitTradeEnabled(false);
+    setWaitTradeMovement(0);
+    setWaitTradeType("% ↑");
+
+    setPremiumDiffEnabled(false);
+    setPremiumDiffValue(0);
+
+    setReEntryEnabled(false);
+    setReEntryExecutionType("ReExecute");
+    setReEntryCycles(1);
+    setReEntryActionType("IMMDT");
+
+    setTrailSlEnabled(false);
+    setTrailSlType("%");
+    setTrailSlPriceMovement("0");
+    setTrailSlTrailingValue("0");
+  }, [selectedInstrument?.InstrumentToken]);
+
+  // When advance feature toggles are turned off globally, reset local UI state
+  useEffect(() => {
+    if (!advanceFeatures?.["Wait & Trade"]) {
+      setWaitTradeEnabled(false);
+      setWaitTradeMovement(0);
+      setWaitTradeType("% ↑");
+    } else if (!waitTradeEnabled) {
+      setWaitTradeEnabled(true);
+    }
+
+    if (!advanceFeatures?.["Premium Difference"]) {
+      setPremiumDiffEnabled(false);
+      setPremiumDiffValue(0);
+    } else if (!premiumDiffEnabled) {
+      setPremiumDiffEnabled(true);
+    }
+
+    if (!advanceFeatures?.["Re Entry/Execute"]) {
+      setReEntryEnabled(false);
+      setReEntryExecutionType("ReExecute");
+      setReEntryCycles(1);
+      setReEntryActionType("IMMDT");
+    } else if (!reEntryEnabled) {
+      setReEntryEnabled(true);
+    }
+
+    if (!advanceFeatures?.["Trail SL"]) {
+      setTrailSlEnabled(false);
+      setTrailSlType("%");
+      setTrailSlPriceMovement("0");
+      setTrailSlTrailingValue("0");
+    } else if (!trailSlEnabled) {
+      setTrailSlEnabled(true);
+    }
+  }, [
+    advanceFeatures,
+    waitTradeEnabled,
+    premiumDiffEnabled,
+    reEntryEnabled,
+    trailSlEnabled,
+  ]);
+
   useEffect(() => {
     const scripts = getValues("StrategyScriptList") || [];
     if (!scripts.length) return;
@@ -772,19 +834,16 @@ const Leg1 = ({
         "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
         "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
         "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
-        Equal: { isPerPt: "wt_eq", typeId: "wt_eq" },
       };
       return meta[label] || meta["% ↑"];
     };
 
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
       const meta = mapWaitTradeType(waitTradeType);
-      const globalEnabled = advanceFeatures?.["Wait & Trade"];
 
       const applyToStrike = (strike) => {
         const prev = strike.waitNTrade || {};
-        const effectiveEnabled =
-          waitTradeEnabled || prev.isWaitnTrade || globalEnabled;
+        const effectiveEnabled = waitTradeEnabled || prev.isWaitnTrade;
 
         if (!effectiveEnabled) {
           strike.waitNTrade = {
@@ -802,20 +861,6 @@ const Leg1 = ({
             isPerPt: meta.isPerPt,
             typeId: meta.typeId,
             MovementValue: String(waitTradeMovement || 0),
-          };
-          return;
-        }
-
-        if (globalEnabled) {
-          const globalType =
-            advanceFeatures?.WaitTradeType || prev.typeId || meta.typeId;
-          const globalMovement =
-            advanceFeatures?.WaitTradeMovement ?? prev.MovementValue ?? "0";
-          strike.waitNTrade = {
-            isWaitnTrade: true,
-            isPerPt: globalType,
-            typeId: globalType,
-            MovementValue: String(globalMovement),
           };
           return;
         }
@@ -847,14 +892,9 @@ const Leg1 = ({
   useEffect(() => {
     if (hydratingRef.current) return;
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
-      const globalEnabled = advanceFeatures?.["Premium Difference"];
-      const globalValue = advanceFeatures?.PremiumDifferenceValue;
-
       const applyToStrike = (strike) => {
         const effectiveEnabled =
-          premiumDiffEnabled ||
-          strike.IsPriceDiffrenceConstrant ||
-          globalEnabled;
+          premiumDiffEnabled || strike.IsPriceDiffrenceConstrant;
 
         if (!effectiveEnabled) {
           strike.IsPriceDiffrenceConstrant = false;
@@ -866,8 +906,6 @@ const Leg1 = ({
 
         const value = premiumDiffEnabled
           ? Number(premiumDiffValue) || 0
-          : globalValue !== undefined
-          ? Number(globalValue) || 0
           : Number(strike.PriceDiffrenceConstrantValue) || 0;
 
         strike.IsPriceDiffrenceConstrant = value > 0;
@@ -898,12 +936,9 @@ const Leg1 = ({
     };
 
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
-      const globalEnabled = advanceFeatures?.["Re Entry/Execute"];
-
       const applyToStrike = (strike) => {
         const prev = strike.reEntry || {};
-        const effectiveEnabled =
-          reEntryEnabled || prev.isRentry || globalEnabled;
+        const effectiveEnabled = reEntryEnabled || prev.isRentry;
 
         if (!effectiveEnabled) {
           strike.reEntry = {
@@ -917,19 +952,15 @@ const Leg1 = ({
 
         const executionType = reEntryEnabled
           ? reEntryExecutionType
-          : advanceFeatures?.ReEntryExecutionType ||
-            mapCodeToUi[prev.RentryType] ||
-            "ReExecute";
+          : mapCodeToUi[prev.RentryType] || "ReExecute";
 
         const cycles = reEntryEnabled
           ? Number(reEntryCycles) || 1
-          : Number(advanceFeatures?.ReEntryCycles || prev.TradeCycle || 1);
+          : Number(prev.TradeCycle || 1);
 
         let actionType = reEntryEnabled
           ? reEntryActionType
-          : advanceFeatures?.ReEntryActionType ||
-            prev.RentryActionTypeId ||
-            "IMMDT";
+          : prev.RentryActionTypeId || "IMMDT";
 
         // RentryActionTypeId can only be "ON_CLOSE" or "IMMDT"
         if (executionType === "ReEntry On Close") {
@@ -962,12 +993,10 @@ const Leg1 = ({
   useEffect(() => {
     if (hydratingRef.current) return;
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
-      const globalEnabled = advanceFeatures?.["Trail SL"];
       const indicatorTrailActive = isIndicatorStrategy;
       const hasManualInput =
         trailSlEnabled ||
         indicatorTrailActive ||
-        globalEnabled ||
         Number(trailSlPriceMovement) > 0 ||
         Number(trailSlTrailingValue) > 0;
 
@@ -988,22 +1017,17 @@ const Leg1 = ({
         const useUiValues = trailSlEnabled || indicatorTrailActive;
         const effectiveType = useUiValues
           ? trailSlType
-          : advanceFeatures?.TrailSlType ||
-            (prev.TrailingType === "tslpt" ? "Pt" : "%");
+          : prev.TrailingType === "tslpt"
+          ? "Pt"
+          : "%";
 
         const movement = useUiValues
           ? Number(trailSlPriceMovement) || 0
-          : Number(
-              advanceFeatures?.TrailSlPriceMovement ??
-                prev.InstrumentMovementValue ??
-                0
-            );
+          : Number(prev.InstrumentMovementValue ?? 0);
 
         const trailing = useUiValues
           ? Number(trailSlTrailingValue) || 0
-          : Number(
-              advanceFeatures?.TrailSlTrailingValue ?? prev.TrailingValue ?? 0
-            );
+          : Number(prev.TrailingValue ?? 0);
 
         strike.isTrailSL = true;
         strike.TrailingSL = {
@@ -2068,11 +2092,9 @@ const Leg1 = ({
                                     setWaitTradeType(e.target.value)
                                   }
                                 >
-                                  {["% ↓", "% ↑", "pt ↑", "pt ↓", "Equal"].map(
-                                    (o) => (
-                                      <option key={o}>{o}</option>
-                                    )
-                                  )}
+                                  {["% ↓", "% ↑", "pt ↑", "pt ↓"].map((o) => (
+                                    <option key={o}>{o}</option>
+                                  ))}
                                 </select>
                               </div>
                               <div>

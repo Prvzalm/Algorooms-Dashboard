@@ -30,7 +30,6 @@ const ReEntryExecuteModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
       cycles,
       actionType,
     });
-    onClose();
   };
 
   if (!isOpen) return null;

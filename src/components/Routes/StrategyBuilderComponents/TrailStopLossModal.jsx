@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PrimaryButton from "../../common/PrimaryButton";
 
 const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
@@ -12,13 +12,24 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     Math.max(0, Number(initialData.trailingValue) || 0)
   );
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setTrailingType(initialData.trailingType || "%");
+    setPriceMovement(Math.max(0, Number(initialData.priceMovement) || 0));
+    setTrailingValue(Math.max(0, Number(initialData.trailingValue) || 0));
+  }, [
+    isOpen,
+    initialData.trailingType,
+    initialData.priceMovement,
+    initialData.trailingValue,
+  ]);
+
   const handleSave = () => {
     onSave({
       trailingType,
       priceMovement,
       trailingValue,
     });
-    onClose();
   };
 
   if (!isOpen) return null;

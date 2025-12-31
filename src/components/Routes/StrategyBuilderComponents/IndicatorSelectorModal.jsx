@@ -31,10 +31,12 @@ const IndicatorSelectorModal = ({
     if (!selectedMeta) return;
     const next = {};
     (selectedMeta.IndicatorParams || []).forEach((p) => {
+      const firstListValue =
+        p.ParamType === "List" && Array.isArray(p.ParamNameList)
+          ? p.ParamNameList[0] ?? ""
+          : "";
       next[p.ParamId] =
-        paramValues[p.ParamId] ??
-        p.DefaultValue ??
-        (p.ParamType === "List" ? "" : "");
+        paramValues[p.ParamId] ?? p.DefaultValue ?? firstListValue;
     });
     setParamValues(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,13 +103,12 @@ const IndicatorSelectorModal = ({
                               {p.ParamName}
                             </label>
                             <select
-                              value={val}
+                              value={val || p.ParamNameList?.[0] || ""}
                               onChange={(e) =>
                                 handleParamChange(p.ParamId, e.target.value)
                               }
                               className="w-full border rounded px-2 py-1 text-xs dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                             >
-                              <option value="">Select</option>
                               {p.ParamNameList.map((opt) => (
                                 <option key={opt}>{opt}</option>
                               ))}
