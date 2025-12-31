@@ -6,9 +6,11 @@ import TrailStopLossModal from "./TrailStopLossModal";
 import React from "react";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import PrimaryButton from "../../common/PrimaryButton";
+import { useStrategyBuilderStore } from "../../../stores/strategyBuilderStore";
 
 const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const { setValue, getValues, watch } = useFormContext();
+  const updatePayload = useStrategyBuilderStore((s) => s.updatePayload);
   const tradeStopTimeValue = watch("TradeStopTime") || "15:15";
   const autoSquareOffTimeValue = watch("AutoSquareOffTime") || "15:15";
   const noTradeAfter = tradeStopTimeValue;
@@ -182,6 +184,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     });
 
     setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: nextScripts });
   };
   const onToggleAdvance = (label, checked) => {
     const modalFeatures = new Set([

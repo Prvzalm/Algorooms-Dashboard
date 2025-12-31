@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 // Helper: Create default strike object
 export const createDefaultStrike = (strikeType = "CE") => ({
-    TransactionType: "SELL",
+    TransactionType: "BUY",
     StrikeType: strikeType,
     StrikeValueType: 0,
     StrikeValue: 0,

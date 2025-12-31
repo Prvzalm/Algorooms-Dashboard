@@ -420,7 +420,7 @@ const StrategyBuilder = () => {
     if (!selectedEquityInstruments.length) return;
 
     const buildDefaultStrike = (strikeType) => ({
-      TransactionType: "SELL",
+      TransactionType: "BUY",
       StrikeType: strikeType,
       StrikeValueType: 0,
       StrikeValue: 0,

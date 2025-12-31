@@ -615,8 +615,8 @@ const Leg1 = ({
 
   const [trailSlEnabled, setTrailSlEnabled] = useState(false);
   const [trailSlType, setTrailSlType] = useState("%");
-  const [trailSlPriceMovement, setTrailSlPriceMovement] = useState(0);
-  const [trailSlTrailingValue, setTrailSlTrailingValue] = useState(0);
+  const [trailSlPriceMovement, setTrailSlPriceMovement] = useState("0");
+  const [trailSlTrailingValue, setTrailSlTrailingValue] = useState("0");
 
   // Reset advance feature UI state when strategy type changes
   useEffect(() => {
@@ -634,8 +634,8 @@ const Leg1 = ({
 
     setTrailSlEnabled(false);
     setTrailSlType("%");
-    setTrailSlPriceMovement(0);
-    setTrailSlTrailingValue(0);
+    setTrailSlPriceMovement("0");
+    setTrailSlTrailingValue("0");
   }, [selectedStrategyTypes?.[0]]);
 
   useEffect(() => {
@@ -745,12 +745,14 @@ const Leg1 = ({
         const typeLabel =
           existingActiveStrike.TrailingSL.TrailingType === "tslpt" ? "Pt" : "%";
         if (trailSlType !== typeLabel) setTrailSlType(typeLabel);
-        const movement =
-          Number(existingActiveStrike.TrailingSL.InstrumentMovementValue) || 0;
+        const movement = String(
+          Number(existingActiveStrike.TrailingSL.InstrumentMovementValue) || 0
+        );
         if (trailSlPriceMovement !== movement)
           setTrailSlPriceMovement(movement);
-        const trailing =
-          Number(existingActiveStrike.TrailingSL.TrailingValue) || 0;
+        const trailing = String(
+          Number(existingActiveStrike.TrailingSL.TrailingValue) || 0
+        );
         if (trailSlTrailingValue !== trailing)
           setTrailSlTrailingValue(trailing);
       }
@@ -961,11 +963,17 @@ const Leg1 = ({
     if (hydratingRef.current) return;
     applyStrikeUpdate(({ longStrike, shortStrike }) => {
       const globalEnabled = advanceFeatures?.["Trail SL"];
+      const indicatorTrailActive = isIndicatorStrategy;
+      const hasManualInput =
+        trailSlEnabled ||
+        indicatorTrailActive ||
+        globalEnabled ||
+        Number(trailSlPriceMovement) > 0 ||
+        Number(trailSlTrailingValue) > 0;
 
       const applyToStrike = (strike) => {
         const prev = strike.TrailingSL || {};
-        const effectiveEnabled =
-          trailSlEnabled || strike.isTrailSL || globalEnabled;
+        const effectiveEnabled = hasManualInput || strike.isTrailSL;
 
         if (!effectiveEnabled) {
           strike.isTrailSL = false;
@@ -977,12 +985,13 @@ const Leg1 = ({
           return;
         }
 
-        const effectiveType = trailSlEnabled
+        const useUiValues = trailSlEnabled || indicatorTrailActive;
+        const effectiveType = useUiValues
           ? trailSlType
           : advanceFeatures?.TrailSlType ||
             (prev.TrailingType === "tslpt" ? "Pt" : "%");
 
-        const movement = trailSlEnabled
+        const movement = useUiValues
           ? Number(trailSlPriceMovement) || 0
           : Number(
               advanceFeatures?.TrailSlPriceMovement ??
@@ -990,7 +999,7 @@ const Leg1 = ({
                 0
             );
 
-        const trailing = trailSlEnabled
+        const trailing = useUiValues
           ? Number(trailSlTrailingValue) || 0
           : Number(
               advanceFeatures?.TrailSlTrailingValue ?? prev.TrailingValue ?? 0
@@ -1014,6 +1023,7 @@ const Leg1 = ({
     trailSlTrailingValue,
     advanceFeatures,
     applyStrikeUpdate,
+    isIndicatorStrategy,
   ]);
 
   const handleQtyMultiplierChange = useCallback(
@@ -2189,11 +2199,10 @@ const Leg1 = ({
                                   type="number"
                                   value={trailSlPriceMovement}
                                   min={0}
-                                  onChange={(e) =>
-                                    setTrailSlPriceMovement(
-                                      Math.max(0, Number(e.target.value) || 0)
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const next = e.target.value;
+                                    setTrailSlPriceMovement(next);
+                                  }}
                                   className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                                 />
                               </div>
@@ -2205,11 +2214,10 @@ const Leg1 = ({
                                   type="number"
                                   value={trailSlTrailingValue}
                                   min={0}
-                                  onChange={(e) =>
-                                    setTrailSlTrailingValue(
-                                      Math.max(0, Number(e.target.value) || 0)
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const next = e.target.value;
+                                    setTrailSlTrailingValue(next);
+                                  }}
                                   className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
                                 />
                               </div>
