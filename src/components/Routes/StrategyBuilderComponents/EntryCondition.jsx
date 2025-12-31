@@ -344,25 +344,6 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
       OperatorName: operatorName,
     };
     setValue(key, arr, { shouldDirty: true, shouldTouch: true });
-
-    // Keep paired side in sync for paired layouts (transactionType === 0)
-    if (transactionType === 0) {
-      const counterpartKey = key.includes("Long")
-        ? key.replace("Long", "Short")
-        : key.replace("Short", "Long");
-      const counterpartArr = [...(watch(counterpartKey) || [])];
-      if (counterpartArr[index]) {
-        counterpartArr[index] = {
-          ...counterpartArr[index],
-          OperatorId: Number(operatorId),
-          OperatorName: operatorName,
-        };
-        setValue(counterpartKey, counterpartArr, {
-          shouldDirty: true,
-          shouldTouch: true,
-        });
-      }
-    }
   };
 
   const addPair = () => {

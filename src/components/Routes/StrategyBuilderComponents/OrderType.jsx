@@ -37,8 +37,30 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
       ? "CNC"
       : "MIS";
 
+  const strategyScripts = watch("StrategyScriptList") || [];
+  const cncExpiryType =
+    strategyScripts?.[0]?.LongEquationoptionStrikeList?.[0]?.ExpiryType ||
+    strategyScripts?.[0]?.ShortEquationoptionStrikeList?.[0]?.ExpiryType ||
+    "WEEKLY";
+
   // CNC Settings state (these are UI-only, not in form)
   const [showCNCSettings, setShowCNCSettings] = useState(true);
+
+  const cncMaxDays = (() => {
+    if (cncExpiryType === "NEXTWEEKLY") return 14;
+    if (cncExpiryType === "MONTHLY") return 30;
+    return 4; // WEEKLY default
+  })();
+
+  useEffect(() => {
+    if (productType !== "CNC") return;
+    if (entryDays > cncMaxDays) {
+      setValue("EntryDaysBeforExpiry", cncMaxDays, { shouldDirty: true });
+    }
+    if (exitDays > cncMaxDays) {
+      setValue("ExitDaysBeforExpiry", cncMaxDays, { shouldDirty: true });
+    }
+  }, [productType, cncMaxDays, entryDays, exitDays, setValue]);
 
   const orderTypes = hideDeliveryProducts ? ["MIS"] : ["MIS", "CNC", "BTST"];
 
@@ -129,8 +151,8 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                   <input
                     type="range"
                     min="0"
-                    max="4"
-                    value={entryDays}
+                    max={cncMaxDays}
+                    value={Math.min(entryDays, cncMaxDays)}
                     onChange={(e) =>
                       setValue("EntryDaysBeforExpiry", Number(e.target.value), {
                         shouldDirty: true,
@@ -139,16 +161,23 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                     style={{
                       background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
-                        (entryDays / 4) * 100
-                      }%, #e5e7eb ${(entryDays / 4) * 100}%, #e5e7eb 100%)`,
+                        ((Math.min(entryDays, cncMaxDays) || 0) / cncMaxDays) *
+                        100
+                      }%, #e5e7eb ${
+                        ((Math.min(entryDays, cncMaxDays) || 0) / cncMaxDays) *
+                        100
+                      }%, #e5e7eb 100%)`,
                     }}
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <span>0</span>
-                    <span>1</span>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>4</span>
+                    <span>
+                      {cncMaxDays > 4 ? Math.round(cncMaxDays / 3) : 1}
+                    </span>
+                    <span>
+                      {cncMaxDays > 4 ? Math.round((2 * cncMaxDays) / 3) : 2}
+                    </span>
+                    <span>{cncMaxDays}</span>
                   </div>
                 </div>
 
@@ -160,8 +189,8 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                   <input
                     type="range"
                     min="0"
-                    max="4"
-                    value={exitDays}
+                    max={cncMaxDays}
+                    value={Math.min(exitDays, cncMaxDays)}
                     onChange={(e) =>
                       setValue("ExitDaysBeforExpiry", Number(e.target.value), {
                         shouldDirty: true,
@@ -170,16 +199,23 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                     style={{
                       background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
-                        (exitDays / 4) * 100
-                      }%, #e5e7eb ${(exitDays / 4) * 100}%, #e5e7eb 100%)`,
+                        ((Math.min(exitDays, cncMaxDays) || 0) / cncMaxDays) *
+                        100
+                      }%, #e5e7eb ${
+                        ((Math.min(exitDays, cncMaxDays) || 0) / cncMaxDays) *
+                        100
+                      }%, #e5e7eb 100%)`,
                     }}
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <span>0</span>
-                    <span>1</span>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>4</span>
+                    <span>
+                      {cncMaxDays > 4 ? Math.round(cncMaxDays / 3) : 1}
+                    </span>
+                    <span>
+                      {cncMaxDays > 4 ? Math.round((2 * cncMaxDays) / 3) : 2}
+                    </span>
+                    <span>{cncMaxDays}</span>
                   </div>
                 </div>
               </div>

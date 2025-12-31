@@ -25,6 +25,12 @@ const Leg1 = ({
   const activeLegIndex = watch("ActiveLegIndex") ?? 0;
   const strategyScripts = watch("StrategyScriptList");
   const advanceFeatures = watch("AdvanceFeatures");
+  const moveSlToCostActive = useMemo(() => {
+    const scripts = strategyScripts || [];
+    const first = scripts[0] || {};
+    const longs = first.LongEquationoptionStrikeList || [];
+    return longs.some((s) => s?.IsMoveSLCTC);
+  }, [strategyScripts]);
 
   const rawBuyWhen = watch("BuyWhen");
   const rawShortWhen = watch("ShortWhen");
@@ -298,10 +304,14 @@ const Leg1 = ({
       : existingActiveLong || existingActiveShort;
 
   const position = existingActiveStrike?.TransactionType || "BUY";
-  const expiryType =
-    productType === "CNC" || productType === "BTST"
-      ? "WEEKLY"
-      : existingActiveStrike?.ExpiryType || "WEEKLY";
+  const firstScript = strategyScripts?.[0];
+  const sharedExpiryFromScripts =
+    firstScript?.LongEquationoptionStrikeList?.[0]?.ExpiryType ||
+    firstScript?.ShortEquationoptionStrikeList?.[0]?.ExpiryType ||
+    existingActiveStrike?.ExpiryType ||
+    "WEEKLY";
+
+  const expiryType = sharedExpiryFromScripts || "WEEKLY";
   const slTypeSel = existingActiveStrike?.SLType === "slpt" ? "SL pt" : "SL%";
   const tpTypeSel =
     existingActiveStrike?.TargetType === "tgpt" ? "TP pt" : "TP%";
@@ -421,13 +431,11 @@ const Leg1 = ({
             : "PE"
           : "");
 
-      const qtyValue =
-        sourceStrike?.Qty ||
-        (isActive
-          ? String(
-              Math.max(1, qtyMultiplier) * (selectedInstrument?.LotSize || 0)
-            )
-          : "");
+      const qtyValue = (() => {
+        if (selectedInstrument?.LotSize) return String(qtyDisplay || "");
+        if (sourceStrike?.Qty) return String(sourceStrike.Qty);
+        return "";
+      })();
 
       const strikeObj =
         sourceStrike?.strikeTypeobj ||
@@ -1060,6 +1068,33 @@ const Leg1 = ({
 
   const handleExpiryChange = useCallback(
     (value) => {
+      if (productType === "CNC") {
+        const scripts = getValues("StrategyScriptList") || [];
+        const updated = scripts.map((script) => {
+          const longs = Array.isArray(script.LongEquationoptionStrikeList)
+            ? script.LongEquationoptionStrikeList.map((s) => ({
+                ...s,
+                ExpiryType: value,
+              }))
+            : [];
+          const shorts = Array.isArray(script.ShortEquationoptionStrikeList)
+            ? script.ShortEquationoptionStrikeList.map((s) => ({
+                ...s,
+                ExpiryType: value,
+              }))
+            : [];
+          return {
+            ...script,
+            LongEquationoptionStrikeList: longs,
+            ShortEquationoptionStrikeList: shorts,
+          };
+        });
+
+        setValue("StrategyScriptList", updated, { shouldDirty: true });
+        updatePayload({ StrategyScriptList: updated });
+        return;
+      }
+
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         longStrike.ExpiryType = value;
         if (shortStrike) {
@@ -1067,7 +1102,7 @@ const Leg1 = ({
         }
       });
     },
-    [applyStrikeUpdate]
+    [applyStrikeUpdate, getValues, productType, setValue, updatePayload]
   );
 
   const handleStrikeCriteriaChange = useCallback(
@@ -1326,7 +1361,10 @@ const Leg1 = ({
           : [];
 
         const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-        const newStrike = createDefaultStrikeBySide("long");
+        const newStrike = {
+          ...createDefaultStrikeBySide("long"),
+          ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+        };
 
         // Auto-set the new leg's option type opposite to the previous leg (CE/PE pairing)
         const prevStrikeType = longArr[longArr.length - 1]?.StrikeType;
@@ -1337,7 +1375,11 @@ const Leg1 = ({
 
         if (isIndicator) {
           const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
-          shortArr.push({ ...newStrike, StrikeType: opposite });
+          shortArr.push({
+            ...newStrike,
+            StrikeType: opposite,
+            ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+          });
         }
 
         base.LongEquationoptionStrikeList = longArr;
@@ -1357,6 +1399,15 @@ const Leg1 = ({
       console.error("Add leg error", err);
     }
   };
+
+  // When Move SL to Cost is enabled, ensure at least two legs and hide manual add
+  useEffect(() => {
+    if (!moveSlToCostActive) return;
+    if (legs.length >= 2) return;
+    handleAddLeg();
+    // handleAddLeg is stable enough here; avoid extra dep to prevent repeated calls
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveSlToCostActive, legs.length]);
 
   // When combined chart is enabled for indicator strategy, ensure at least 2 legs
   useEffect(() => {
@@ -1380,14 +1431,21 @@ const Leg1 = ({
             ? [...base.ShortEquationoptionStrikeList]
             : [];
 
-          const newStrike = createDefaultStrikeBySide("long");
+          const newStrike = {
+            ...createDefaultStrikeBySide("long"),
+            ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+          };
 
           const isIndicator = selectedStrategyTypes?.[0] === "indicator";
           longArr.push(newStrike);
 
           if (isIndicator) {
             const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
-            shortArr.push({ ...newStrike, StrikeType: opposite });
+            shortArr.push({
+              ...newStrike,
+              StrikeType: opposite,
+              ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+            });
           }
 
           base.LongEquationoptionStrikeList = longArr;
@@ -1586,7 +1644,7 @@ const Leg1 = ({
           <div className="text-sm font-semibold text-black dark:text-white">
             Strategy Legs
           </div>
-          {chartType !== "options" && (
+          {chartType !== "options" && !moveSlToCostActive && (
             <PrimaryButton
               type="button"
               onClick={handleAddLeg}
@@ -1814,16 +1872,8 @@ const Leg1 = ({
                         </label>
                         <select
                           className="border rounded px-3 py-2 text-sm w-full dark:bg-[#15171C] dark:text-white dark:border-[#2C2F36]"
-                          disabled={
-                            isDisabled ||
-                            productType === "CNC" ||
-                            productType === "BTST"
-                          }
-                          value={
-                            productType === "CNC" || productType === "BTST"
-                              ? "WEEKLY"
-                              : expiryType
-                          }
+                          disabled={isDisabled || productType === "BTST"}
+                          value={productType === "BTST" ? "WEEKLY" : expiryType}
                           onChange={(e) => handleExpiryChange(e.target.value)}
                         >
                           {expiryOptions.map((opt) => (
