@@ -114,7 +114,7 @@ export function buildStrategyPayload({
         ? cleanValues.StrategyScriptList
         : [];
     const firstScript = currentScripts[0] || {};
-        const lotSizeVal = selectedInstrument?.LotSize ?? 0;
+    const lotSizeVal = selectedInstrument?.LotSize ?? 0;
 
     const pruneSidesByTransaction = (scripts) =>
         (Array.isArray(scripts) ? scripts : []).map((script) => ({
@@ -133,9 +133,9 @@ export function buildStrategyPayload({
 
     const enrichStrike = (item) => ({
         ...item,
-            // lotSize carries multiplier (no qty fallback)
-            Qty: item?.Qty ?? 0,
-            lotSize: item?.lotSize ?? 0,
+        // lotSize carries multiplier (no qty fallback)
+        Qty: item?.Qty ?? 0,
+        lotSize: item?.lotSize ?? 0,
         IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
         IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
         PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue ?? 0,
@@ -190,9 +190,9 @@ export function buildStrategyPayload({
             {
                 InstrumentToken:
                     selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
-                    // Qty intentionally not auto-set; lotSize carries multiplier
-                    Qty: firstScript.Qty ?? 0,
-                    lotSize: firstScript.lotSize ?? 0,
+                // Qty intentionally not auto-set; lotSize carries multiplier
+                Qty: firstScript.Qty ?? 0,
+                lotSize: firstScript.lotSize ?? 0,
                 LongEquationoptionStrikeList: longOptionStrikes,
                 ShortEquationoptionStrikeList: Array.isArray(
                     firstScript.ShortEquationoptionStrikeList
