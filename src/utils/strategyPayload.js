@@ -114,17 +114,7 @@ export function buildStrategyPayload({
         ? cleanValues.StrategyScriptList
         : [];
     const firstScript = currentScripts[0] || {};
-    const lotSizeVal = selectedInstrument?.LotSize || firstScript.Qty || 0;
-
-    const defaultScriptTarget = firstScript.Target ?? cleanValues.Target ?? 0;
-    const defaultScriptSl = firstScript.SL ?? cleanValues.SL ?? 0;
-
-    const applyScriptStops = (scripts) =>
-        (Array.isArray(scripts) ? scripts : []).map((script) => ({
-            ...script,
-            Target: script?.Target ?? defaultScriptTarget,
-            SL: script?.SL ?? defaultScriptSl,
-        }));
+        const lotSizeVal = selectedInstrument?.LotSize ?? 0;
 
     const pruneSidesByTransaction = (scripts) =>
         (Array.isArray(scripts) ? scripts : []).map((script) => ({
@@ -143,8 +133,9 @@ export function buildStrategyPayload({
 
     const enrichStrike = (item) => ({
         ...item,
-        Qty: item?.Qty || lotSizeVal,
-        lotSize: item?.lotSize || lotSizeVal,
+            // lotSize carries multiplier (no qty fallback)
+            Qty: item?.Qty ?? 0,
+            lotSize: item?.lotSize ?? 0,
         IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
         IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
         PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue ?? 0,
@@ -191,25 +182,25 @@ export function buildStrategyPayload({
 
     let StrategyScriptListFinal;
     if (isIndicatorEquityMulti) {
-        StrategyScriptListFinal = applyScriptStops(
-            pruneSidesByTransaction(cleanValues.StrategyScriptList)
+        StrategyScriptListFinal = pruneSidesByTransaction(
+            cleanValues.StrategyScriptList
         );
     } else {
-        StrategyScriptListFinal = applyScriptStops(
-            pruneSidesByTransaction([
-                {
-                    InstrumentToken:
-                        selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
-                    Qty: lotSizeVal,
-                    LongEquationoptionStrikeList: longOptionStrikes,
-                    ShortEquationoptionStrikeList: Array.isArray(
-                        firstScript.ShortEquationoptionStrikeList
-                    )
-                        ? firstScript.ShortEquationoptionStrikeList.map(enrichStrike)
-                        : [],
-                },
-            ])
-        );
+        StrategyScriptListFinal = pruneSidesByTransaction([
+            {
+                InstrumentToken:
+                    selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
+                    // Qty intentionally not auto-set; lotSize carries multiplier
+                    Qty: firstScript.Qty ?? 0,
+                    lotSize: firstScript.lotSize ?? 0,
+                LongEquationoptionStrikeList: longOptionStrikes,
+                ShortEquationoptionStrikeList: Array.isArray(
+                    firstScript.ShortEquationoptionStrikeList
+                )
+                    ? firstScript.ShortEquationoptionStrikeList.map(enrichStrike)
+                    : [],
+            },
+        ]);
     }
 
     const normalizeTpSlType = () => {
