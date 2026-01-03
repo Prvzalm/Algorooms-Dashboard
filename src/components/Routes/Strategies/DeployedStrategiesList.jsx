@@ -81,7 +81,7 @@ const DeployedStrategiesList = ({
     );
 
   return (
-    <div className="space-y-4 relative w-full overflow-hidden">
+    <div className="space-y-4 relative w-full overflow-visible">
       <ConfirmModal
         open={!!confirmForBrokerId}
         title="Start Trade Engine?"
@@ -124,7 +124,7 @@ const DeployedStrategiesList = ({
             return (
               <div
                 key={brokerItem.broker.code}
-                className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] w-full overflow-hidden"
+                className="rounded-2xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C] w-full"
               >
                 <div className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 relative">
                   <div className="flex items-start justify-between gap-3 w-full lg:w-auto">

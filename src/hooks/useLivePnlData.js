@@ -9,11 +9,18 @@ export const useLivePnlData = (deployedData, isLoading, isError) => {
     const unsubscribeFromLiveUpdates = usePnlStore(
         (state) => state.unsubscribeFromLiveUpdates
     );
+    const reset = usePnlStore((state) => state.reset);
     const brokers = usePnlStore((state) => state.brokers);
     const grandTotalPnl = usePnlStore((state) => state.grandTotalPnl);
 
     useEffect(() => {
-        if (!deployedData || isLoading || isError) return;
+        if (isLoading || isError) return;
+
+        // If API returned empty, clear stale deployments
+        if (!deployedData || deployedData.length === 0) {
+            reset();
+            return;
+        }
 
         // Subscribe to live updates via centralized store
         subscribeToLiveUpdates(deployedData);
@@ -28,6 +35,7 @@ export const useLivePnlData = (deployedData, isLoading, isError) => {
         isError,
         subscribeToLiveUpdates,
         unsubscribeFromLiveUpdates,
+        reset,
     ]);
 
     return {

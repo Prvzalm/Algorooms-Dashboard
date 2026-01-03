@@ -2,20 +2,16 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { getPnlTextClass } from "../../../services/utils/formatters";
 
 const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
-  const cellRef = useRef();
-  const [alignLeft, setAlignLeft] = useState(false);
-
-  useEffect(() => {
-    const el = cellRef.current;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const spaceRight = window.innerWidth - rect.right;
-      setAlignLeft(spaceRight < 120);
-    }
-  }, []);
-
   const formatAmount = (amt) =>
-    amt > 0 ? `+${amt.toFixed(2)}` : amt.toFixed(2);
+    amt > 0
+      ? `+₹${amt.toLocaleString("en-IN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+      : `₹${amt.toLocaleString("en-IN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
 
   const data = useMemo(() => {
     if (!dictionaryOfDateWisePnl) return [];
@@ -71,6 +67,7 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
         const label = dayDate.toLocaleDateString("en-GB", {
           day: "2-digit",
           month: "short",
+          year: "numeric",
         });
         if (amount !== undefined) {
           monthlySum += amount;
@@ -107,6 +104,19 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
     });
   };
 
+  if (!data.length) {
+    return (
+      <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8">
+        <h2 className="text-lg font-semibold text-black dark:text-white mb-2">
+          Daywise Breakdown
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 px-2 pb-4">
+          No daywise PnL data available.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-darkbg rounded-2xl w-full mb-8">
       <h2 className="text-lg font-semibold text-black dark:text-white mb-4">
@@ -128,15 +138,18 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
                 {month.grid.map((cell, i) => (
                   <div
                     key={i}
-                    onMouseEnter={(e) => handleCellClick(e, cell)}
+                    onMouseEnter={(e) =>
+                      cell.type !== "inactive" && handleCellClick(e, cell)
+                    }
                     onMouseLeave={() => setTooltip(null)}
-                    className={`w-4 h-4 rounded-sm cursor-pointer transition duration-150 ${
+                    className={`w-4 h-4 rounded-sm transition duration-150 ${
                       cell.type === "profit"
-                        ? "bg-green-500"
+                        ? "bg-green-500 hover:ring-2 hover:ring-green-200"
                         : cell.type === "loss"
-                        ? "bg-red-500"
+                        ? "bg-red-500 hover:ring-2 hover:ring-red-200"
                         : "bg-gray-300 dark:bg-gray-600"
-                    }`}
+                    } ${cell.type === "inactive" ? "cursor-default" : "cursor-pointer"}`}
+                    aria-label={`${cell.date}: ${formatAmount(cell.amount)}`}
                   />
                 ))}
               </div>

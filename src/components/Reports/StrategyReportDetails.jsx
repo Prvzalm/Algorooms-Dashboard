@@ -259,7 +259,14 @@ const StrategyReportDetails = ({
                   ></span>
                   <span
                     className="flex-1 truncate text-slate-500 dark:text-slate-300"
-                    title={new Date(d.Date).toLocaleDateString("en-GB")}
+                    title={`${new Date(d.Date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })} • ₹${(d.pnlDayWise || 0).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`}
                   >
                     {new Date(d.Date).toLocaleDateString("en-GB", {
                       day: "2-digit",
@@ -273,7 +280,11 @@ const StrategyReportDetails = ({
                         : "text-rose-600"
                     }`}
                   >
-                    {d.pnlDayWise || 0}
+                    ₹
+                    {(d.pnlDayWise || 0).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </li>
               ))
