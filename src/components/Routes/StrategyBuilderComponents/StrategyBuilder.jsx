@@ -124,6 +124,24 @@ const StrategyBuilder = () => {
     resetAll,
   } = useStrategyBuilderStore();
 
+  const navigateToStrategies = () => {
+    // Centralized exit to strategies with full cleanup
+    closeBacktestModal();
+    showBacktest(false);
+    setCreatedStrategyId(null);
+    resetAll();
+
+    const defaults = getDefaultPayload();
+    initialFormValuesRef.current = defaults;
+    setPayload(defaults);
+    reset(defaults);
+    setSelectedInstrument("");
+    setSelectedEquityInstruments([]);
+    setSelectedStrategyTypes([defaults.StrategyType]);
+
+    navigate("/strategies", { replace: true });
+  };
+
   // State for instrument quantities
   const watchedScripts = watch("StrategyScriptList") || [];
 
@@ -921,11 +939,7 @@ const StrategyBuilder = () => {
                 }, 100);
               } else {
                 // Reset form and navigate to strategies
-                reset();
-                // Reset backtest component state so popup shows on next create
-                showBacktest(false);
-                setCreatedStrategyId(null);
-                navigate("/strategies");
+                navigateToStrategies();
               }
             } else {
               // Fallback if strategy not found in list
@@ -938,11 +952,7 @@ const StrategyBuilder = () => {
                 );
               }
               if (!shouldBacktest) {
-                reset();
-                // Reset backtest component state
-                showBacktest(false);
-                setCreatedStrategyId(null);
-                navigate("/strategies");
+                navigateToStrategies();
               }
             }
           } catch (error) {
@@ -951,22 +961,14 @@ const StrategyBuilder = () => {
               "Strategy created successfully, but couldn't load backtest. Please refresh and try again."
             );
             if (!shouldBacktest) {
-              reset();
-              // Reset backtest component state
-              showBacktest(false);
-              setCreatedStrategyId(null);
-              navigate("/strategies");
+              navigateToStrategies();
             }
           }
         }
 
         // If user chose "No, Skip" and we're updating, navigate to strategies
         if (isUpdating && !shouldBacktest) {
-          reset();
-          // Reset backtest component state
-          showBacktest(false);
-          setCreatedStrategyId(null);
-          navigate("/strategies");
+          navigateToStrategies();
         }
       },
       onError: (e) => {
@@ -1003,7 +1005,7 @@ const StrategyBuilder = () => {
           <div className="flex items-center">
             <button
               type="button"
-              onClick={() => navigate("/strategies")}
+              onClick={navigateToStrategies}
               className="inline-flex items-center gap-2 text-sm text-[#0096FF] hover:underline"
             >
               <span className="text-lg">←</span>

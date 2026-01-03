@@ -281,6 +281,8 @@ const StrategiesPage = () => {
           });
         },
         onSettled: () => {
+          // Ensure deployed list reflects removal without manual refresh
+          refetchDeployed?.();
           setRemovingDeploymentIds((prev) => {
             const next = new Set(prev);
             next.delete(compositeKey);
@@ -336,6 +338,8 @@ const StrategiesPage = () => {
           });
         },
         onSettled: () => {
+          // Refresh deployed list so broker removal is reflected immediately
+          refetchDeployed?.();
           setRemovingBrokerIds((prev) => {
             const next = new Set(prev);
             next.delete(brokerCode);

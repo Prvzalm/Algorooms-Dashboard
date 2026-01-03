@@ -96,25 +96,24 @@ const PaymentDetailsModal = ({
           .toString()
           .toLowerCase();
 
+        const link =
+          response?.paymentLink ||
+          response?.PaymentLink ||
+          response?.redirectUrl;
+
+        // Open any returned payment link immediately (UPI/redirect flows)
+        if (link) {
+          window.open(link, "_blank");
+        }
+
         const isSuccessful =
           response?.success === true ||
           response?.isSuccess === true ||
           normalizedStatus === "success" ||
           normalizedStatus === "paid" ||
-          normalizedStatus === "completed" ||
-          !!response?.paymentLink ||
-          !!response?.PaymentLink;
+          normalizedStatus === "completed";
 
-        if (isSuccessful) {
-          const link =
-            response?.paymentLink ||
-            response?.PaymentLink ||
-            response?.redirectUrl;
-
-          if (link) {
-            window.open(link, "_blank");
-          }
-
+        if (isSuccessful || link) {
           toast.success(
             response?.message ||
               response?.Message ||

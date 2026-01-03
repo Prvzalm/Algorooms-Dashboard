@@ -89,6 +89,9 @@ const InstrumentModal = ({
     if (prev !== segmentType) {
       setSelected("");
       setSelectedList([]);
+      if (prev === "Equity" && segmentType !== "Equity") {
+        setSearchQuery("");
+      }
     }
     previousSegmentRef.current = segmentType;
   }, [segmentType, setSelected, setSelectedList]);
