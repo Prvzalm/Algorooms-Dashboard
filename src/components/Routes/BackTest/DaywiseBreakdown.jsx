@@ -148,7 +148,11 @@ const DaywiseBreakdown = ({ dictionaryOfDateWisePnl }) => {
                         : cell.type === "loss"
                         ? "bg-red-500 hover:ring-2 hover:ring-red-200"
                         : "bg-gray-300 dark:bg-gray-600"
-                    } ${cell.type === "inactive" ? "cursor-default" : "cursor-pointer"}`}
+                    } ${
+                      cell.type === "inactive"
+                        ? "cursor-default"
+                        : "cursor-pointer"
+                    }`}
                     aria-label={`${cell.date}: ${formatAmount(cell.amount)}`}
                   />
                 ))}
