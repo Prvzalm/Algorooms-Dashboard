@@ -6,17 +6,17 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     initialData.trailingType || "%"
   );
   const [priceMovement, setPriceMovement] = useState(
-    Math.max(0, Number(initialData.priceMovement) || 0)
+    initialData.priceMovement ?? ""
   );
   const [trailingValue, setTrailingValue] = useState(
-    Math.max(0, Number(initialData.trailingValue) || 0)
+    initialData.trailingValue ?? ""
   );
 
   useEffect(() => {
     if (!isOpen) return;
     setTrailingType(initialData.trailingType || "%");
-    setPriceMovement(Math.max(0, Number(initialData.priceMovement) || 0));
-    setTrailingValue(Math.max(0, Number(initialData.trailingValue) || 0));
+    setPriceMovement(initialData.priceMovement ?? "");
+    setTrailingValue(initialData.trailingValue ?? "");
   }, [
     isOpen,
     initialData.trailingType,
@@ -94,7 +94,9 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
                 step="any"
                 value={priceMovement}
                 onChange={(e) =>
-                  setPriceMovement(Math.max(0, Number(e.target.value) || 0))
+                  setPriceMovement(
+                    e.target.value === "" ? "" : Number(e.target.value) || 0
+                  )
                 }
                 className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333] pr-8"
                 placeholder="Enter value"
@@ -128,7 +130,9 @@ const TrailStopLossModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               step="any"
               value={trailingValue}
               onChange={(e) =>
-                setTrailingValue(Math.max(0, Number(e.target.value) || 0))
+                setTrailingValue(
+                  e.target.value === "" ? "" : Number(e.target.value) || 0
+                )
               }
               className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
               placeholder="Enter value"

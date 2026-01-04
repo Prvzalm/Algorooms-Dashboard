@@ -65,6 +65,7 @@ const StrategyBuilder = () => {
   const { strategyId } = useParams();
   const editing = !!strategyId;
   const initialFormValuesRef = useRef(getDefaultPayload());
+  const editPrefilledRef = useRef(false); // Track when edit data has hydrated form/store
 
   const methods = useForm({
     defaultValues: initialFormValuesRef.current,
@@ -82,6 +83,7 @@ const StrategyBuilder = () => {
     page: 1,
     pageSize: 100, // Large page size to get all strategies
     strategyType: "created",
+    enabled: false, // Only fetch on-demand after creation
   });
 
   // For fetching instrument details in edit mode
@@ -99,6 +101,38 @@ const StrategyBuilder = () => {
       editInstrumentSearch.shouldFetch
     );
   const navigate = useNavigate();
+
+  // Derive AdvanceFeatures flags from strike data (edit mode hydration)
+  const deriveAdvanceFeatures = (
+    scripts,
+    activeIdx = 0,
+    squareOffAll = false
+  ) => {
+    if (!Array.isArray(scripts) || !scripts.length) return {};
+    const first = scripts[0] || {};
+    const pickStrike = (list) =>
+      Array.isArray(list) && list.length
+        ? list[Math.min(activeIdx, list.length - 1)] || list[0]
+        : null;
+
+    const longStrike = pickStrike(first.LongEquationoptionStrikeList);
+    const shortStrike = pickStrike(first.ShortEquationoptionStrikeList);
+    const strike = longStrike || shortStrike || {};
+
+    const premiumEnabled =
+      strike?.IsPriceDiffrenceConstrant &&
+      Number(strike?.PriceDiffrenceConstrantValue) > 0;
+
+    return {
+      "Move SL to Cost": !!strike?.IsMoveSLCTC,
+      "Exit All on SL/Tgt": !!(squareOffAll || strike?.isExitAll),
+      "Pre Punch SL": !!strike?.isPrePunchSL,
+      "Wait & Trade": !!strike?.waitNTrade?.isWaitnTrade,
+      "Premium Difference": !!premiumEnabled,
+      "Re Entry/Execute": !!strike?.reEntry?.isRentry,
+      "Trail SL": !!strike?.isTrailSL,
+    };
+  };
 
   // ✅ OPTIMIZED: Single selector with shallow equality check
   const {
@@ -172,8 +206,8 @@ const StrategyBuilder = () => {
       if (sIdx !== idx) return script;
       if (value === "") return { ...script, Qty: "" };
       const parsed = Number(value);
-      const fallback = defaultLotQty(selectedEquityInstruments[idx]?.LotSize);
-      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+      // Accept any positive number without forcing fallback during typing
+      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : value;
       return { ...script, Qty: qty };
     });
     setValue("StrategyScriptList", updated, { shouldDirty: true });
@@ -184,8 +218,13 @@ const StrategyBuilder = () => {
     const current = getValues("StrategyScriptList") || [];
     if (!current.length || !current[idx]) return;
     const fallback = defaultLotQty(lotSize);
-    const parsed = Number(current[idx].Qty);
-    const safeQty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    const currentQty = current[idx].Qty;
+    // Only apply default if blank or invalid
+    const parsed = Number(currentQty);
+    const safeQty =
+      currentQty === "" || !Number.isFinite(parsed) || parsed <= 0
+        ? fallback
+        : parsed;
     if (safeQty === current[idx].Qty) return;
     const updated = current.map((script, sIdx) =>
       sIdx === idx ? { ...script, Qty: safeQty } : script
@@ -197,12 +236,13 @@ const StrategyBuilder = () => {
   const handleSingleQtyChange = (value) => {
     const current = getValues("StrategyScriptList") || [];
     if (!current.length) return;
-    const fallback = defaultLotQty(selectedInstrument?.LotSize);
     const updated = current.map((script, idx) => {
       if (idx !== 0) return script;
+      // Allow empty string during typing
       if (value === "") return { ...script, Qty: "" };
       const parsed = Number(value);
-      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+      // Accept positive numbers, keep value as-is for invalid input (will be fixed on blur)
+      const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : value;
       return { ...script, Qty: qty };
     });
     setValue("StrategyScriptList", updated, { shouldDirty: true });
@@ -213,8 +253,13 @@ const StrategyBuilder = () => {
     const current = getValues("StrategyScriptList") || [];
     if (!current.length) return;
     const fallback = defaultLotQty(selectedInstrument?.LotSize);
-    const parsed = Number(current[0].Qty);
-    const safeQty = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    const currentQty = current[0].Qty;
+    // Only apply default if blank or invalid
+    const parsed = Number(currentQty);
+    const safeQty =
+      currentQty === "" || !Number.isFinite(parsed) || parsed <= 0
+        ? fallback
+        : parsed;
     if (safeQty === current[0].Qty) return;
     const updated = current.map((script, idx) =>
       idx === 0 ? { ...script, Qty: safeQty } : script
@@ -233,61 +278,37 @@ const StrategyBuilder = () => {
 
     return (
       <div style={style} className="px-1" {...ariaAttributes}>
-        <div className="border rounded-lg p-4 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative w-full h-[220px] flex flex-col">
+        <div className="border rounded-lg p-2 text-xs bg-white dark:bg-[#1E2027] dark:border-[#2A2D35] shadow-sm relative flex items-center gap-2">
           <button
             type="button"
             onClick={() => handleRemoveEquityInstrument(ins.InstrumentToken)}
-            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 transition-colors flex-shrink-0"
             title="Remove instrument"
           >
             <span className="text-sm font-bold">×</span>
           </button>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                Instrument Name
-              </div>
-              <div className="font-medium text-gray-900 dark:text-white">
-                {ins.Name}
-              </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-gray-900 dark:text-white truncate">
+              {ins.Name}
             </div>
-            <div>
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                Lot Size
+            {ins.SegmentType && (
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                {ins.SegmentType}
               </div>
-              <div className="font-medium text-gray-900 dark:text-white">
-                {ins.LotSize || 0}
-              </div>
+            )}
+          </div>
+          <div className="flex-shrink-0 w-12">
+            <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-1">
+              Qty
             </div>
-            <div>
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                Exchange
-              </div>
-              <div className="font-medium text-gray-900 dark:text-white">
-                {ins.Exchange || ins.Segment || "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                Segment Type
-              </div>
-              <div className="font-medium text-gray-900 dark:text-white">
-                {ins.SegmentType || "—"}
-              </div>
-            </div>
-            <div className="col-span-2">
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                Quantity
-              </div>
-              <input
-                type="number"
-                min="1"
-                value={qtyValue}
-                onChange={(e) => handleEquityQtyChange(index, e.target.value)}
-                onBlur={() => handleEquityQtyBlur(index, ins.LotSize)}
-                className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <input
+              type="number"
+              min="1"
+              value={qtyValue}
+              onChange={(e) => handleEquityQtyChange(index, e.target.value)}
+              onBlur={() => handleEquityQtyBlur(index, ins.LotSize)}
+              className="w-full px-0.5 py-1 border border-gray-300 dark:border-[#2A2D35] rounded-md bg-white dark:bg-[#131419] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-center"
+            />
           </div>
         </div>
       </div>
@@ -321,6 +342,21 @@ const StrategyBuilder = () => {
     setCreatedStrategyId(null);
   };
 
+  const mergeWithDefaults = (raw) => {
+    const defaults = getDefaultPayload();
+    const merged = { ...defaults, ...raw };
+    Object.keys(defaults).forEach((key) => {
+      if (
+        merged[key] === "" ||
+        merged[key] === null ||
+        merged[key] === undefined
+      ) {
+        merged[key] = defaults[key];
+      }
+    });
+    return merged;
+  };
+
   useEffect(() => {
     const defaults = getDefaultPayload();
     reset(defaults);
@@ -328,6 +364,7 @@ const StrategyBuilder = () => {
     setSelectedInstrument("");
     setSelectedEquityInstruments([]);
     setSelectedStrategyTypes([defaults.StrategyType]);
+    editPrefilledRef.current = false;
   }, [
     reset,
     setPayload,
@@ -343,6 +380,7 @@ const StrategyBuilder = () => {
     setPayload(blankPayload);
     setSelectedInstrument("");
     setSelectedEquityInstruments([]);
+    editPrefilledRef.current = false;
   }, [
     editing,
     strategyId,
@@ -372,6 +410,9 @@ const StrategyBuilder = () => {
   // ✅ OPTIMIZED: Sync instrument selection with payload
   useEffect(() => {
     if (!selectedInstrument || !selectedInstrument.SegmentType) return;
+
+    // When editing and payload is already hydrated, avoid rebuilding strike arrays
+    if (editing && editPrefilledRef.current) return;
 
     // Update both form and Zustand
     setValue("StrategySegmentType", selectedInstrument.SegmentType, {
@@ -426,6 +467,7 @@ const StrategyBuilder = () => {
       AdvanceFeatures: {},
     });
   }, [
+    editing,
     selectedInstrument,
     setValue,
     getValues,
@@ -437,6 +479,9 @@ const StrategyBuilder = () => {
   useEffect(() => {
     if (selectedStrategyTypes[0] !== "indicator") return;
     if (!selectedEquityInstruments.length) return;
+
+    // Avoid overriding populated edit payload
+    if (editing && editPrefilledRef.current) return;
 
     const buildDefaultStrike = (strikeType) => ({
       TransactionType: "BUY",
@@ -517,6 +562,7 @@ const StrategyBuilder = () => {
       StrategyScriptList: scripts,
     });
   }, [
+    editing,
     selectedEquityInstruments,
     selectedStrategyTypes,
     setValue,
@@ -584,8 +630,12 @@ const StrategyBuilder = () => {
         Long_ExitEquation: d.Long_ExitEquation || [],
         Short_ExitEquation: d.Short_ExitEquation || [],
         IsChartOnOptionStrike: d.IsChartOnOptionStrike || false,
+        AdvanceFeatures: d.AdvanceFeatures || {},
         isBtSt: d.isBtSt || false,
         StrategyId: d.StrategyId || 0,
+        ActiveLegIndex: d.ActiveLegIndex || 0,
+        StrategyExecutionType:
+          d.StrategyExecutionType || d.StrategyExecuterId || "tb",
         Interval: d.Interval || 1,
         SL: d.SL || 0,
         Target: d.Target || 0,
@@ -613,11 +663,28 @@ const StrategyBuilder = () => {
         ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
       };
 
+      // Hydrate advance feature flags from strike-level data when API doesn't send AdvanceFeatures
+      const derivedAdvance = deriveAdvanceFeatures(
+        mapped.StrategyScriptList,
+        mapped.ActiveLegIndex || 0,
+        mapped.SquareOffAllOptionLegOnSl
+      );
+      mapped.AdvanceFeatures = {
+        ...mapped.AdvanceFeatures,
+        ...derivedAdvance,
+      };
+
       reset(mapped);
       setSelectedStrategyTypes([mapped.StrategyType]);
 
       // Sync Zustand store with mapped data for edit mode
       setPayload(mapped);
+      // Ensure AdvanceFeatures are present in the form for downstream effects
+      setValue("AdvanceFeatures", mapped.AdvanceFeatures || {}, {
+        shouldDirty: false,
+      });
+
+      editPrefilledRef.current = true;
 
       const normalizedSegment = mapped.StrategySegmentType?.toLowerCase();
       const isEquityMultiEdit =
@@ -755,7 +822,7 @@ const StrategyBuilder = () => {
 
   const onSubmit = (values) => {
     // Merge form values with Zustand payload for complete state
-    const mergedValues = { ...strategyPayload, ...values };
+    const mergedValues = mergeWithDefaults({ ...strategyPayload, ...values });
 
     const validateAndNormalize = (raw) => {
       const errors = [];
@@ -1150,11 +1217,11 @@ const StrategyBuilder = () => {
                   )}
 
                   {selectedEquityInstruments.length > 0 && (
-                    <div className="mt-2 space-y-3 pr-2">
+                    <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
                       {selectedEquityInstruments.map((ins, idx) => (
                         <div
                           key={ins.InstrumentToken || ins.Name || idx}
-                          className="w-full"
+                          className="flex-shrink-0 w-40"
                         >
                           {renderEquityInstrumentRow({
                             index: idx,

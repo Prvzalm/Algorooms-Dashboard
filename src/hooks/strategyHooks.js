@@ -31,6 +31,8 @@ export const useUserStrategies = ({
   strategyType = "created",
   queryText = "",
   orderBy = "Name",
+  enabled = true,
+  staleTimeMs = 60 * 1000,
 }) => {
   return useQuery({
     queryKey: [
@@ -49,12 +51,13 @@ export const useUserStrategies = ({
         queryText,
         orderBy,
       }),
-    keepPreviousData: false,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    enabled,
+    keepPreviousData: true,
+    staleTime: staleTimeMs,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 

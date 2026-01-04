@@ -248,22 +248,22 @@ export function buildStrategyPayload({
     const normalizedShortExit = normalizeIndicatorEquations(cleanValues.Short_ExitEquation || []);
 
     payloadBase.Long_ExitEquation = onlyShort
-        ? []
+        ? null
         : toNullIfEmpty(normalizedLongExit);
     payloadBase.Short_ExitEquation = onlyLong
-        ? []
+        ? null
         : toNullIfEmpty(normalizedShortExit);
 
     if (selectedStrategyTypes[0] === "indicator") {
-        // When user selects single side, send the other side as an empty array
+        // When user selects single side, send the other side as null
         const normalizedLong = normalizeIndicatorEquations(cleanValues.LongEntryEquation || []);
         const normalizedShort = normalizeIndicatorEquations(cleanValues.ShortEntryEquation || []);
 
         payloadBase.LongEntryEquation = onlyShort
-            ? []
+            ? null
             : toNullIfEmpty(normalizedLong);
         payloadBase.ShortEntryEquation = onlyLong
-            ? []
+            ? null
             : toNullIfEmpty(normalizedShort);
     } else {
         payloadBase.LongEntryEquation = null;

@@ -29,6 +29,8 @@ const InstrumentModal = ({
   // send a single space when input is empty so API returns "all" instruments
   const [searchQuery, setSearchQuery] = useState("");
   const [segmentType, setSegmentType] = useState("Option");
+  const [tempSelected, setTempSelected] = useState(selected || "");
+  const [tempSelectedList, setTempSelectedList] = useState(selectedList || []);
 
   const {
     data: instruments = [],
@@ -49,31 +51,33 @@ const InstrumentModal = ({
 
   const toggleSelect = (item) => {
     if (multiMode) {
-      setSelected(""); // clear single
-      const exists = selectedList.some(
+      setTempSelected(""); // clear single
+      const exists = tempSelectedList.some(
         (i) => i.InstrumentToken === item.InstrumentToken
       );
       if (exists) {
-        setSelectedList(
-          selectedList.filter((i) => i.InstrumentToken !== item.InstrumentToken)
+        setTempSelectedList(
+          tempSelectedList.filter(
+            (i) => i.InstrumentToken !== item.InstrumentToken
+          )
         );
       } else {
         if (
           segmentType === "Equity" &&
-          selectedList.length >= EQUITY_MULTI_LIMIT
+          tempSelectedList.length >= EQUITY_MULTI_LIMIT
         ) {
           toast.error(
             `You can select up to ${EQUITY_MULTI_LIMIT} equity instruments.`
           );
           return;
         }
-        setSelectedList([
-          ...selectedList,
+        setTempSelectedList([
+          ...tempSelectedList,
           { ...item, SegmentType: segmentType },
         ]);
       }
     } else {
-      setSelected({ ...item, SegmentType: segmentType });
+      setTempSelected({ ...item, SegmentType: segmentType });
     }
   };
 
@@ -87,8 +91,8 @@ const InstrumentModal = ({
   useEffect(() => {
     const prev = previousSegmentRef.current;
     if (prev !== segmentType) {
-      setSelected("");
-      setSelectedList([]);
+      setTempSelected("");
+      setTempSelectedList([]);
       if (prev === "Equity" && segmentType !== "Equity") {
         setSearchQuery("");
       }
@@ -111,12 +115,26 @@ const InstrumentModal = ({
   }, [visible]);
 
   useEffect(() => {
+    if (visible) {
+      setTempSelected(selected || "");
+      setTempSelectedList(selectedList || []);
+    }
+  }, [visible, selected, selectedList]);
+
+  useEffect(() => {
     if (!visible) {
       setSearchQuery("");
     }
   }, [visible]);
 
   if (!visible) return null;
+
+  const handleSave = () => {
+    const finalList = multiMode ? tempSelectedList : [];
+    setSelected(tempSelected);
+    setSelectedList(finalList);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -208,10 +226,10 @@ const InstrumentModal = ({
           ) : (
             instruments.map((item) => {
               const isActive = multiMode
-                ? selectedList.some(
+                ? tempSelectedList.some(
                     (i) => i.InstrumentToken === item.InstrumentToken
                   )
-                : selected?.Name === item.Name;
+                : tempSelected?.Name === item.Name;
               return (
                 <button
                   type="button"
@@ -232,7 +250,7 @@ const InstrumentModal = ({
 
         <PrimaryButton
           type="button"
-          onClick={onClose}
+          onClick={handleSave}
           className="w-full py-3 rounded-lg font-semibold sticky bottom-0"
         >
           Save

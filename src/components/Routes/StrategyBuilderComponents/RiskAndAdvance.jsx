@@ -78,7 +78,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const [showWaitTradeModal, setShowWaitTradeModal] = useState(false);
   const [waitTradeTempData, setWaitTradeTempData] = useState({
     type: "% ↑",
-    movement: "0",
+    movement: "",
   });
 
   // Reset advance toggles when strategy type changes
@@ -92,8 +92,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       "Re Entry/Execute": false,
       "Trail SL": false,
     });
-    setWaitTradeTempData({ type: "% ↑", movement: "0" });
-    setPremiumDiffTempValue("0");
+    setWaitTradeTempData({ type: "% ↑", movement: "" });
+    setPremiumDiffTempValue("");
     setReEntryTempData({
       executionType: "ReExecute",
       cycles: "1",
@@ -120,6 +120,58 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       "Trail SL": !!advanceFeatures["Trail SL"],
     }));
   }, [advanceFeatures]);
+
+  // If AdvanceFeatures is empty but strikes contain flags (edit mode), sync from strikes
+  // This should only run when AdvanceFeatures is completely empty (initial load/edit)
+  // to avoid overwriting user's checkbox selections when adding/switching legs
+  useEffect(() => {
+    const scripts = Array.isArray(strategyScripts) ? strategyScripts : [];
+    if (!scripts.length) return;
+
+    // Only sync if AdvanceFeatures is completely empty or undefined (initial state)
+    const hasAnyFeatureEnabled = advanceOptions.some(
+      (opt) => advanceFeatures[opt] === true
+    );
+
+    // If user has already enabled any feature, don't override with strike data
+    if (hasAnyFeatureEnabled) return;
+
+    const first = scripts[0] || {};
+    const pickStrike = (list) =>
+      Array.isArray(list) && list.length
+        ? list[Math.min(activeLegIndex, list.length - 1)] || list[0]
+        : null;
+
+    const longStrike = pickStrike(first.LongEquationoptionStrikeList);
+    const shortStrike = pickStrike(first.ShortEquationoptionStrikeList);
+    const strike = longStrike || shortStrike || {};
+
+    const premiumEnabled =
+      strike?.IsPriceDiffrenceConstrant &&
+      Number(strike?.PriceDiffrenceConstrantValue) > 0;
+
+    const derived = {
+      "Move SL to Cost": !!strike?.IsMoveSLCTC,
+      "Exit All on SL/Tgt": !!(
+        advanceFeatures?.["Exit All on SL/Tgt"] || strike?.isExitAll
+      ),
+      "Pre Punch SL": !!strike?.isPrePunchSL,
+      "Wait & Trade": !!strike?.waitNTrade?.isWaitnTrade,
+      "Premium Difference": !!premiumEnabled,
+      "Re Entry/Execute": !!strike?.reEntry?.isRentry,
+      "Trail SL": !!strike?.isTrailSL,
+    };
+
+    const needsSync = advanceOptions.some(
+      (opt) => !!derived[opt] !== !!advanceFeatures[opt]
+    );
+
+    if (needsSync) {
+      setAdvState((prev) => ({ ...prev, ...derived }));
+      const nextAf = { ...advanceFeatures, ...derived };
+      setValue("AdvanceFeatures", nextAf, { shouldDirty: false });
+    }
+  }, [strategyScripts, activeLegIndex, advanceFeatures, setValue]);
 
   const isDisabledAdvance = (label) => {
     // Rule 1: Move SL to Cost active -> disable all except Premium Difference (Exit All also disabled)
@@ -166,6 +218,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         ? [...script.ShortEquationoptionStrikeList]
         : [];
 
+      // Update active leg only
       if (longs[activeLegIndex]) {
         const copy = { ...longs[activeLegIndex] };
         updater(copy);
@@ -176,6 +229,38 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
         updater(copy);
         shorts[activeLegIndex] = copy;
       }
+
+      return {
+        ...script,
+        LongEquationoptionStrikeList: longs,
+        ShortEquationoptionStrikeList: shorts,
+      };
+    });
+
+    setValue("StrategyScriptList", nextScripts, { shouldDirty: true });
+    updatePayload({ StrategyScriptList: nextScripts });
+  };
+
+  // Update all legs globally (used when disabling advance features)
+  const updateAllStrikes = (updater) => {
+    const scripts = strategyScripts || [];
+    if (!Array.isArray(scripts) || scripts.length === 0) return;
+
+    const nextScripts = scripts.map((script) => {
+      const longs = Array.isArray(script.LongEquationoptionStrikeList)
+        ? script.LongEquationoptionStrikeList.map((strike) => {
+            const copy = { ...strike };
+            updater(copy);
+            return copy;
+          })
+        : [];
+      const shorts = Array.isArray(script.ShortEquationoptionStrikeList)
+        ? script.ShortEquationoptionStrikeList.map((strike) => {
+            const copy = { ...strike };
+            updater(copy);
+            return copy;
+          })
+        : [];
 
       return {
         ...script,
@@ -204,60 +289,56 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const resetAdvanceFeature = (label) => {
     switch (label) {
       case "Move SL to Cost":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.IsMoveSLCTC = false;
         });
         break;
       case "Exit All on SL/Tgt":
         setValue("SquareOffAllOptionLegOnSl", false, { shouldDirty: true });
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.isExitAll = false;
         });
         break;
       case "Pre Punch SL":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.isPrePunchSL = false;
         });
         break;
       case "Wait & Trade":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.waitNTrade = {
-            ...(s.waitNTrade || {}),
             isWaitnTrade: false,
-            isPerPt: "wt_eq",
-            typeId: "wt_eq",
+            isPerPt: "wtpr_+",
+            typeId: "wtpr_+",
             MovementValue: "0",
           };
-          s.IsMoveSLCTC = false;
         });
         setWaitTradeTempData({ type: "% ↑", movement: "0" });
         break;
       case "Premium Difference":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.IsPriceDiffrenceConstrant = false;
           s.PriceDiffrenceConstrantValue = "0";
         });
         setPremiumDiffTempValue("0");
         break;
       case "Re Entry/Execute":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.reEntry = {
-            ...(s.reEntry || {}),
             isRentry: false,
-            RentryType: "REX",
+            RentryType: "REN",
             TradeCycle: "0",
-            RentryActionTypeId: "IMMDT",
+            RentryActionTypeId: "ON_CLOSE",
           };
-          s.IsMoveSLCTC = false;
         });
         setReEntryTempData({
-          executionType: "ReExecute",
+          executionType: "ReEntry On Close",
           cycles: "1",
-          actionType: "IMMDT",
+          actionType: "ON_CLOSE",
         });
         break;
       case "Trail SL":
-        updateActiveStrikes((s) => {
+        updateAllStrikes((s) => {
           s.isTrailSL = false;
           s.TrailingSL = {
             TrailingType: "tslpr",
@@ -336,7 +417,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       };
       setWaitTradeTempData({
         type: wtMapRev[currentStrike.waitNTrade?.typeId] || "% ↑",
-        movement: String(currentStrike.waitNTrade?.MovementValue ?? "0") || "0",
+        movement: currentStrike.waitNTrade?.MovementValue ?? "",
       });
       setShowWaitTradeModal(true);
       return;
@@ -348,8 +429,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       const firstScript = scripts[0] || {};
       const longs = firstScript.LongEquationoptionStrikeList || [];
       const currentStrike = longs[0] || {};
-      const currentPremValue =
-        currentStrike.PriceDiffrenceConstrantValue || "0";
+      const currentPremValue = currentStrike.PriceDiffrenceConstrantValue ?? "";
       setPremiumDiffTempValue(currentPremValue);
       setShowPremiumDiffModal(true);
       return;
@@ -446,7 +526,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
 
   // Premium Difference Modal state & handler
   const [showPremiumDiffModal, setShowPremiumDiffModal] = useState(false);
-  const [premiumDiffTempValue, setPremiumDiffTempValue] = useState("0");
+  const [premiumDiffTempValue, setPremiumDiffTempValue] = useState("");
 
   // Re-Entry/Execute Modal state & handler
   const [showReEntryModal, setShowReEntryModal] = useState(false);
@@ -562,9 +642,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                 defaultValue={getValues("ExitWhenTotalProfit") || ""}
                 placeholder="Exit When Over All Profit In Amount (INR)"
                 onChange={(e) =>
-                  setValue("ExitWhenTotalProfit", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
+                  setValue(
+                    "ExitWhenTotalProfit",
+                    e.target.value === "" ? "" : Number(e.target.value) || 0,
+                    {
+                      shouldDirty: true,
+                    }
+                  )
                 }
                 className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
               />
@@ -573,9 +657,13 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                 defaultValue={getValues("ExitWhenTotalLoss") || ""}
                 placeholder="Exit When Over All Loss In Amount (INR)"
                 onChange={(e) =>
-                  setValue("ExitWhenTotalLoss", Number(e.target.value) || 0, {
-                    shouldDirty: true,
-                  })
+                  setValue(
+                    "ExitWhenTotalLoss",
+                    e.target.value === "" ? "" : Number(e.target.value) || 0,
+                    {
+                      shouldDirty: true,
+                    }
+                  )
                 }
                 className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
               />
@@ -589,9 +677,15 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     placeholder="Max Trade Cycle"
                     value={watch("MaxTrade") || ""}
                     onChange={(e) =>
-                      setValue("MaxTrade", Number(e.target.value) || 0, {
-                        shouldDirty: true,
-                      })
+                      setValue(
+                        "MaxTrade",
+                        e.target.value === ""
+                          ? ""
+                          : Number(e.target.value) || 0,
+                        {
+                          shouldDirty: true,
+                        }
+                      )
                     }
                     className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                   />
@@ -623,14 +717,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     placeholder="Target on each script"
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (val === "") {
-                        setValue("Target", "", { shouldDirty: true });
-                        return;
-                      }
-                      const num = Number(val);
-                      if (!Number.isNaN(num)) {
-                        setValue("Target", num, { shouldDirty: true });
-                      }
+                      setValue("Target", val === "" ? "" : Number(val) || 0, {
+                        shouldDirty: true,
+                      });
                     }}
                     className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
                   />
@@ -640,14 +729,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     placeholder="Stop Loss on each script"
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (val === "") {
-                        setValue("SL", "", { shouldDirty: true });
-                        return;
-                      }
-                      const num = Number(val);
-                      if (!Number.isNaN(num)) {
-                        setValue("SL", num, { shouldDirty: true });
-                      }
+                      setValue("SL", val === "" ? "" : Number(val) || 0, {
+                        shouldDirty: true,
+                      });
                     }}
                     className="flex-1 min-w-[240px] bg-blue-50 text-gray-700 px-4 py-3 rounded-xl text-sm placeholder-gray-500 dark:bg-[#1E2027] dark:text-white dark:placeholder-gray-400"
                   />
@@ -709,7 +793,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                           onChange={(e) =>
                             setValue(
                               "LockProfit",
-                              Number(e.target.value) || 0,
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value) || 0,
                               {
                                 shouldDirty: true,
                               }
@@ -724,7 +810,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                           onChange={(e) =>
                             setValue(
                               "LockProfitAt",
-                              Number(e.target.value) || 0,
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value) || 0,
                               {
                                 shouldDirty: true,
                               }
@@ -743,7 +831,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                           onChange={(e) =>
                             setValue(
                               "ProfitTranches",
-                              Number(e.target.value) || 0,
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value) || 0,
                               {
                                 shouldDirty: true,
                               }
@@ -758,7 +848,9 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                           onChange={(e) =>
                             setValue(
                               "TrailProfitBy",
-                              Number(e.target.value) || 0,
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value) || 0,
                               {
                                 shouldDirty: true,
                               }
@@ -1116,9 +1208,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
                     onChange={(e) =>
                       setWaitTradeTempData((prev) => ({
                         ...prev,
-                        movement: String(
-                          Math.max(0, Number(e.target.value) || 0)
-                        ),
+                        movement: e.target.value,
                       }))
                     }
                     className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
@@ -1160,11 +1250,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
               <input
                 type="number"
                 value={premiumDiffTempValue}
-                onChange={(e) =>
-                  setPremiumDiffTempValue(
-                    Math.max(0, Number(e.target.value) || 0)
-                  )
-                }
+                onChange={(e) => setPremiumDiffTempValue(e.target.value)}
                 className="w-full border rounded px-3 py-2 text-sm dark:bg-[#1E2027] dark:text-white dark:border-[#333]"
                 placeholder="Enter value"
               />
