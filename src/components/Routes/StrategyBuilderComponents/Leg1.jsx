@@ -38,8 +38,7 @@ const Leg1 = ({
   const tradeOnTriggerCandle = watch("isTradeOnTriggerCandle") || false;
   const ofContinuousCandle = watch("IsContiniousTriggerCandle") || false;
   const isChartOnOptionStrike = watch("IsChartOnOptionStrike") || false;
-  const chartType =
-    watch("chartTypeCombinedOrOption") ?? watch("chartType") ?? null;
+  const chartType = isChartOnOptionStrike ?? watch("chartType") ?? null;
   const transactionType = watch("TransactionType") ?? 0;
   const allowShortSide = transactionType !== 1; // 0 = both, 2 = only short
   const productTypeNum = Number(watch("ProductType")) || 0;
@@ -1188,63 +1187,70 @@ const Leg1 = ({
 
   // When combined chart is enabled for indicator strategy, ensure at least 2 legs
   useEffect(() => {
-    if (isChartOnOptionStrike && isIndicatorStrategy && legs.length < 2) {
+    const isCombinedChart = isChartOnOptionStrike === "combined";
+    if (isCombinedChart && isIndicatorStrategy) {
       try {
-        const idx = legs.length;
-        const nextLegName = `L${idx + 1}`;
+        const scripts = getValues("StrategyScriptList") || [];
+        const base = scripts[0] || {};
+        const longArr = Array.isArray(base.LongEquationoptionStrikeList)
+          ? base.LongEquationoptionStrikeList
+          : [];
 
-        const updateFormState = () => {
-          setLegs((prevLegs) => [...prevLegs, nextLegName]);
-          setSelectedLeg(nextLegName);
+        // Only add legs if we actually have less than 2 in the form data
+        if (longArr.length < 2) {
+          const idx = longArr.length;
+          const nextLegName = `L${idx + 1}`;
 
-          const scripts = getValues("StrategyScriptList") || [];
-          const base = { ...(scripts[0] || {}) };
+          const updateFormState = () => {
+            setLegs((prevLegs) => [...prevLegs, nextLegName]);
+            setSelectedLeg(nextLegName);
 
-          const longArr = Array.isArray(base.LongEquationoptionStrikeList)
-            ? [...base.LongEquationoptionStrikeList]
-            : [];
+            const updatedLongArr = [...longArr];
+            const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+              ? [...base.ShortEquationoptionStrikeList]
+              : [];
 
-          const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
-            ? [...base.ShortEquationoptionStrikeList]
-            : [];
+            const newStrike = {
+              ...createDefaultStrikeBySide("long"),
+              ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+            };
 
-          const newStrike = {
-            ...createDefaultStrikeBySide("long"),
-            ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+            const isIndicator = selectedStrategyTypes?.[0] === "indicator";
+            updatedLongArr.push(newStrike);
+
+            if (isIndicator) {
+              const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
+              shortArr.push({
+                ...newStrike,
+                StrikeType: opposite,
+                ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
+              });
+            }
+
+            const updatedBase = {
+              ...base,
+              LongEquationoptionStrikeList: updatedLongArr,
+            };
+            if (isIndicator) {
+              updatedBase.ShortEquationoptionStrikeList = shortArr;
+            }
+
+            const updated = [updatedBase];
+            setValue("StrategyScriptList", updated, { shouldDirty: true });
+            setValue("ActiveLegIndex", idx, { shouldDirty: true });
+
+            updatePayload({ StrategyScriptList: updated });
           };
 
-          const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-          longArr.push(newStrike);
-
-          if (isIndicator) {
-            const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
-            shortArr.push({
-              ...newStrike,
-              StrikeType: opposite,
-              ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
-            });
-          }
-
-          base.LongEquationoptionStrikeList = longArr;
-          if (isIndicator) {
-            base.ShortEquationoptionStrikeList = shortArr;
-          }
-
-          const updated = [base];
-          setValue("StrategyScriptList", updated, { shouldDirty: true });
-          setValue("ActiveLegIndex", idx, { shouldDirty: true });
-
-          updatePayload({ StrategyScriptList: updated });
-        };
-
-        setTimeout(updateFormState, 0);
+          setTimeout(updateFormState, 0);
+        }
       } catch (err) {
         console.error("Add leg error", err);
       }
     }
   }, [
     isChartOnOptionStrike,
-    legs.length,
+    isIndicatorStrategy,
     selectedStrategyTypes,
     getValues,
     setValue,
@@ -1254,7 +1260,8 @@ const Leg1 = ({
   // ✅ Remove leg handler (moved from OrderType)
   const handleRemoveLeg = (removeIndex) => {
     try {
-      const minLegs = isChartOnOptionStrike && isIndicatorStrategy ? 2 : 1;
+      const isCombinedChart = isChartOnOptionStrike === "combined";
+      const minLegs = isCombinedChart && isIndicatorStrategy ? 2 : 1;
       if (legs.length <= minLegs) return; // Keep at least minLegs legs
 
       const updateFormState = () => {

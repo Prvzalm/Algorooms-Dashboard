@@ -87,9 +87,9 @@ export function buildStrategyPayload({
     const txType = Number(cleanValues.TransactionType ?? 0); // 0 both, 1 long, 2 short
     const onlyLong = txType === 1;
     const onlyShort = txType === 2;
-    const chartTypeSelection = cleanValues.chartTypeCombinedOrOption ?? false;
+    const isChartOnOptionStrike = cleanValues.IsChartOnOptionStrike;
     const isOptionOrCombinedChart =
-        chartTypeSelection === "combined" || chartTypeSelection === "options";
+        isChartOnOptionStrike === "combined" || isChartOnOptionStrike === "options";
     const selectedInstrument = ui.selectedInstrument || null;
     const selectedEquityInstruments = ui.selectedEquityInstruments || [];
     const showBacktestComponent = ui.showBacktestComponent || false;
@@ -124,7 +124,7 @@ export function buildStrategyPayload({
                 : Array.isArray(script.LongEquationoptionStrikeList)
                     ? script.LongEquationoptionStrikeList
                     : [],
-            ShortEquationoptionStrikeList: onlyLong
+            ShortEquationoptionStrikeList: (onlyLong || selectedStrategyTypes[0] === "time")
                 ? []
                 : Array.isArray(script.ShortEquationoptionStrikeList)
                     ? script.ShortEquationoptionStrikeList
@@ -133,27 +133,35 @@ export function buildStrategyPayload({
 
     const enrichStrike = (item) => ({
         ...item,
-        // lotSize carries multiplier (no qty fallback)
-        Qty: item?.Qty ?? 0,
-        lotSize: item?.lotSize ?? 0,
+        // Convert blank/empty values to 0 for API
+        Qty: item?.Qty === "" || item?.Qty === null || item?.Qty === undefined ? 0 : Number(item.Qty) || 0,
+        lotSize: item?.lotSize === "" || item?.lotSize === null || item?.lotSize === undefined ? 0 : Number(item.lotSize) || 0,
         IsMoveSLCTC: item?.IsMoveSLCTC ?? false,
         IsPriceDiffrenceConstrant: item?.IsPriceDiffrenceConstrant ?? false,
-        PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue ?? 0,
+        PriceDiffrenceConstrantValue: item?.PriceDiffrenceConstrantValue === "" || item?.PriceDiffrenceConstrantValue === null || item?.PriceDiffrenceConstrantValue === undefined ? 0 : Number(item.PriceDiffrenceConstrantValue) || 0,
         isPrePunchSL: item?.isPrePunchSL ?? false,
-        reEntry:
-            item?.reEntry ?? {
-                isRentry: false,
-                RentryType: "REN",
-                TradeCycle: 0,
-                RentryActionTypeId: "ON_CLOSE",
-            },
-        waitNTrade:
-            item?.waitNTrade ?? {
-                isWaitnTrade: false,
-                isPerPt: "wtpr_+",
-                typeId: "wtpr_+",
-                MovementValue: 0,
-            },
+        reEntry: item?.reEntry ? {
+            isRentry: item.reEntry.isRentry ?? false,
+            RentryType: item.reEntry.RentryType ?? "REN",
+            TradeCycle: item.reEntry.TradeCycle === "" || item.reEntry.TradeCycle === null || item.reEntry.TradeCycle === undefined ? 0 : Number(item.reEntry.TradeCycle) || 0,
+            RentryActionTypeId: item.reEntry.RentryActionTypeId ?? "ON_CLOSE",
+        } : {
+            isRentry: false,
+            RentryType: "REN",
+            TradeCycle: 0,
+            RentryActionTypeId: "ON_CLOSE",
+        },
+        waitNTrade: item?.waitNTrade ? {
+            isWaitnTrade: item.waitNTrade.isWaitnTrade ?? false,
+            isPerPt: item.waitNTrade.isPerPt ?? "wtpr_+",
+            typeId: item.waitNTrade.typeId ?? "wtpr_+",
+            MovementValue: item.waitNTrade.MovementValue === "" || item.waitNTrade.MovementValue === null || item.waitNTrade.MovementValue === undefined ? 0 : Number(item.waitNTrade.MovementValue) || 0,
+        } : {
+            isWaitnTrade: false,
+            isPerPt: "wtpr_+",
+            typeId: "wtpr_+",
+            MovementValue: 0,
+        },
         strikeTypeobj: {
             type: item?.strikeTypeobj?.type ?? "ATM",
             StrikeValue: Number(item?.strikeTypeobj?.StrikeValue) || 0,
@@ -162,12 +170,15 @@ export function buildStrategyPayload({
         },
         isExitAll: item?.isExitAll ?? false,
         isTrailSL: item?.isTrailSL ?? false,
-        TrailingSL:
-            item?.TrailingSL ?? {
-                TrailingType: "tslpr",
-                InstrumentMovementValue: 0,
-                TrailingValue: 0,
-            },
+        TrailingSL: item?.TrailingSL ? {
+            TrailingType: item.TrailingSL.TrailingType ?? "tslpr",
+            InstrumentMovementValue: item.TrailingSL.InstrumentMovementValue === "" || item.TrailingSL.InstrumentMovementValue === null || item.TrailingSL.InstrumentMovementValue === undefined ? 0 : Number(item.TrailingSL.InstrumentMovementValue) || 0,
+            TrailingValue: item.TrailingSL.TrailingValue === "" || item.TrailingSL.TrailingValue === null || item.TrailingSL.TrailingValue === undefined ? 0 : Number(item.TrailingSL.TrailingValue) || 0,
+        } : {
+            TrailingType: "tslpr",
+            InstrumentMovementValue: 0,
+            TrailingValue: 0,
+        },
     });
 
     const longOptionStrikes = Array.isArray(
@@ -190,9 +201,9 @@ export function buildStrategyPayload({
             {
                 InstrumentToken:
                     selectedInstrument?.InstrumentToken || firstScript.InstrumentToken || "",
-                // Qty intentionally not auto-set; lotSize carries multiplier
-                Qty: firstScript.Qty ?? 0,
-                lotSize: firstScript.lotSize ?? 0,
+                // Convert blank values to 0 for API
+                Qty: firstScript.Qty === "" || firstScript.Qty === null || firstScript.Qty === undefined ? 0 : Number(firstScript.Qty) || 0,
+                lotSize: firstScript.lotSize === "" || firstScript.lotSize === null || firstScript.lotSize === undefined ? 0 : Number(firstScript.lotSize) || 0,
                 LongEquationoptionStrikeList: longOptionStrikes,
                 ShortEquationoptionStrikeList: Array.isArray(
                     firstScript.ShortEquationoptionStrikeList
@@ -234,13 +245,10 @@ export function buildStrategyPayload({
         AutoSquareOffTime: cleanValues.AutoSquareOffTime || "15:15",
         EntryRule: null,
         ExitRule: null,
-        chartTypeCombinedOrOption: chartTypeSelection ?? false,
-        IsChartOnOptionStrike: Boolean(
-            isOptionOrCombinedChart || cleanValues?.IsChartOnOptionStrike
-        ),
+        IsChartOnOptionStrike: Boolean(isOptionOrCombinedChart),
         StrategyId: strategyIdForPayload,
-        ExitWhenTotalLoss: String(cleanValues.ExitWhenTotalLoss || 0),
-        ExitWhenTotalProfit: String(cleanValues.ExitWhenTotalProfit || 0),
+        ExitWhenTotalLoss: String(cleanValues.ExitWhenTotalLoss === "" || cleanValues.ExitWhenTotalLoss === null || cleanValues.ExitWhenTotalLoss === undefined ? 0 : cleanValues.ExitWhenTotalLoss),
+        ExitWhenTotalProfit: String(cleanValues.ExitWhenTotalProfit === "" || cleanValues.ExitWhenTotalProfit === null || cleanValues.ExitWhenTotalProfit === undefined ? 0 : cleanValues.ExitWhenTotalProfit),
         TpSLType: tpSlTypeValue,
     };
 

@@ -38,7 +38,7 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
   const isCombinedChartDisabled =
     strategySegmentType === "equity" || strategySegmentType === "future";
 
-  const chartType = watch("chartTypeCombinedOrOption");
+  const chartType = watch("IsChartOnOptionStrike");
 
   // Indicator master
   const { data: indicatorData, isLoading, isError } = useIndicatorMaster(true);
@@ -64,14 +64,11 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
 
   useEffect(() => {
     if (isCombinedChartDisabled && chartType === "combined") {
-      setValue("chartTypeCombinedOrOption", "options", { shouldDirty: true });
+      setValue("IsChartOnOptionStrike", "options", { shouldDirty: true });
     }
   }, [isCombinedChartDisabled, chartType, setValue]);
 
   useEffect(() => {
-    setValue("IsChartOnOptionStrike", chartType === "combined", {
-      shouldDirty: true,
-    });
     setValue("useCombinedChart", chartType === "combined", {
       shouldDirty: true,
     });
@@ -87,14 +84,85 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
     }
   }, [chartType, transactionType, setValue]);
 
+  // Initialize chart type only if not already set (for new strategy creation)
   useEffect(() => {
-    const initialChartType = null;
-    setValue("chartTypeCombinedOrOption", initialChartType);
+    const currentChartType = watch("IsChartOnOptionStrike");
+    if (currentChartType === undefined) {
+      setValue("IsChartOnOptionStrike", null);
+    }
   }, []);
 
   const combinedChartTooltip = isCombinedChartDisabled
     ? "Combined chart is available only for option strikes. Equity and futures selections render their own price feeds."
     : "Displays entry indicators and selected option strikes on a single chart so you can validate timing without switching between legs.";
+
+  const adjustLegsForChartType = (targetType) => {
+    if (!targetType) return;
+
+    const scripts = watch("StrategyScriptList") || [];
+    if (!scripts.length) return;
+
+    const firstScript = scripts[0];
+    const longLegs = firstScript?.LongEquationoptionStrikeList || [];
+    const shortLegs = firstScript?.ShortEquationoptionStrikeList || [];
+
+    const defaultLong = {
+      TransactionType: "BUY",
+      StrikeType: "CE",
+      StrikeValueType: 0,
+      StrikeValue: 0,
+      Qty: 0,
+    };
+
+    const defaultShort = {
+      TransactionType: "SELL",
+      StrikeType: "PE",
+      StrikeValueType: 0,
+      StrikeValue: 0,
+      Qty: 0,
+    };
+
+    const updatedScript = { ...firstScript };
+
+    if (targetType === "combined") {
+      // For combined chart, keep up to 2 existing legs or create defaults
+      if (longLegs.length >= 2) {
+        // Keep first 2 legs
+        updatedScript.LongEquationoptionStrikeList = [longLegs[0], longLegs[1]];
+      } else if (longLegs.length === 1) {
+        // Keep first leg and add second default
+        updatedScript.LongEquationoptionStrikeList = [longLegs[0], defaultLong];
+      } else {
+        // No legs, create 2 defaults
+        updatedScript.LongEquationoptionStrikeList = [defaultLong, defaultLong];
+      }
+
+      if (shortLegs.length >= 2) {
+        updatedScript.ShortEquationoptionStrikeList = [
+          shortLegs[0],
+          shortLegs[1],
+        ];
+      } else if (shortLegs.length === 1) {
+        updatedScript.ShortEquationoptionStrikeList = [
+          shortLegs[0],
+          defaultShort,
+        ];
+      } else {
+        updatedScript.ShortEquationoptionStrikeList = [
+          defaultShort,
+          defaultShort,
+        ];
+      }
+    } else if (targetType === "options") {
+      updatedScript.LongEquationoptionStrikeList =
+        longLegs.length > 0 ? [longLegs[0]] : [defaultLong];
+      updatedScript.ShortEquationoptionStrikeList = [];
+    } else {
+      return;
+    }
+
+    setValue("StrategyScriptList", [updatedScript], { shouldDirty: true });
+  };
 
   // Utilities
   const findIndicatorMeta = (id) =>
@@ -830,13 +898,11 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                 type="checkbox"
                 checked={chartType === "combined"}
                 onChange={() => {
-                  setValue(
-                    "chartTypeCombinedOrOption",
-                    chartType === "combined" ? null : "combined",
-                    {
-                      shouldDirty: true,
-                    }
-                  );
+                  const next = chartType === "combined" ? null : "combined";
+                  if (next) adjustLegsForChartType(next);
+                  setValue("IsChartOnOptionStrike", next, {
+                    shouldDirty: true,
+                  });
                 }}
               />
               Use Combined Chart
@@ -846,13 +912,11 @@ const EntryCondition = ({ selectedStrategyTypes }) => {
                 type="checkbox"
                 checked={chartType === "options"}
                 onChange={() => {
-                  setValue(
-                    "chartTypeCombinedOrOption",
-                    chartType === "options" ? null : "options",
-                    {
-                      shouldDirty: true,
-                    }
-                  );
+                  const next = chartType === "options" ? null : "options";
+                  if (next) adjustLegsForChartType(next);
+                  setValue("IsChartOnOptionStrike", next, {
+                    shouldDirty: true,
+                  });
                 }}
               />
               Use Options Chart

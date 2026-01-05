@@ -629,7 +629,22 @@ const StrategyBuilder = () => {
         ShortEntryEquation: d.ShortEntryEquation || [],
         Long_ExitEquation: d.Long_ExitEquation || [],
         Short_ExitEquation: d.Short_ExitEquation || [],
-        IsChartOnOptionStrike: d.IsChartOnOptionStrike || false,
+        IsChartOnOptionStrike: (() => {
+          // Convert boolean IsChartOnOptionStrike to "combined"/"options"/null based on legs count
+          if (!d.IsChartOnOptionStrike) return null;
+          const scripts = d.StrategyScriptList || [];
+          const firstScript = scripts[0];
+          if (!firstScript) return null;
+          const longLegs = firstScript.LongEquationoptionStrikeList || [];
+          const shortLegs = firstScript.ShortEquationoptionStrikeList || [];
+          const totalLegs = longLegs.length + shortLegs.length;
+          // If 2 or more legs, it's combined chart; if 1 leg, it's options chart
+          return totalLegs >= 2
+            ? "combined"
+            : totalLegs === 1
+            ? "options"
+            : null;
+        })(),
         AdvanceFeatures: d.AdvanceFeatures || {},
         isBtSt: d.isBtSt || false,
         StrategyId: d.StrategyId || 0,

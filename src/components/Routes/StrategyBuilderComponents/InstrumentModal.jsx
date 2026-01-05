@@ -12,6 +12,7 @@ const segmentTypes = [
 ];
 
 const equityQueryTabs = ["ALL", "NIFTY50", "NIFTY100", "NIFTY200"];
+const futureQueryTabs = ["ALL", "NEARMONTHS", "NEXTMONTHS", "FARMONTHS"];
 
 const EQUITY_MULTI_LIMIT = 50;
 
@@ -95,6 +96,13 @@ const InstrumentModal = ({
       setTempSelectedList([]);
       if (prev === "Equity" && segmentType !== "Equity") {
         setSearchQuery("");
+      }
+      if (prev === "Future" && segmentType !== "Future") {
+        setSearchQuery("");
+      }
+      // Set default query for Equity and Future
+      if (segmentType === "Equity" || segmentType === "Future") {
+        setSearchQuery("ALL");
       }
     }
     previousSegmentRef.current = segmentType;
@@ -202,12 +210,34 @@ const InstrumentModal = ({
         )}
 
         {segmentType === "Future" && (
-          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <p className="text-xs text-yellow-800 dark:text-yellow-200">
-              * Qty has to be filled after seeing it from your broker account
-              for NFO
-            </p>
-          </div>
+          <>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {futureQueryTabs.map((label) => {
+                const isActive =
+                  searchQuery.trim().toLowerCase() === label.toLowerCase();
+                return (
+                  <button
+                    type="button"
+                    key={label}
+                    onClick={() => setSearchQuery(label)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition border ${
+                      isActive
+                        ? "bg-[#E8EDFF] text-[#1B44FE] border-[#1B44FE]/60"
+                        : "bg-[#F5F8FA] text-gray-700 border-transparent hover:border-[#1B44FE]/50 dark:bg-[#1E2027] dark:text-white"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                * Qty has to be filled after seeing it from your broker account
+                for NFO
+              </p>
+            </div>
+          </>
         )}
 
         <div className="grid grid-cols-2 gap-3 mb-6 max-h-64 overflow-y-auto">
