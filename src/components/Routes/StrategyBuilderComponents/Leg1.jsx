@@ -138,7 +138,20 @@ const Leg1 = ({
   const isIndicatorStrategy = strategyType === "indicator";
 
   // available options (unchanged)
-  const expiryOptions = ["WEEKLY", "NEXTWEEKLY", "MONTHLY"];
+  const allExpiryOptions = ["WEEKLY", "NEXTWEEKLY", "MONTHLY"];
+
+  // Filter expiry options based on instrument
+  const expiryOptions = useMemo(() => {
+    const instrumentName = selectedInstrument?.Name?.toUpperCase() || "";
+    const isNiftyBankOrFinService =
+      instrumentName.includes("NIFTY BANK") ||
+      instrumentName.includes("NIFTYBANK") ||
+      instrumentName.includes("NIFTY FIN SERVICE") ||
+      instrumentName.includes("NIFTYFIN");
+
+    return isNiftyBankOrFinService ? ["MONTHLY"] : allExpiryOptions;
+  }, [selectedInstrument]);
+
   const slOptions = ["SL%", "SL pt"];
   const tpOptions = ["TP%", "TP pt"];
   const onPriceOptions = ["On Price", "On Close"];
@@ -148,6 +161,7 @@ const Leg1 = ({
   const strikeCriteriaOptions = [
     { label: "ATM pt", value: "ATM_PT" },
     { label: "ATM %", value: "ATM_PERCENT" },
+    { label: "Delta", value: "DELTA_NEAR" },
     { label: "CP", value: "CP" },
     { label: "CP >=", value: "CP_GTE" },
     { label: "CP <=", value: "CP_LTE" },
@@ -185,6 +199,7 @@ const Leg1 = ({
     if (crit === "CP") return "CPNEAR";
     if (crit === "CP_GTE") return "CPGREATERTHAN";
     if (crit === "CP_LTE") return "CPLESSTHAN";
+    if (crit === "DELTA_NEAR") return "DELTANEAR";
     return crit;
   };
 
@@ -240,6 +255,14 @@ const Leg1 = ({
         return `CP ≥ ${abs}`;
       case "CPLESSTHAN":
         return `CP ≤ ${abs}`;
+      case "DELTANEAR": {
+        const clamped = Math.min(
+          1,
+          Math.max(0, Number.isFinite(value) ? value : 0.5)
+        );
+        const display = clamped.toFixed(1);
+        return `Delta ${display}`;
+      }
       default:
         return strikeObj.type || "ATM";
     }
@@ -354,6 +377,7 @@ const Leg1 = ({
     if (backendStrikeType === "CPNEAR") return "CP";
     if (backendStrikeType === "CPGREATERTHAN") return "CP_GTE";
     if (backendStrikeType === "CPLESSTHAN") return "CP_LTE";
+    if (backendStrikeType === "DELTANEAR") return "DELTA_NEAR";
     return "ATM_PT";
   })();
 
@@ -362,6 +386,7 @@ const Leg1 = ({
   const isATMMode =
     selectedStrikeCriteria === "ATM_PT" ||
     selectedStrikeCriteria === "ATM_PERCENT";
+  const isDeltaCriteria = selectedStrikeCriteria === "DELTA_NEAR";
 
   const formatATMSelection = (value, criteria) => {
     if (!value) return "ATM";
@@ -376,9 +401,14 @@ const Leg1 = ({
   const strikeTypeSelectValue = isATMMode
     ? formatATMSelection(strikeValueNumeric, selectedStrikeCriteria)
     : "ATM";
-  const strikeTypeNumber = !isATMMode
-    ? existingActiveStrike?.strikeTypeobj?.StrikeValue || ""
-    : "";
+  const strikeTypeNumber = useMemo(() => {
+    if (isATMMode) return "";
+    const raw = existingActiveStrike?.strikeTypeobj?.StrikeValue;
+    if (raw === undefined || raw === null || raw === "") {
+      return isDeltaCriteria ? 0.5 : "";
+    }
+    return raw;
+  }, [existingActiveStrike, isATMMode, isDeltaCriteria]);
 
   const lotSizeBase = selectedInstrument?.LotSize || 0;
   const effectiveLotSize =
@@ -886,9 +916,11 @@ const Leg1 = ({
   const handleStrikeCriteriaChange = useCallback(
     (criteria) => {
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const defaultStrikeValue =
+          criteria === "CP" ? "" : criteria === "DELTA_NEAR" ? 0.5 : 0;
         const strikeObj = {
           type: strikeCriteriaToType(criteria),
-          StrikeValue: criteria === "CP" ? "" : 0,
+          StrikeValue: defaultStrikeValue,
           RangeFrom: 0,
           RangeTo: 0,
         };
@@ -921,8 +953,17 @@ const Leg1 = ({
 
   const handleStrikeNumberChange = useCallback(
     (value) => {
-      const formatted =
-        value === "" ? "" : String(Math.max(0, Number(value) || 0));
+      const numeric = Number(value);
+      const formatted = (() => {
+        if (value === "") return "";
+        if (!Number.isFinite(numeric)) return isDeltaCriteria ? "0.5" : "0";
+        if (isDeltaCriteria) {
+          const clamped = Math.min(1, Math.max(0, numeric));
+          const rounded = Math.round(clamped * 10) / 10; // enforce 0.1 steps
+          return rounded.toFixed(1);
+        }
+        return String(Math.max(0, numeric));
+      })();
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         const strikeObj = {
           type: strikeCriteriaToType(selectedStrikeCriteria),
@@ -936,7 +977,7 @@ const Leg1 = ({
         }
       });
     },
-    [applyStrikeUpdate, selectedStrikeCriteria]
+    [applyStrikeUpdate, selectedStrikeCriteria, isDeltaCriteria]
   );
 
   const handleSlTypeChange = useCallback(
@@ -1717,7 +1758,12 @@ const Leg1 = ({
                               handleStrikeNumberChange(e.target.value)
                             }
                             disabled={isDisabled}
-                            placeholder="Enter value"
+                            placeholder={
+                              isDeltaCriteria ? "0.0 - 1.0" : "Enter value"
+                            }
+                            min={isDeltaCriteria ? 0 : undefined}
+                            max={isDeltaCriteria ? 1 : undefined}
+                            step={isDeltaCriteria ? 0.1 : undefined}
                           />
                         )}
                       </div>

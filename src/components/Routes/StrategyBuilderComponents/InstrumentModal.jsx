@@ -159,7 +159,7 @@ const InstrumentModal = ({
               // if user clears input (or only spaces), send single space to fetch all
               setSearchQuery(e.target.value)
             }
-            placeholder="Search scripts: i.e. State Bank of India, Banknifty, Crudeoil"
+            placeholder="Search symbols: e.g. SBIN, RELIANCE, INFY"
             className="bg-transparent outline-none flex-1 text-sm text-gray-700 dark:text-white placeholder:text-gray-400"
           />
         </div>

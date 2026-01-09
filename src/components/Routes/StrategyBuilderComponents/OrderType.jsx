@@ -91,11 +91,11 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
 
   return (
     <div className="relative">
-      <div className="p-4 border rounded-2xl space-y-4 bg-white dark:border-[#1E2027] dark:bg-[#131419]">
+      <div className="p-4 border rounded-2xl bg-white dark:border-[#1E2027] dark:bg-[#131419] flex flex-col">
         <div className="text-lg font-semibold text-black dark:text-white">
           Order Type
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Select your type
         </p>
         <div className="flex items-center space-x-4 text-sm">

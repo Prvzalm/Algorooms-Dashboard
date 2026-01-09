@@ -21,7 +21,7 @@ export const useTradingViewSettings = (strategyId, options = {}) => {
  */
 export const useBulkTradingViewSettings = (strategyIds, options = {}) => {
     return useQuery({
-        queryKey: ["tradingViewSettings", "bulk", strategyIds],
+        queryKey: ["tradingViewSettings", "bulk", [...(strategyIds || [])].sort().join(",")],
         queryFn: async () => {
             if (!strategyIds || strategyIds.length === 0) {
                 return { enabledStrategies: new Set(), settingsMap: {} };
@@ -55,7 +55,7 @@ export const useBulkTradingViewSettings = (strategyIds, options = {}) => {
             return { enabledStrategies, settingsMap };
         },
         enabled: !!strategyIds && strategyIds.length > 0,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 30 * 1000, // 30 seconds - reduced for faster updates
         ...options,
     });
 };

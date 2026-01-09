@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useUserStrategies,
@@ -24,6 +24,23 @@ import { useBulkTradingViewSettings } from "../../../hooks/tradingViewHooks";
 import PrimaryButton from "../../common/PrimaryButton";
 
 const subTabs = ["Strategies", "Tradingview Signals Trading"];
+
+// Helper function to get visible page numbers (max 5)
+const getVisiblePages = (currentPage, totalPages) => {
+  const maxVisible = 5;
+  if (totalPages <= maxVisible) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(totalPages, start + maxVisible - 1);
+
+  if (end - start < maxVisible - 1) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+};
 
 const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   const navigate = useNavigate();
@@ -53,7 +70,7 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
   }, [activeSubTab, debouncedSearchQuery]);
 
   const {
-    data: userStrategies = [],
+    data: strategiesResponse,
     isLoading: strategiesLoading,
     isError: strategiesError,
   } = useUserStrategies({
@@ -64,8 +81,24 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
     orderBy: "Date",
   });
 
-  // Get all strategy IDs
-  const strategyIds = userStrategies.map((s) => s.StrategyId);
+  const userStrategies = strategiesResponse?.strategies || [];
+  const totalStrategiesCount = strategiesResponse?.totalCount || 0;
+  const totalPages = Math.max(
+    1,
+    Math.ceil((strategiesResponse?.totalCount || 0) / pageSize)
+  );
+
+  useEffect(() => {
+    if (strategyPage > totalPages) {
+      setStrategyPage(totalPages);
+    }
+  }, [strategyPage, totalPages]);
+
+  // Get all strategy IDs - use useMemo to stabilize array reference
+  const strategyIds = useMemo(
+    () => userStrategies.map((s) => s.StrategyId),
+    [userStrategies]
+  );
 
   // Fetch TradingView settings for all strategies using TanStack Query
   const {
@@ -163,8 +196,8 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
           {filteredStrategies.length > 0 && (
             <div className="flex justify-between items-center mb-4">
               <span className="text-xs text-[#718EBF] dark:text-gray-400">
-                Showing {filteredStrategies.length} strategies (Page{" "}
-                {strategyPage})
+                Showing {filteredStrategies.length} of {totalStrategiesCount}{" "}
+                strategies
               </span>
               <div className="flex items-center bg-[#F5F8FA] dark:bg-[#2D2F36] rounded-full overflow-hidden text-sm">
                 <button
@@ -179,16 +212,35 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                 >
                   <FiChevronLeft />
                 </button>
-                <span className="px-4 py-2 font-medium select-none">
-                  {strategyPage}
-                </span>
+                {getVisiblePages(strategyPage, totalPages).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setStrategyPage(page)}
+                    disabled={strategiesLoading}
+                    className={`px-4 py-2 font-medium transition-colors ${
+                      strategyPage === page
+                        ? "bg-white dark:bg-[#3A3D44] text-[#1B44FE]"
+                        : "hover:bg-white dark:hover:bg-[#3A3D44] text-[#718EBF] dark:text-gray-400"
+                    } ${
+                      strategiesLoading
+                        ? "cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
                 <button
                   onClick={() => setStrategyPage((p) => p + 1)}
                   disabled={
-                    userStrategies.length < pageSize || strategiesLoading
+                    strategyPage >= totalPages ||
+                    strategiesLoading ||
+                    totalStrategiesCount === 0
                   }
                   className={`px-3 py-2 flex items-center ${
-                    userStrategies.length < pageSize || strategiesLoading
+                    strategyPage >= totalPages ||
+                    strategiesLoading ||
+                    totalStrategiesCount === 0
                       ? "opacity-40 cursor-not-allowed"
                       : "hover:bg-white dark:hover:bg-[#3A3D44]"
                   }`}
@@ -399,8 +451,8 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
               </div>
               <div className="flex justify-between items-center mt-6">
                 <span className="text-xs text-[#718EBF] dark:text-gray-400">
-                  Showing {filteredStrategies.length} strategies (Page{" "}
-                  {strategyPage})
+                  Showing {filteredStrategies.length} of {totalStrategiesCount}{" "}
+                  strategies
                 </span>
                 <div className="flex items-center bg-[#F5F8FA] dark:bg-[#2D2F36] rounded-full overflow-hidden text-sm">
                   <button
@@ -415,16 +467,35 @@ const MyStrategiesList = ({ activeSubTab, setActiveSubTab }) => {
                   >
                     <FiChevronLeft />
                   </button>
-                  <span className="px-4 py-2 font-medium select-none">
-                    {strategyPage}
-                  </span>
+                  {getVisiblePages(strategyPage, totalPages).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setStrategyPage(page)}
+                      disabled={strategiesLoading}
+                      className={`px-4 py-2 font-medium transition-colors ${
+                        strategyPage === page
+                          ? "bg-white dark:bg-[#3A3D44] text-[#1B44FE]"
+                          : "hover:bg-white dark:hover:bg-[#3A3D44] text-[#718EBF] dark:text-gray-400"
+                      } ${
+                        strategiesLoading
+                          ? "cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
                   <button
                     onClick={() => setStrategyPage((p) => p + 1)}
                     disabled={
-                      userStrategies.length < pageSize || strategiesLoading
+                      strategyPage >= totalPages ||
+                      strategiesLoading ||
+                      totalStrategiesCount === 0
                     }
                     className={`px-3 py-2 flex items-center ${
-                      userStrategies.length < pageSize || strategiesLoading
+                      strategyPage >= totalPages ||
+                      strategiesLoading ||
+                      totalStrategiesCount === 0
                         ? "opacity-40 cursor-not-allowed"
                         : "hover:bg-white dark:hover:bg-[#3A3D44]"
                     }`}

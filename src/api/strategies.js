@@ -26,7 +26,14 @@ export const userCreatedStrategies = async ({
     }
   );
 
-  return response.data?.Data?.StrategyData || [];
+  const pagination = response.data?.Data?.Pagination || {};
+  return {
+    strategies: response.data?.Data?.StrategyData || [],
+    totalCount: pagination.TotalRows || 0,
+    totalPages: pagination.TotalPages || 0,
+    pageIndex: pagination.PageIndex || 1,
+    pageSize: pagination.PageSize || 10,
+  };
 };
 
 export const createStrategy = async (payload) => {

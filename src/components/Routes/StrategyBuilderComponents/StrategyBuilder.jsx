@@ -1124,7 +1124,7 @@ const StrategyBuilder = () => {
               </div>
 
               <div className="relative">
-                <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027]">
+                <div className="p-4 border rounded-xl space-y-4 w-full bg-white dark:bg-[#131419] dark:border-[#1E2027] md:min-h-[166px] flex flex-col">
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold dark:text-white">
                       Select Instruments
@@ -1160,9 +1160,7 @@ const StrategyBuilder = () => {
                           : "text-xl"
                       }`}
                     >
-                      {selectedInstrument || selectedEquityInstruments.length
-                        ? "Change"
-                        : "+ Add"}
+                      + Add
                     </span>
                   </div>
 
@@ -1232,19 +1230,21 @@ const StrategyBuilder = () => {
                   )}
 
                   {selectedEquityInstruments.length > 0 && (
-                    <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-                      {selectedEquityInstruments.map((ins, idx) => (
-                        <div
-                          key={ins.InstrumentToken || ins.Name || idx}
-                          className="flex-shrink-0 w-40"
-                        >
-                          {renderEquityInstrumentRow({
-                            index: idx,
-                            style: {},
-                            ariaAttributes: {},
-                          })}
-                        </div>
-                      ))}
+                    <div className="mt-2 flex-1 overflow-y-auto max-h-[300px] md:max-h-[220px]">
+                      <div className="flex flex-col gap-2">
+                        {selectedEquityInstruments.map((ins, idx) => (
+                          <div
+                            key={ins.InstrumentToken || ins.Name || idx}
+                            className="flex-shrink-0"
+                          >
+                            {renderEquityInstrumentRow({
+                              index: idx,
+                              style: {},
+                              ariaAttributes: {},
+                            })}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
