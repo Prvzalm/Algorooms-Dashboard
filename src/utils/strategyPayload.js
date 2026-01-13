@@ -164,7 +164,27 @@ export function buildStrategyPayload({
         },
         strikeTypeobj: {
             type: item?.strikeTypeobj?.type ?? "ATM",
-            StrikeValue: Number(item?.strikeTypeobj?.StrikeValue) || 0,
+            StrikeValue: (() => {
+                const strikeType = item?.strikeTypeobj?.type;
+                const strikeValue = item?.strikeTypeobj?.StrikeValue;
+
+                // For DELTANEAR, keep as string
+                if (strikeType === "DELTANEAR") {
+                    return strikeValue === "" || strikeValue === null || strikeValue === undefined
+                        ? "0.50"
+                        : String(strikeValue);
+                }
+
+                // For CP types, keep as string if it's a string, else convert to number
+                if (strikeType === "CPNEAR" || strikeType === "CPGREATERTHAN" || strikeType === "CPLESSTHAN") {
+                    return strikeValue === "" || strikeValue === null || strikeValue === undefined
+                        ? ""
+                        : String(strikeValue);
+                }
+
+                // For ATM and ATMPER, convert to number
+                return Number(strikeValue) || 0;
+            })(),
             RangeFrom: item?.strikeTypeobj?.RangeFrom ?? 0,
             RangeTo: item?.strikeTypeobj?.RangeTo ?? 0,
         },

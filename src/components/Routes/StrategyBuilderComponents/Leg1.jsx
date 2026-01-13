@@ -404,10 +404,12 @@ const Leg1 = ({
   const strikeTypeNumber = useMemo(() => {
     if (isATMMode) return "";
     const raw = existingActiveStrike?.strikeTypeobj?.StrikeValue;
-    if (raw === undefined || raw === null || raw === "") {
-      return isDeltaCriteria ? 0.5 : "";
+    if (raw === undefined || raw === null) {
+      return isDeltaCriteria ? "0.50" : "";
     }
-    return raw;
+    // Allow empty string to pass through (for clearing input)
+    if (raw === "") return "";
+    return String(raw);
   }, [existingActiveStrike, isATMMode, isDeltaCriteria]);
 
   const lotSizeBase = selectedInstrument?.LotSize || 0;
@@ -917,7 +919,7 @@ const Leg1 = ({
     (criteria) => {
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         const defaultStrikeValue =
-          criteria === "CP" ? "" : criteria === "DELTA_NEAR" ? 0.5 : 0;
+          criteria === "CP" ? "" : criteria === "DELTA_NEAR" ? "0.50" : "0";
         const strikeObj = {
           type: strikeCriteriaToType(criteria),
           StrikeValue: defaultStrikeValue,
@@ -953,21 +955,61 @@ const Leg1 = ({
 
   const handleStrikeNumberChange = useCallback(
     (value) => {
+      // Allow empty string during typing
+      if (value === "") {
+        applyStrikeUpdate(({ longStrike, shortStrike }) => {
+          const strikeObj = {
+            type: strikeCriteriaToType(selectedStrikeCriteria),
+            StrikeValue: "",
+            RangeFrom: 0,
+            RangeTo: 0,
+          };
+          longStrike.strikeTypeobj = strikeObj;
+          if (shortStrike) {
+            shortStrike.strikeTypeobj = { ...strikeObj };
+          }
+        });
+        return;
+      }
+
+      // For delta, allow typing decimal points and partial values
+      if (isDeltaCriteria) {
+        // Allow partial decimal input like "0.", "0.5", etc during typing
+        const isValidPartialInput = /^[0-9]*\.?[0-9]*$/.test(value);
+        if (isValidPartialInput) {
+          // Store raw value during typing without formatting
+          applyStrikeUpdate(({ longStrike, shortStrike }) => {
+            const strikeObj = {
+              type: strikeCriteriaToType(selectedStrikeCriteria),
+              StrikeValue: value,
+              RangeFrom: 0,
+              RangeTo: 0,
+            };
+            longStrike.strikeTypeobj = strikeObj;
+            if (shortStrike) {
+              shortStrike.strikeTypeobj = { ...strikeObj };
+            }
+          });
+          return;
+        }
+      }
+
+      // For non-delta or invalid input, apply immediate formatting
       const numeric = Number(value);
       const formatted = (() => {
-        if (value === "") return "";
-        if (!Number.isFinite(numeric)) return isDeltaCriteria ? "0.5" : "0";
+        if (!Number.isFinite(numeric)) return isDeltaCriteria ? "0.50" : "0";
         if (isDeltaCriteria) {
+          // Clamp 0-1 and keep two decimals for 0.01 steps
           const clamped = Math.min(1, Math.max(0, numeric));
-          const rounded = Math.round(clamped * 10) / 10; // enforce 0.1 steps
-          return rounded.toFixed(1);
+          const rounded = Math.round(clamped * 100) / 100;
+          return rounded.toFixed(2);
         }
         return String(Math.max(0, numeric));
       })();
       applyStrikeUpdate(({ longStrike, shortStrike }) => {
         const strikeObj = {
           type: strikeCriteriaToType(selectedStrikeCriteria),
-          StrikeValue: formatted,
+          StrikeValue: String(formatted),
           RangeFrom: 0,
           RangeTo: 0,
         };
@@ -992,6 +1034,60 @@ const Leg1 = ({
     },
     [applyStrikeUpdate]
   );
+
+  const handleStrikeNumberBlur = useCallback(() => {
+    if (!isDeltaCriteria) return;
+
+    const currentValue = existingActiveStrike?.strikeTypeobj?.StrikeValue;
+    if (
+      currentValue === "" ||
+      currentValue === undefined ||
+      currentValue === null
+    ) {
+      // If empty, set to default
+      applyStrikeUpdate(({ longStrike, shortStrike }) => {
+        const strikeObj = {
+          type: strikeCriteriaToType(selectedStrikeCriteria),
+          StrikeValue: "0.50",
+          RangeFrom: 0,
+          RangeTo: 0,
+        };
+        longStrike.strikeTypeobj = strikeObj;
+        if (shortStrike) {
+          shortStrike.strikeTypeobj = { ...strikeObj };
+        }
+      });
+      return;
+    }
+
+    const numeric = Number(currentValue);
+    if (Number.isFinite(numeric)) {
+      // Clamp and format
+      const clamped = Math.min(1, Math.max(0, numeric));
+      const rounded = Math.round(clamped * 100) / 100;
+      const formatted = rounded.toFixed(2);
+
+      if (formatted !== String(currentValue)) {
+        applyStrikeUpdate(({ longStrike, shortStrike }) => {
+          const strikeObj = {
+            type: strikeCriteriaToType(selectedStrikeCriteria),
+            StrikeValue: formatted,
+            RangeFrom: 0,
+            RangeTo: 0,
+          };
+          longStrike.strikeTypeobj = strikeObj;
+          if (shortStrike) {
+            shortStrike.strikeTypeobj = { ...strikeObj };
+          }
+        });
+      }
+    }
+  }, [
+    isDeltaCriteria,
+    existingActiveStrike,
+    applyStrikeUpdate,
+    selectedStrikeCriteria,
+  ]);
 
   const handleStopLossChange = useCallback(
     (value) => {
@@ -1757,13 +1853,14 @@ const Leg1 = ({
                             onChange={(e) =>
                               handleStrikeNumberChange(e.target.value)
                             }
+                            onBlur={handleStrikeNumberBlur}
                             disabled={isDisabled}
                             placeholder={
-                              isDeltaCriteria ? "0.0 - 1.0" : "Enter value"
+                              isDeltaCriteria ? "0.00 - 1.00" : "Enter value"
                             }
                             min={isDeltaCriteria ? 0 : undefined}
                             max={isDeltaCriteria ? 1 : undefined}
-                            step={isDeltaCriteria ? 0.1 : undefined}
+                            step={isDeltaCriteria ? 0.01 : undefined}
                           />
                         )}
                       </div>
