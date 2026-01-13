@@ -96,6 +96,10 @@ const PaymentDetailsModal = ({
           .toString()
           .toLowerCase();
 
+        const normalizedMessage = (response?.message || response?.Message || "")
+          .toString()
+          .toLowerCase();
+
         const link =
           response?.paymentLink ||
           response?.PaymentLink ||
@@ -109,9 +113,11 @@ const PaymentDetailsModal = ({
         const isSuccessful =
           response?.success === true ||
           response?.isSuccess === true ||
+          response?.Success === true ||
           normalizedStatus === "success" ||
           normalizedStatus === "paid" ||
-          normalizedStatus === "completed";
+          normalizedStatus === "completed" ||
+          normalizedMessage === "success";
 
         if (isSuccessful || link) {
           toast.success(
