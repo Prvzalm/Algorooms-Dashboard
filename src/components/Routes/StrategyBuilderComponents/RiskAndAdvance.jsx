@@ -410,7 +410,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
       const longs = firstScript.LongEquationoptionStrikeList || [];
       const currentStrike = longs[0] || {};
       const wtMapRev = {
-        wt_eq: "% ↑",
+        "wtpr_+": "% ↑",
         "wtpt_+": "pt ↑",
         "wtpt_-": "pt ↓",
         "wtpr_-": "% ↓",
@@ -494,7 +494,7 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
     const mapWaitTradeType = (label) => {
       const meta = {
         "% ↓": { isPerPt: "wtpr_-", typeId: "wtpr_-" },
-        "% ↑": { isPerPt: "wt_eq", typeId: "wt_eq" },
+        "% ↑": { isPerPt: "wtpr_+", typeId: "wtpr_+" },
         "pt ↑": { isPerPt: "wtpt_+", typeId: "wtpt_+" },
         "pt ↓": { isPerPt: "wtpt_-", typeId: "wtpt_-" },
       };

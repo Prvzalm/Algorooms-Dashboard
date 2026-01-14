@@ -511,8 +511,8 @@ const StrategyBuilder = () => {
       },
       waitNTrade: {
         isWaitnTrade: true,
-        isPerPt: "wt_eq",
-        typeId: "wt_eq",
+        isPerPt: "wtpr_+",
+        typeId: "wtpr_+",
         MovementValue: "0",
       },
       TrailingSL: {
