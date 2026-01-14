@@ -998,7 +998,7 @@ const StrategyBuilder = () => {
           // Since response doesn't contain ID, fetch strategy by name
           try {
             const strategiesResponse = await refetchUserStrategies();
-            const strategies = strategiesResponse?.data || [];
+            const strategies = strategiesResponse?.data?.strategies || [];
 
             // Find the created strategy by matching name
             const createdStrategy = strategies.find(

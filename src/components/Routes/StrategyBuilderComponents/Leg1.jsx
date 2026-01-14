@@ -20,6 +20,8 @@ const Leg1 = ({
 }) => {
   // Guard to prevent feedback loops when hydrating per-leg features from existing strikes
   const hydratingRef = useRef(false);
+  // Track initial mount to avoid overwriting ExpiryType during edit mode load
+  const initialMountRef = useRef(true);
   const { setValue, getValues, watch } = useFormContext();
   // Select stable store actions individually to avoid unnecessary rerenders
   const updatePayload = useStrategyBuilderStore((s) => s.updatePayload);
@@ -73,21 +75,30 @@ const Leg1 = ({
     }
   }, [tradeOnTriggerCandle, rawBuyWhen, rawShortWhen, ofContinuousCandle]);
 
-  // Force ExpiryType to WEEKLY for CNC and BTST
+  // Set default ExpiryType to WEEKLY for CNC and BTST (only if not already set during editing)
   useEffect(() => {
     if (productType === "CNC" || productType === "BTST") {
       const scripts = getValues("StrategyScriptList") || [];
+
+      // If we're in edit mode and this is initial mount, skip overwriting existing values
+      if (editing && initialMountRef.current) {
+        initialMountRef.current = false;
+        return;
+      }
+
       const updatedScripts = scripts.map((script) => {
         const updatedLong = (script.LongEquationoptionStrikeList || []).map(
           (strike) => ({
             ...strike,
-            ExpiryType: "WEEKLY",
+            // Preserve existing ExpiryType during editing, otherwise default to WEEKLY
+            ExpiryType: strike.ExpiryType || "WEEKLY",
           })
         );
         const updatedShort = (script.ShortEquationoptionStrikeList || []).map(
           (strike) => ({
             ...strike,
-            ExpiryType: "WEEKLY",
+            // Preserve existing ExpiryType during editing, otherwise default to WEEKLY
+            ExpiryType: strike.ExpiryType || "WEEKLY",
           })
         );
         return {
@@ -98,7 +109,12 @@ const Leg1 = ({
       });
       setValue("StrategyScriptList", updatedScripts, { shouldDirty: true });
     }
-  }, [productType, setValue, getValues]);
+
+    // Mark as not initial mount after first run
+    if (!editing && initialMountRef.current) {
+      initialMountRef.current = false;
+    }
+  }, [productType, setValue, getValues, editing]);
 
   // When options chart is enabled for indicator strategy, keep only one leg
   useEffect(() => {
