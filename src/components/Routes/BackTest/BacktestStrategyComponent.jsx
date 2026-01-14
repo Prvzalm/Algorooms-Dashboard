@@ -111,11 +111,12 @@ const BacktestStrategyComponent = ({
   const apiKey = "abc"; // assumption from sample
 
   // strategies list
-  const { data: strategies } = useUserStrategies({
+  const { data: strategiesData } = useUserStrategies({
     page: 1,
     pageSize: 50,
     orderBy: "Date",
   });
+  const strategies = strategiesData?.strategies || [];
   const currentStrategy = useMemo(
     () => strategies?.find((s) => String(s.StrategyId) === String(strategyId)),
     [strategies, strategyId]

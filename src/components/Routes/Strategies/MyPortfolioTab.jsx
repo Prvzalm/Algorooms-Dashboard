@@ -50,7 +50,7 @@ const MyPortfolioTab = () => {
     pageSize: 100,
     orderBy: "Date",
   });
-  const strategies = strategiesData || [];
+  const strategies = strategiesData?.strategies || [];
 
   // backtest credit
   const { data: counter } = useBackTestCounterDetails();
