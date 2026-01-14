@@ -1330,13 +1330,47 @@ const Leg1 = ({
   };
 
   // When Move SL to Cost is enabled, ensure at least two legs and hide manual add
+  // When disabled, remove the second leg if it was auto-added
   useEffect(() => {
-    if (!moveSlToCostActive) return;
-    if (legs.length >= 2) return;
-    handleAddLeg();
+    if (moveSlToCostActive) {
+      // Add second leg if only 1 leg exists
+      if (legs.length < 2) {
+        handleAddLeg();
+      }
+    } else {
+      // When Move SL to Cost is disabled, remove second leg if it exists and was auto-added
+      const scripts = getValues("StrategyScriptList") || [];
+      if (scripts[0]) {
+        const longStrikes = scripts[0].LongEquationoptionStrikeList || [];
+        const shortStrikes = scripts[0].ShortEquationoptionStrikeList || [];
+        
+        // Only remove if we have exactly 2 legs (the auto-added one)
+        if (longStrikes.length === 2) {
+          // Remove the second leg
+          longStrikes.splice(1, 1);
+          if (shortStrikes.length > 1) {
+            shortStrikes.splice(1, 1);
+          }
+
+          const updated = [
+            {
+              ...scripts[0],
+              LongEquationoptionStrikeList: longStrikes,
+              ShortEquationoptionStrikeList: shortStrikes,
+            },
+          ];
+
+          setValue("StrategyScriptList", updated, { shouldDirty: true });
+          updatePayload({ StrategyScriptList: updated });
+          
+          // Set active leg to first one
+          setValue("ActiveLegIndex", 0, { shouldDirty: true });
+        }
+      }
+    }
     // handleAddLeg is stable enough here; avoid extra dep to prevent repeated calls
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moveSlToCostActive, legs.length]);
+  }, [moveSlToCostActive]);
 
   // When combined chart is enabled for indicator strategy, ensure at least 2 legs
   useEffect(() => {
