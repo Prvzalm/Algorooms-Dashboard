@@ -1343,7 +1343,7 @@ const Leg1 = ({
       if (scripts[0]) {
         const longStrikes = scripts[0].LongEquationoptionStrikeList || [];
         const shortStrikes = scripts[0].ShortEquationoptionStrikeList || [];
-        
+
         // Only remove if we have exactly 2 legs (the auto-added one)
         if (longStrikes.length === 2) {
           // Remove the second leg
@@ -1362,7 +1362,7 @@ const Leg1 = ({
 
           setValue("StrategyScriptList", updated, { shouldDirty: true });
           updatePayload({ StrategyScriptList: updated });
-          
+
           // Set active leg to first one
           setValue("ActiveLegIndex", 0, { shouldDirty: true });
         }
