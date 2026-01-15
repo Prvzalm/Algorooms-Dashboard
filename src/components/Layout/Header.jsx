@@ -45,7 +45,7 @@ const Header = () => {
       {/* Beta Toggle */}
       <div className="flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Beta
+          V1
         </span>
         <button
           onClick={handleBetaToggle}
@@ -59,6 +59,9 @@ const Header = () => {
             }`}
           />
         </button>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          V2
+        </span>
       </div>
 
       <Link to="/wallet">
