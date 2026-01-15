@@ -20,10 +20,11 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   const activeLegIndex = watch("ActiveLegIndex") || 0;
   const advanceFeatures = watch("AdvanceFeatures") || {};
 
-  // Check if equity instruments are selected in indicator-based mode
+  // Check if equity or futures instruments are selected in indicator-based mode
   const isIndicatorEquityMode =
     selectedStrategyTypes?.[0] === "indicator" &&
-    getValues("StrategySegmentType") === "Equity";
+    (getValues("StrategySegmentType") === "Equity" || 
+     getValues("StrategySegmentType") === "Future");
 
   const tpSlTypeRaw = watch("TpSLType");
   const targetSlType = Number(tpSlTypeRaw) === 1 ? "Points" : "Percentage(%)";
