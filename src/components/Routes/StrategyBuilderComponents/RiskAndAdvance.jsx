@@ -23,8 +23,8 @@ const RiskAndAdvance = ({ selectedStrategyTypes, comingSoon = false }) => {
   // Check if equity or futures instruments are selected in indicator-based mode
   const isIndicatorEquityMode =
     selectedStrategyTypes?.[0] === "indicator" &&
-    (getValues("StrategySegmentType") === "Equity" || 
-     getValues("StrategySegmentType") === "Future");
+    (getValues("StrategySegmentType") === "Equity" ||
+      getValues("StrategySegmentType") === "Future");
 
   const tpSlTypeRaw = watch("TpSLType");
   const targetSlType = Number(tpSlTypeRaw) === 1 ? "Points" : "Percentage(%)";
