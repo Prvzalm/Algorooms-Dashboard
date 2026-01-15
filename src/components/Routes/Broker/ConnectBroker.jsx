@@ -16,10 +16,10 @@ const ConnectBroker = () => {
   useEffect(() => {
     if (firedRef.current) return; // guard against double invocation
     const params = new URLSearchParams(location.search);
-    const queryKey = localStorage.getItem("broker-auth-query-key");
+    const queryKey = localStorage.getItem("brokerAuthqueryString");
     const requestToken = params.get(queryKey);
-    const brokerClientId = localStorage.getItem("selected-broker-client-id");
-    const jwt = localStorage.getItem("token");
+    const brokerClientId = localStorage.getItem("BrokerClientId");
+    const jwt = localStorage.getItem("Authorization");
 
     if (!requestToken || !brokerClientId) {
       navigate("/", { replace: true });
@@ -37,8 +37,8 @@ const ConnectBroker = () => {
       } catch (err) {
         // hook will show toast; nothing else needed here
       } finally {
-        localStorage.removeItem("selected-broker-client-id");
-        localStorage.removeItem("broker-auth-query-key");
+        localStorage.removeItem("BrokerClientId");
+        localStorage.removeItem("brokerAuthqueryString");
         navigate("/", { replace: true });
       }
     })();

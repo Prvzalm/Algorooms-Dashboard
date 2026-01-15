@@ -13,7 +13,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
+      localStorage.removeItem("Authorization");
       delete axiosInstance.defaults.headers.common["Authorization"];
       queryClient.clear();
       window.location.href = "/signin"; // redirect to signin

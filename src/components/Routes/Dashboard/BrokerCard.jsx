@@ -190,12 +190,12 @@ const BrokerCard = ({ brokers = [] }) => {
               onChange={() => {
                 if (!selectedBroker?.loginUrl) return;
                 localStorage.setItem(
-                  "selected-broker-client-id",
+                  "BrokerClientId",
                   selectedBroker.code
                 );
                 // Save expected query param key provided by API (fallback handled earlier)
                 localStorage.setItem(
-                  "broker-auth-query-key",
+                  "brokerAuthqueryString",
                   selectedBroker.brokerAuthQueryString
                 );
                 window.location.href = selectedBroker.loginUrl;

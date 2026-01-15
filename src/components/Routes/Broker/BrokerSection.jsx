@@ -41,9 +41,9 @@ const BrokerSection = () => {
   const handleTerminalLogin = (broker) => {
     if (!broker?.APILoginUrl) return; // nothing to do
     // Save identifiers for ConnectBroker route to process
-    localStorage.setItem("selected-broker-client-id", broker.BrokerClientId);
+    localStorage.setItem("BrokerClientId", broker.BrokerClientId);
     localStorage.setItem(
-      "broker-auth-query-key",
+      "brokerAuthqueryString",
       broker.brokerAuthQueryString || "request_token"
     );
     window.location.href = broker.APILoginUrl;

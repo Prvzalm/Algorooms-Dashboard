@@ -13,12 +13,12 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(localStorage.getItem("Authorization"));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   if (token && !axiosInstance.defaults.headers.common["Authorization"]) {
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    axiosInstance.defaults.headers.common["Authorization"] = `${token}`;
   }
 
   const loadingProfileRef = useRef(false);
@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }) => {
     if (!accessToken) {
       return { success: false, message: "Missing access token" };
     }
-    setToken(accessToken);
-    localStorage.setItem("token", accessToken);
+    setToken(`Bearer ${accessToken}`);
+    localStorage.setItem("Authorization", `Bearer ${accessToken}`);
     axiosInstance.defaults.headers.common[
       "Authorization"
     ] = `Bearer ${accessToken}`;
@@ -95,14 +95,14 @@ export const AuthProvider = ({ children }) => {
       await axiosInstance.post("/home/signOutUser");
       setToken(null);
       setUser(null);
-      localStorage.removeItem("token");
+      localStorage.removeItem("Authorization");
       delete axiosInstance.defaults.headers.common["Authorization"];
       queryClient.clear();
     } catch (error) {
       console.error("Logout API failed", error);
       setToken(null);
       setUser(null);
-      localStorage.removeItem("token");
+      localStorage.removeItem("Authorization");
       delete axiosInstance.defaults.headers.common["Authorization"];
       queryClient.clear();
     }
