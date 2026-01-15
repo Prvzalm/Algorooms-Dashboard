@@ -35,8 +35,10 @@ const Header = () => {
 
     if (newValue) {
       document.cookie = "ui=v2; path=/";
+      window.location.reload();
     } else {
       document.cookie = "ui=v1; path=/";
+      window.location.reload();
     }
   };
 
