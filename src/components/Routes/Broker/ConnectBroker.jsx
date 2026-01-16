@@ -21,10 +21,10 @@ const ConnectBroker = () => {
     const brokerClientId = localStorage.getItem("BrokerClientId");
     const jwt = localStorage.getItem("Authorization");
 
-    if (!requestToken || !brokerClientId) {
-      navigate("/", { replace: true });
-      return;
-    }
+    // if (!requestToken || !brokerClientId) {
+    //   navigate("/", { replace: true });
+    //   return;
+    // }
 
     firedRef.current = true;
     (async () => {
