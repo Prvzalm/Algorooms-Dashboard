@@ -1411,7 +1411,8 @@ const Leg1 = ({
             // Keep CE/PE pairing for indicator strategies
             if (side === "short" && next.length < longArr.length) {
               const counterpart = longArr[next.length];
-              strike.StrikeType = counterpart?.StrikeType === "CE" ? "PE" : "CE";
+              strike.StrikeType =
+                counterpart?.StrikeType === "CE" ? "PE" : "CE";
             }
             next.push(strike);
           }
