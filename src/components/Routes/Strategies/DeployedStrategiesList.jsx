@@ -41,6 +41,7 @@ const DeployedStrategiesList = ({
   const [expandedStrategyKeys, setExpandedStrategyKeys] = useState(new Set());
   const [openBrokerMenu, setOpenBrokerMenu] = useState(null);
   const [openStrategyMenu, setOpenStrategyMenu] = useState(null);
+  const [strategyPages, setStrategyPages] = useState({});
 
   useEffect(() => {
     const handleOutside = () => {
@@ -70,6 +71,14 @@ const DeployedStrategiesList = ({
       else next.add(key);
       return next;
     });
+  };
+
+  const getCurrentPage = (compositeKey) => {
+    return strategyPages[compositeKey] || 1;
+  };
+
+  const setCurrentPage = (compositeKey, page) => {
+    setStrategyPages((prev) => ({ ...prev, [compositeKey]: page }));
   };
 
   if (loading) return <DeployedSkeleton rows={3} strategiesPerRow={2} />;
@@ -290,7 +299,7 @@ const DeployedStrategiesList = ({
                 </div>
 
                 {expanded && brokerItem.strategies.length > 0 && (
-                  <div className="border-t border-[#E4EAF0] dark:border-[#2D2F36] px-5 py-4 space-y-4 overflow-x-auto">
+                  <div className="border-t border-[#E4EAF0] dark:border-[#2D2F36] px-5 py-4 space-y-4 overflow-visible">
                     {brokerItem.strategies.map((rawS) => {
                       const s = getStrategyEffective(brokerItem, rawS);
                       const compositeKey = `${brokerItem.broker.code}_${rawS.id}`;
@@ -310,7 +319,7 @@ const DeployedStrategiesList = ({
                       return (
                         <div
                           key={compositeKey}
-                          className="space-y-2 w-full max-w-full"
+                          className="space-y-2 w-full max-w-full relative"
                         >
                           {/* Strategy Card */}
                           <div className="flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap items-start lg:items-center gap-3 lg:gap-4 xl:gap-3 lg:justify-between rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] px-4 py-3 bg-[#F9FBFC] dark:bg-[#1B1D22] w-full">
@@ -377,7 +386,7 @@ const DeployedStrategiesList = ({
                             </div>
 
                             {/* Controls Section */}
-                            <div className="flex items-stretch gap-3 flex-wrap xl:flex-nowrap xl:items-center xl:ml-auto relative w-full max-w-full lg:flex-1 lg:justify-end">
+                            <div className="flex items-stretch gap-3 flex-wrap xl:flex-nowrap xl:items-center xl:ml-auto w-full max-w-full lg:flex-1 lg:justify-end">
                               {/* Mode Toggle */}
                               <div className="flex flex-col gap-1 min-w-[160px] w-full sm:w-auto">
                                 <span className="text-[11px] uppercase tracking-wide text-[#718EBF] dark:text-gray-500">
@@ -534,195 +543,281 @@ const DeployedStrategiesList = ({
                                   </button>
                                 </div>
                               </div>
-                              {openStrategyMenu === compositeKey && (
-                                <div
-                                  className="absolute right-0 top-full mt-2 z-30 min-w-[180px] rounded-lg border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg text-xs py-2"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36] flex items-center gap-2"
-                                    onClick={() => {
-                                      onEditStrategy?.(brokerItem, rawS, s);
-                                      setOpenStrategyMenu(null);
-                                    }}
-                                    disabled={removingDeployment}
-                                  >
-                                    <FiEdit2 className="text-sm" />
-                                    Edit Deployment
-                                  </button>
-                                  <button
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36] flex items-center gap-2 text-red-500"
-                                    onClick={() => {
-                                      onDeleteStrategy?.(brokerItem, rawS, s);
-                                      setOpenStrategyMenu(null);
-                                    }}
-                                    disabled={removingDeployment}
-                                  >
-                                    {removingDeployment ? (
-                                      <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
-                                    ) : (
-                                      <FiTrash2 className="text-sm" />
-                                    )}
-                                    Remove Deployment
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           </div>
 
-                          {/* Positions Panel - below the card */}
-                          {strategyExpanded && (
-                            <div className="rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C]">
-                              {s.positions && s.positions.length > 0 ? (
-                                <div className="px-4 pt-3 text-sm font-semibold text-orange-500">
-                                  Positions
-                                </div>
-                              ) : null}
-                              {s.positions && s.positions.length > 0 ? (
-                                <div className="overflow-x-auto px-2 pb-3">
-                                  <table className="min-w-full text-xs md:text-sm">
-                                    <thead>
-                                      <tr className="text-[#718EBF] dark:text-gray-400">
-                                        <th className="px-3 py-2 text-left">
-                                          Script
-                                        </th>
-                                        <th className="px-3 py-2 text-left">
-                                          Transaction
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          Entry Price
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          SL
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          Target
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          Exit Price
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          LTP
-                                        </th>
-                                        <th className="px-3 py-2 text-left">
-                                          Time Stamp
-                                        </th>
-                                        <th className="px-3 py-2 text-left">
-                                          Entry Time
-                                        </th>
-                                        <th className="px-3 py-2 text-left">
-                                          Exit Time
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
-                                          PNL
-                                        </th>
-                                        <th className="px-3 py-2 text-left">
-                                          Status
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[#E4EAF0] dark:divide-[#2D2F36]">
-                                      {s.positions.map((p, idx) => {
-                                        const isBuy =
-                                          (p.TransactionType ||
-                                            p.orderRequest
-                                              ?._transactionType) === "BUY";
-                                        const script =
-                                          p.TickerTradingSymbol ||
-                                          p.TradingSymbol ||
-                                          p.orderRequest?._tradingSymbol ||
-                                          "-";
-                                        const status = `${(p.OrderStatus || "")
-                                          .toString()
-                                          .toUpperCase()}${
-                                          p.OrderExitType
-                                            ? " " +
-                                              p.OrderExitType.toString()
-                                                .replace(/-/g, " ")
-                                                .toUpperCase()
-                                            : ""
-                                        }`.trim();
-                                        return (
-                                          <tr
-                                            key={
-                                              p.OrderDetailId ||
-                                              p.OrderId ||
-                                              idx
-                                            }
-                                            className="text-[#2E3A59] dark:text-white"
-                                          >
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                              {script}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                              <span
-                                                className={`font-medium ${
-                                                  isBuy
-                                                    ? "text-green-600"
-                                                    : "text-red-500"
-                                                }`}
-                                              >
-                                                {isBuy ? "BUY" : "SELL"}{" "}
-                                                {p.Qty ?? ""}
-                                              </span>
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums">
-                                              {Number(
-                                                p.EntryPrice ?? 0
-                                              ).toFixed(2)}
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums">
-                                              {Number(p.StopLoss ?? 0).toFixed(
-                                                2
-                                              )}
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums">
-                                              {Number(p.Target ?? 0).toFixed(2)}
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums">
-                                              {Number(p.ExitPrice ?? 0).toFixed(
-                                                2
-                                              )}
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums">
-                                              {Number(p.LTP ?? 0).toFixed(2)}
-                                            </td>
-                                            <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
-                                              {p.TimeStamp
-                                                ? new Date(
-                                                    p.TimeStamp
-                                                  ).toLocaleDateString("en-GB")
-                                                : "-"}
-                                            </td>
-                                            <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
-                                              {p.EntryTimeStamp || "-"}
-                                            </td>
-                                            <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
-                                              {p.ExitTimeStamp || "-"}
-                                            </td>
-                                            <td
-                                              className={`px-3 py-2 text-right tabular-nums ${getPnlTextClass(
-                                                p.PNL
-                                              )}`}
-                                            >
-                                              {Number(p.PNL ?? 0).toFixed(2)}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                              {status || "-"}
-                                            </td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                <div className="text-sm text-[#718EBF] dark:text-gray-400 py-4 text-center">
-                                  No transactions
-                                </div>
-                              )}
+                          {openStrategyMenu === compositeKey && (
+                            <div
+                              className="absolute right-4 top-12 z-50 min-w-[180px] rounded-lg border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1F1F24] shadow-lg text-xs py-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36] flex items-center gap-2"
+                                onClick={() => {
+                                  onEditStrategy?.(brokerItem, rawS, s);
+                                  setOpenStrategyMenu(null);
+                                }}
+                                disabled={removingDeployment}
+                              >
+                                <FiEdit2 className="text-sm" />
+                                Edit Deployment
+                              </button>
+                              <button
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#2D2F36] flex items-center gap-2 text-red-500"
+                                onClick={() => {
+                                  onDeleteStrategy?.(brokerItem, rawS, s);
+                                  setOpenStrategyMenu(null);
+                                }}
+                                disabled={removingDeployment}
+                              >
+                                {removingDeployment ? (
+                                  <span className="w-3 h-3 border-2 border-t-transparent border-current rounded-full animate-spin" />
+                                ) : (
+                                  <FiTrash2 className="text-sm" />
+                                )}
+                                Remove Deployment
+                              </button>
                             </div>
                           )}
+
+                          {/* Positions Panel - below the card */}
+                          {strategyExpanded &&
+                            (() => {
+                              const currentPage = getCurrentPage(compositeKey);
+                              const itemsPerPage = 10;
+                              const totalPositions = s.positions?.length || 0;
+                              const totalPages = Math.ceil(
+                                totalPositions / itemsPerPage
+                              );
+                              const startIndex =
+                                (currentPage - 1) * itemsPerPage;
+                              const endIndex = startIndex + itemsPerPage;
+                              const paginatedPositions =
+                                s.positions?.slice(startIndex, endIndex) || [];
+
+                              return (
+                                <div className="rounded-xl border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#15171C]">
+                                  {s.positions && s.positions.length > 0 ? (
+                                    <div className="px-4 pt-3 text-sm font-semibold text-orange-500">
+                                      Positions
+                                    </div>
+                                  ) : null}
+                                  {s.positions && s.positions.length > 0 ? (
+                                    <div className="overflow-x-auto px-2 pb-3">
+                                      <table className="min-w-full text-xs md:text-sm">
+                                        <thead>
+                                          <tr className="text-[#718EBF] dark:text-gray-400">
+                                            <th className="px-3 py-2 text-left">
+                                              Script
+                                            </th>
+                                            <th className="px-3 py-2 text-left">
+                                              Transaction
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              Entry Price
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              SL
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              Target
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              Exit Price
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              LTP
+                                            </th>
+                                            <th className="px-3 py-2 text-left">
+                                              Time Stamp
+                                            </th>
+                                            <th className="px-3 py-2 text-left">
+                                              Entry Time
+                                            </th>
+                                            <th className="px-3 py-2 text-left">
+                                              Exit Time
+                                            </th>
+                                            <th className="px-3 py-2 text-right">
+                                              PNL
+                                            </th>
+                                            <th className="px-3 py-2 text-left">
+                                              Status
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#E4EAF0] dark:divide-[#2D2F36]">
+                                          {paginatedPositions.map((p, idx) => {
+                                            const isBuy =
+                                              (p.TransactionType ||
+                                                p.orderRequest
+                                                  ?._transactionType) === "BUY";
+                                            const script =
+                                              p.TickerTradingSymbol ||
+                                              p.TradingSymbol ||
+                                              p.orderRequest?._tradingSymbol ||
+                                              "-";
+                                            const status = `${(
+                                              p.OrderStatus || ""
+                                            )
+                                              .toString()
+                                              .toUpperCase()}${
+                                              p.OrderExitType
+                                                ? " " +
+                                                  p.OrderExitType.toString()
+                                                    .replace(/-/g, " ")
+                                                    .toUpperCase()
+                                                : ""
+                                            }`.trim();
+                                            return (
+                                              <tr
+                                                key={
+                                                  p.OrderDetailId ||
+                                                  p.OrderId ||
+                                                  idx
+                                                }
+                                                className="text-[#2E3A59] dark:text-white"
+                                              >
+                                                <td className="px-3 py-2 whitespace-nowrap">
+                                                  {script}
+                                                </td>
+                                                <td className="px-3 py-2 whitespace-nowrap">
+                                                  <span
+                                                    className={`font-medium ${
+                                                      isBuy
+                                                        ? "text-green-600"
+                                                        : "text-red-500"
+                                                    }`}
+                                                  >
+                                                    {isBuy ? "BUY" : "SELL"}{" "}
+                                                    {p.Qty ?? ""}
+                                                  </span>
+                                                </td>
+                                                <td className="px-3 py-2 text-right tabular-nums">
+                                                  {Number(
+                                                    p.EntryPrice ?? 0
+                                                  ).toFixed(2)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right tabular-nums">
+                                                  {Number(
+                                                    p.StopLoss ?? 0
+                                                  ).toFixed(2)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right tabular-nums">
+                                                  {Number(
+                                                    p.Target ?? 0
+                                                  ).toFixed(2)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right tabular-nums">
+                                                  {Number(
+                                                    p.ExitPrice ?? 0
+                                                  ).toFixed(2)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right tabular-nums">
+                                                  {Number(p.LTP ?? 0).toFixed(
+                                                    2
+                                                  )}
+                                                </td>
+                                                <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                                  {p.TimeStamp
+                                                    ? new Date(
+                                                        p.TimeStamp
+                                                      ).toLocaleDateString(
+                                                        "en-GB"
+                                                      )
+                                                    : "-"}
+                                                </td>
+                                                <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                                  {p.EntryTimeStamp || "-"}
+                                                </td>
+                                                <td className="px-3 py-2 text-[#718EBF] dark:text-gray-400 text-xs whitespace-nowrap">
+                                                  {p.ExitTimeStamp || "-"}
+                                                </td>
+                                                <td
+                                                  className={`px-3 py-2 text-right tabular-nums ${getPnlTextClass(
+                                                    p.PNL
+                                                  )}`}
+                                                >
+                                                  {Number(p.PNL ?? 0).toFixed(
+                                                    2
+                                                  )}
+                                                </td>
+                                                <td className="px-3 py-2 whitespace-nowrap">
+                                                  {status || "-"}
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm text-[#718EBF] dark:text-gray-400 py-4 text-center">
+                                      No transactions
+                                    </div>
+                                  )}
+
+                                  {/* Pagination Controls */}
+                                  {totalPages > 1 && (
+                                    <div className="flex items-center justify-between px-4 py-3 border-t border-[#E4EAF0] dark:border-[#2D2F36]">
+                                      <div className="text-xs text-[#718EBF] dark:text-gray-400">
+                                        Showing {startIndex + 1} to{" "}
+                                        {Math.min(endIndex, totalPositions)} of{" "}
+                                        {totalPositions} positions
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() =>
+                                            setCurrentPage(
+                                              compositeKey,
+                                              currentPage - 1
+                                            )
+                                          }
+                                          disabled={currentPage === 1}
+                                          className="px-3 py-1 text-xs rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1B1D22] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2E] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                        >
+                                          Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                          {Array.from(
+                                            { length: totalPages },
+                                            (_, i) => i + 1
+                                          ).map((page) => (
+                                            <button
+                                              key={page}
+                                              onClick={() =>
+                                                setCurrentPage(
+                                                  compositeKey,
+                                                  page
+                                                )
+                                              }
+                                              className={`px-3 py-1 text-xs rounded-md transition ${
+                                                currentPage === page
+                                                  ? "bg-[#1B44FE] text-white"
+                                                  : "border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1B1D22] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2E]"
+                                              }`}
+                                            >
+                                              {page}
+                                            </button>
+                                          ))}
+                                        </div>
+                                        <button
+                                          onClick={() =>
+                                            setCurrentPage(
+                                              compositeKey,
+                                              currentPage + 1
+                                            )
+                                          }
+                                          disabled={currentPage === totalPages}
+                                          className="px-3 py-1 text-xs rounded-md border border-[#E4EAF0] dark:border-[#2D2F36] bg-white dark:bg-[#1B1D22] text-[#2E3A59] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2E] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                        >
+                                          Next
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                         </div>
                       );
                     })}

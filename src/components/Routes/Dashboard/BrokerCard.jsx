@@ -189,10 +189,7 @@ const BrokerCard = ({ brokers = [] }) => {
               readOnly
               onChange={() => {
                 if (!selectedBroker?.loginUrl) return;
-                localStorage.setItem(
-                  "BrokerClientId",
-                  selectedBroker.code
-                );
+                localStorage.setItem("BrokerClientId", selectedBroker.code);
                 // Save expected query param key provided by API (fallback handled earlier)
                 localStorage.setItem(
                   "brokerAuthqueryString",

@@ -6,6 +6,7 @@ import JoinAndSupport from "./JoinAndSupport";
 import { man, tutorialIcon, upStox, upStoxJas } from "../../../assets";
 import { useEffect, useRef, useState } from "react";
 import NoticeModal from "../../NoticeModal";
+import { FiChevronDown } from "react-icons/fi";
 import {
   useBrokerwiseStrategies,
   useUserBrokerData,
@@ -195,7 +196,7 @@ const Dashboard = () => {
             ref={dropdownRef}
           >
             {selectedBroker ? (
-              <div className="flex items-center space-x-2 font-semibold">
+              <div className="flex items-center gap-2 font-semibold px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2a2a30] transition-colors">
                 <img
                   src={selectedBroker.logo}
                   alt={selectedBroker.name}
@@ -207,9 +208,19 @@ const Dashboard = () => {
                     ({selectedBroker.code})
                   </span>
                 </span>
+                <FiChevronDown
+                  className={`text-lg text-[#2E3A59] dark:text-white transition-transform flex-shrink-0 ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
               </div>
             ) : (
-              <span className="text-sm text-gray-500">No broker selected</span>
+              <div className="flex items-center gap-2 px-3 py-2">
+                <span className="text-sm text-gray-500">
+                  No broker selected
+                </span>
+                <FiChevronDown className="text-lg text-gray-500" />
+              </div>
             )}
 
             {dropdownOpen && (

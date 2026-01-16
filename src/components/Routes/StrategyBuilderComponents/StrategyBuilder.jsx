@@ -674,8 +674,8 @@ const StrategyBuilder = () => {
         ShortWhen: d.ShortWhen || null,
         IsContiniousTriggerCandle: d.IsContiniousTriggerCandle || false,
         ChartType: d.ChartType ?? 1,
-        EntryDaysBeforExpiry: d.EntryDaysBeforExpiry || 0,
-        ExitDaysBeforExpiry: d.ExitDaysBeforExpiry || 4,
+        EntryDaysBeforExpiry: d.EntryDaysBeforExpiry ?? 0,
+        ExitDaysBeforExpiry: d.ExitDaysBeforExpiry ?? 0,
       };
 
       // Hydrate advance feature flags from strike-level data when API doesn't send AdvanceFeatures

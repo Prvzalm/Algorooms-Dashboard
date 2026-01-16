@@ -22,6 +22,8 @@ const Leg1 = ({
   const hydratingRef = useRef(false);
   // Track initial mount to avoid overwriting ExpiryType during edit mode load
   const initialMountRef = useRef(true);
+  // Track auto-added leg for Move SL to Cost
+  const moveSlAutoAddedRef = useRef(false);
   const { setValue, getValues, watch } = useFormContext();
   // Select stable store actions individually to avoid unnecessary rerenders
   const updatePayload = useStrategyBuilderStore((s) => s.updatePayload);
@@ -1335,10 +1337,14 @@ const Leg1 = ({
     if (moveSlToCostActive) {
       // Add second leg if only 1 leg exists
       if (legs.length < 2) {
+        moveSlAutoAddedRef.current = true;
         handleAddLeg();
       }
     } else {
-      // When Move SL to Cost is disabled, remove second leg if it exists and was auto-added
+      // When Move SL to Cost is disabled, remove second leg only if it was auto-added
+      if (!moveSlAutoAddedRef.current) return;
+      if (chartType === "combined") return;
+
       const scripts = getValues("StrategyScriptList") || [];
       if (scripts[0]) {
         const longStrikes = scripts[0].LongEquationoptionStrikeList || [];
@@ -1367,10 +1373,12 @@ const Leg1 = ({
           setValue("ActiveLegIndex", 0, { shouldDirty: true });
         }
       }
+
+      moveSlAutoAddedRef.current = false;
     }
     // handleAddLeg is stable enough here; avoid extra dep to prevent repeated calls
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moveSlToCostActive]);
+  }, [moveSlToCostActive, chartType]);
 
   // When combined chart is enabled for indicator strategy, ensure at least 2 legs
   useEffect(() => {
@@ -1380,57 +1388,50 @@ const Leg1 = ({
         const scripts = getValues("StrategyScriptList") || [];
         const base = scripts[0] || {};
         const longArr = Array.isArray(base.LongEquationoptionStrikeList)
-          ? base.LongEquationoptionStrikeList
+          ? [...base.LongEquationoptionStrikeList]
+          : [];
+        const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
+          ? [...base.ShortEquationoptionStrikeList]
           : [];
 
-        // Only add legs if we actually have less than 2 in the form data
-        if (longArr.length < 2) {
-          const idx = longArr.length;
-          const nextLegName = `L${idx + 1}`;
+        // In edit mode, never auto-add default legs if any existing data is present
+        if (editing && (longArr.length > 0 || shortArr.length > 0)) return;
 
-          const updateFormState = () => {
-            setLegs((prevLegs) => [...prevLegs, nextLegName]);
-            setSelectedLeg(nextLegName);
+        // If either side already has 2 or more legs, don't auto-add
+        const existingLegs = Math.max(longArr.length, shortArr.length);
+        if (existingLegs >= 2) return;
 
-            const updatedLongArr = [...longArr];
-            const shortArr = Array.isArray(base.ShortEquationoptionStrikeList)
-              ? [...base.ShortEquationoptionStrikeList]
-              : [];
-
-            const newStrike = {
-              ...createDefaultStrikeBySide("long"),
+        const ensureTwoLegs = (arr, side) => {
+          const next = [...arr];
+          while (next.length < 2) {
+            const strike = {
+              ...createDefaultStrikeBySide(side),
               ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
             };
-
-            const isIndicator = selectedStrategyTypes?.[0] === "indicator";
-            updatedLongArr.push(newStrike);
-
-            if (isIndicator) {
-              const opposite = newStrike.StrikeType === "CE" ? "PE" : "CE";
-              shortArr.push({
-                ...newStrike,
-                StrikeType: opposite,
-                ...(moveSlToCostActive ? { IsMoveSLCTC: true } : {}),
-              });
+            // Keep CE/PE pairing for indicator strategies
+            if (side === "short" && next.length < longArr.length) {
+              const counterpart = longArr[next.length];
+              strike.StrikeType = counterpart?.StrikeType === "CE" ? "PE" : "CE";
             }
+            next.push(strike);
+          }
+          return next;
+        };
 
-            const updatedBase = {
-              ...base,
-              LongEquationoptionStrikeList: updatedLongArr,
-            };
-            if (isIndicator) {
-              updatedBase.ShortEquationoptionStrikeList = shortArr;
-            }
+        const updatedLongArr = ensureTwoLegs(longArr, "long");
+        const updatedShortArr = ensureTwoLegs(shortArr, "short");
 
-            const updated = [updatedBase];
-            setValue("StrategyScriptList", updated, { shouldDirty: true });
-            setValue("ActiveLegIndex", idx, { shouldDirty: true });
+        const updatedBase = {
+          ...base,
+          LongEquationoptionStrikeList: updatedLongArr,
+          ShortEquationoptionStrikeList: updatedShortArr,
+        };
 
-            updatePayload({ StrategyScriptList: updated });
-          };
-
-          setTimeout(updateFormState, 0);
-        }
+        setLegs(["L1", "L2"]);
+        setSelectedLeg("L1");
+        setValue("StrategyScriptList", [updatedBase], { shouldDirty: true });
+        setValue("ActiveLegIndex", 0, { shouldDirty: true });
+        updatePayload({ StrategyScriptList: [updatedBase] });
       } catch (err) {
         console.error("Add leg error", err);
       }
@@ -1442,6 +1443,7 @@ const Leg1 = ({
     getValues,
     setValue,
     updatePayload,
+    editing,
   ]);
 
   // ✅ Remove leg handler (moved from OrderType)

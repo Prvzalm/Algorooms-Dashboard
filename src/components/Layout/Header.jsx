@@ -46,6 +46,9 @@ const Header = () => {
     <header className="w-full bg-white dark:bg-darkbg p-6 flex justify-end border-b border-[#26272F33] dark:border-gray-700 items-center h-16 fixed top-0 z-30 space-x-6">
       {/* Beta Toggle */}
       <div className="flex items-center space-x-2">
+        <span className="px-2 py-1 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
+          BETA
+        </span>
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
           V1
         </span>
