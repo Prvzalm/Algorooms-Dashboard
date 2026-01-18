@@ -490,9 +490,9 @@ const DeployStrategyModal = ({
                 onChange={(e) => setOvernightRiskAccepted(e.target.checked)}
               />
               <span>
-                I understand that this CNC / BTST strategy carries overnight
-                and gap risk, that losses may exceed intraday expectations, and
-                that I am deploying it with proper hedging or risk management in
+                I understand that this CNC / BTST strategy carries overnight and
+                gap risk, that losses may exceed intraday expectations, and that
+                I am deploying it with proper hedging or risk management in
                 place.
               </span>
             </label>

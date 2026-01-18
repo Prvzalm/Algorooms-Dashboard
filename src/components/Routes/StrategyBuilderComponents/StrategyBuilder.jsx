@@ -1326,8 +1326,8 @@ const StrategyBuilder = () => {
               onChange={(e) => setTerminalConnectionAccepted(e.target.checked)}
             />
             <label htmlFor="terminal-connection-ack" className="select-none">
-              I understand that failure to connect my trading terminal and
-              trade engine before market opens may result in delayed or missed
+              I understand that failure to connect my trading terminal and trade
+              engine before market opens may result in delayed or missed
               executions.
             </label>
           </div>
