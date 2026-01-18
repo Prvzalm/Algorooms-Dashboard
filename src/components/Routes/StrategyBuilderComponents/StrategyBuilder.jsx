@@ -101,6 +101,8 @@ const StrategyBuilder = () => {
       editInstrumentSearch.shouldFetch
     );
   const navigate = useNavigate();
+  const [terminalConnectionAccepted, setTerminalConnectionAccepted] =
+    useState(false);
 
   // Derive AdvanceFeatures flags from strike data (edit mode hydration)
   const deriveAdvanceFeatures = (
@@ -175,6 +177,16 @@ const StrategyBuilder = () => {
 
     navigate("/strategies", { replace: true });
   };
+
+  const productTypeNum = Number(watch("ProductType")) || 0;
+  const isBtSt = watch("isBtSt") || false;
+  const isCncOrBtst = productTypeNum === 1 || isBtSt;
+
+  useEffect(() => {
+    if (!isCncOrBtst && terminalConnectionAccepted) {
+      setTerminalConnectionAccepted(false);
+    }
+  }, [isCncOrBtst, terminalConnectionAccepted]);
 
   // State for instrument quantities
   const watchedScripts = watch("StrategyScriptList") || [];
@@ -1304,11 +1316,28 @@ const StrategyBuilder = () => {
           />
         </div>
 
+        {isCncOrBtst && (
+          <div className="flex items-start gap-2 text-sm">
+            <input
+              id="terminal-connection-ack"
+              type="checkbox"
+              className="mt-1"
+              checked={terminalConnectionAccepted}
+              onChange={(e) => setTerminalConnectionAccepted(e.target.checked)}
+            />
+            <label htmlFor="terminal-connection-ack" className="select-none">
+              I understand that failure to connect my trading terminal and
+              trade engine before market opens may result in delayed or missed
+              executions.
+            </label>
+          </div>
+        )}
+
         {/* Mobile view: fixed button at bottom */}
         <div className="md:hidden mobile-buttons-container">
           <PrimaryButton
             type="submit"
-            disabled={isPending}
+            disabled={isPending || (isCncOrBtst && !terminalConnectionAccepted)}
             className="px-8 py-3 text-sm w-full max-w-xs"
           >
             {isPending
@@ -1325,7 +1354,7 @@ const StrategyBuilder = () => {
         <div className="flex justify-end">
           <PrimaryButton
             type="submit"
-            disabled={isPending}
+            disabled={isPending || (isCncOrBtst && !terminalConnectionAccepted)}
             className="ml-auto md:px-8 px-4 py-3 text-sm hidden md:block"
           >
             {isPending

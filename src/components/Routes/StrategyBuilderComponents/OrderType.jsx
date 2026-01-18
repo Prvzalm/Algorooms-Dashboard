@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 import TradeSettings from "./TradeSettings";
@@ -19,8 +19,10 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
   const squareOffTime = watch("AutoSquareOffTime") || "15:15";
   const productTypeNum = Number(watch("ProductType")) || 0;
   const isBtSt = watch("isBtSt") || false;
-  const entryDays = watch("EntryDaysBeforExpiry") ?? 0;
-  const exitDays = watch("ExitDaysBeforExpiry") ?? 0;
+  const entryDaysRaw = watch("EntryDaysBeforExpiry");
+  const exitDaysRaw = watch("ExitDaysBeforExpiry");
+  const entryDays = entryDaysRaw ?? 0;
+  const exitDays = exitDaysRaw ?? 0;
   const strategySegmentType = watch("StrategySegmentType") || "";
   const normalizedSegment = strategySegmentType.toLowerCase();
   const isEquityInstrument = normalizedSegment === "equity";
@@ -45,6 +47,7 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
 
   // CNC Settings state (these are UI-only, not in form)
   const [showCNCSettings, setShowCNCSettings] = useState(true);
+  const cncInitRef = useRef(false);
 
   const cncMaxDays = (() => {
     if (cncExpiryType === "NEXTWEEKLY") return 14;
@@ -61,6 +64,20 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
       setValue("ExitDaysBeforExpiry", cncMaxDays, { shouldDirty: true });
     }
   }, [productType, cncMaxDays, entryDays, exitDays, setValue]);
+
+  useEffect(() => {
+    if (productType !== "CNC") {
+      cncInitRef.current = false;
+      return;
+    }
+    if (!cncInitRef.current) {
+      cncInitRef.current = true;
+      return;
+    }
+    if (entryDaysRaw == null) {
+      setValue("EntryDaysBeforExpiry", cncMaxDays, { shouldDirty: true });
+    }
+  }, [productType, cncExpiryType, cncMaxDays, entryDaysRaw, setValue]);
 
   const orderTypes = hideDeliveryProducts ? ["MIS"] : ["MIS", "CNC", "BTST"];
 
@@ -84,9 +101,21 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
     setValue("ProductType", productTypeMap[type], { shouldDirty: true });
     setValue("isBtSt", type === "BTST", { shouldDirty: true });
     if (type === "CNC") {
-      setValue("EntryDaysBeforExpiry", 0, { shouldDirty: true });
-      setValue("ExitDaysBeforExpiry", 0, { shouldDirty: true });
+      setValue("EntryDaysBeforExpiry", cncMaxDays, { shouldDirty: true });
+      if (exitDaysRaw == null) {
+        setValue("ExitDaysBeforExpiry", 0, { shouldDirty: true });
+      }
     }
+  };
+
+  const getCncTicks = (max) => {
+    if (!max || max <= 0) return [0];
+    if (max <= 6) {
+      return Array.from({ length: max + 1 }, (_, i) => i);
+    }
+    const t1 = Math.round(max / 3);
+    const t2 = Math.round((2 * max) / 3);
+    return Array.from(new Set([0, t1, t2, max])).sort((a, b) => a - b);
   };
 
   return (
@@ -169,15 +198,19 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                       }%, #e5e7eb 100%)`,
                     }}
                   />
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0</span>
-                    <span>
-                      {cncMaxDays > 4 ? Math.round(cncMaxDays / 3) : 1}
-                    </span>
-                    <span>
-                      {cncMaxDays > 4 ? Math.round((2 * cncMaxDays) / 3) : 2}
-                    </span>
-                    <span>{cncMaxDays}</span>
+                  <div className="relative mt-2 h-4">
+                    {getCncTicks(cncMaxDays).map((tick) => (
+                      <span
+                        key={`entry-tick-${tick}`}
+                        className="absolute text-xs text-gray-500 dark:text-gray-400"
+                        style={{
+                          left: `${(tick / cncMaxDays) * 100}%`,
+                          transform: "translateX(-50%)",
+                        }}
+                      >
+                        {tick}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
@@ -207,15 +240,19 @@ const OrderType = ({ selectedStrategyTypes, comingSoon = false }) => {
                       }%, #e5e7eb 100%)`,
                     }}
                   />
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0</span>
-                    <span>
-                      {cncMaxDays > 4 ? Math.round(cncMaxDays / 3) : 1}
-                    </span>
-                    <span>
-                      {cncMaxDays > 4 ? Math.round((2 * cncMaxDays) / 3) : 2}
-                    </span>
-                    <span>{cncMaxDays}</span>
+                  <div className="relative mt-2 h-4">
+                    {getCncTicks(cncMaxDays).map((tick) => (
+                      <span
+                        key={`exit-tick-${tick}`}
+                        className="absolute text-xs text-gray-500 dark:text-gray-400"
+                        style={{
+                          left: `${(tick / cncMaxDays) * 100}%`,
+                          transform: "translateX(-50%)",
+                        }}
+                      >
+                        {tick}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>

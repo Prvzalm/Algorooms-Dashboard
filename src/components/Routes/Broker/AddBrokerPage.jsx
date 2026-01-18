@@ -107,6 +107,10 @@ const AddBrokerPage = () => {
             Browse the partner list and pick the broker you want to connect with
             Algorooms.
           </p>
+          <p className="text-xs text-[#718EBF] dark:text-[#A0AEC0] mb-6">
+            Broker logo rights are completely of broker itself. We (Algorooms)
+            do not claim any right on broker logo.
+          </p>
 
           <div className="relative mb-6">
             <input
@@ -163,7 +167,7 @@ const AddBrokerPage = () => {
                     <img
                       src={broker.BrokerLogoUrl}
                       alt={broker.BrokerName}
-                      className="w-16 h-16 mb-2"
+                      className="w-24 h-24 mb-2"
                     />
                     <p className="text-sm font-medium text-[#2E3A59] dark:text-white">
                       {broker.BrokerName}
@@ -211,7 +215,7 @@ const AddBrokerPage = () => {
                     <img
                       src={selectedBroker.BrokerLogoUrl}
                       alt={selectedBroker.BrokerName}
-                      className="w-16 h-16"
+                      className="w-20 h-20"
                     />
                     <div>
                       <p className="font-semibold text-[#2E3A59] dark:text-white">
@@ -328,17 +332,6 @@ const AddBrokerPage = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1 items-center text-sm text-[#718EBF] dark:text-[#A0AEC0]">
-                Static IP:
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-blue-500 block break-all flex-1">
-                  10.0.0.1
-                </p>
-              </div>
-            </div>
-
             <PrimaryButton
               className="w-full py-3"
               type="submit"

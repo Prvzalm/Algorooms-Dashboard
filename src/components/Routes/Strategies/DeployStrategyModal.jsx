@@ -140,6 +140,9 @@ const DeployStrategyModal = ({
   const [autoSquareOffTime, setAutoSquareOffTime] = useState("");
   const [selectedBrokerIds, setSelectedBrokerIds] = useState([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [overnightRiskAccepted, setOvernightRiskAccepted] = useState(false);
+  const [terminalConnectionAccepted, setTerminalConnectionAccepted] =
+    useState(false);
 
   // Store original values from strategy details
   const [originalMaxProfit, setOriginalMaxProfit] = useState(0);
@@ -248,7 +251,42 @@ const DeployStrategyModal = ({
     setAutoSquareOffTime("");
     setSelectedBrokerIds([]);
     setTermsAccepted(false);
+    setOvernightRiskAccepted(false);
+    setTerminalConnectionAccepted(false);
   }, [open]);
+
+  const isCncOrBtst = useMemo(() => {
+    const sources = [initialDeployment, strategy, details];
+    const typeValue = resolveValueFromSources(sources, [
+      "ProductType",
+      "productType",
+      "OrderType",
+      "orderType",
+    ]);
+    const isBtstValue = resolveValueFromSources(sources, [
+      "isBtSt",
+      "IsBtSt",
+      "isBTST",
+      "IsBTST",
+    ]);
+    const typeName = resolveValueFromSources(sources, [
+      "ProductTypeName",
+      "productTypeName",
+      "OrderTypeName",
+      "orderTypeName",
+    ]);
+
+    if (typeof typeName === "string") {
+      const name = typeName.toLowerCase();
+      if (name.includes("btst")) return true;
+      if (name.includes("cnc")) return true;
+    }
+
+    const numericType = Number(typeValue);
+    if (Number.isFinite(numericType) && numericType === 1) return true;
+    if (isBtstValue === true) return true;
+    return false;
+  }, [initialDeployment, strategy, details]);
 
   const resolveMaxTradeCycle = () => {
     const value = resolveValueFromSources(
@@ -442,6 +480,40 @@ const DeployStrategyModal = ({
           </label>
         </div>
 
+        {isCncOrBtst && (
+          <div className="mt-4 space-y-2 text-sm">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={overnightRiskAccepted}
+                onChange={(e) => setOvernightRiskAccepted(e.target.checked)}
+              />
+              <span>
+                I understand that this CNC / BTST strategy carries overnight
+                and gap risk, that losses may exceed intraday expectations, and
+                that I am deploying it with proper hedging or risk management in
+                place.
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={terminalConnectionAccepted}
+                onChange={(e) =>
+                  setTerminalConnectionAccepted(e.target.checked)
+                }
+              />
+              <span>
+                I understand that failure to connect my trading terminal and
+                trade engine before market opens may result in delayed or missed
+                executions.
+              </span>
+            </label>
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 mt-6">
           <button
             className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -452,7 +524,14 @@ const DeployStrategyModal = ({
           </button>
           <PrimaryButton
             onClick={submit}
-            disabled={deploying || loading || brokersLoading || !termsAccepted}
+            disabled={
+              deploying ||
+              loading ||
+              brokersLoading ||
+              !termsAccepted ||
+              (isCncOrBtst &&
+                (!overnightRiskAccepted || !terminalConnectionAccepted))
+            }
             className="px-4 py-2 rounded-lg"
           >
             {deploying ? "Deploying…" : "Deploy"}
