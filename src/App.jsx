@@ -1,11 +1,4 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-  Outlet,
-} from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -14,10 +7,12 @@ import Sidebar from "./components/Layout/Sidebar";
 
 import DashboardPage from "./components/Routes/Dashboard/DashboardPage";
 import StrategyBuilder from "./components/Routes/StrategyBuilderComponents/StrategyBuilder";
+import TradingviewSignalsPage from "./components/Routes/TradingViewSignalComponents/TradingviewSignalsPage";
 import ProfilePage from "./components/Routes/ProfileComponents/ProfilePage";
 import WalletPage from "./components/Routes/Wallet/WalletPage";
 import SubscriptionsPage from "./components/Routes/Subscriptions/SubscriptionsPage";
 import NotificationsPage from "./components/Routes/Notifications/NotificationsPage";
+import RaAlgosPage from "./components/Routes/RaAlgos/RaAlgosPage";
 import BacktestStrategyComponent from "./components/Routes/BackTest/BacktestStrategyComponent";
 import StrategiesPage from "./components/Routes/Strategies/StrategiesPage";
 import BrokerSection from "./components/Routes/Broker/BrokerSection";
@@ -28,10 +23,10 @@ import ConnectBroker from "./components/Routes/Broker/ConnectBroker";
 import Reports from "./components/Reports/Reports";
 
 import Auth from "./components/Auth";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
+import { Outlet } from "react-router-dom";
 import { algoLogo } from "./assets";
-import { useUpdateBrokerAuthCode } from "./hooks/brokerHooks";
 
 //Protected layout with Sidebar + Header
 const ProtectedLayout = () => {
@@ -73,45 +68,16 @@ const ProtectedLayout = () => {
 function App() {
   const { token, loading } = useAuth();
   const location = useLocation();
-  const { mutateAsync, isLoading } = useUpdateBrokerAuthCode();
-  const navigate = useNavigate();
 
   const normalizedPath = (location.pathname || "/").replace(/\/+$/, "") || "/";
   const isAuthPage = normalizedPath === "/signin";
-
-  // Handle broker auth code from redirect
-  useEffect(() => {
-    if (location.pathname.includes("connect-broker")) {
-      const params = new URLSearchParams(location.search);
-      const requestToken = params.get(localStorage.getItem("brokerAuthqueryString"));
-      const brokerClientId = localStorage.getItem("BrokerClientId");
-      const jwt = localStorage.getItem("Authorization");
-
-      if (requestToken && brokerClientId && jwt) {
-        (async () => {
-          try {
-            await mutateAsync({
-              BrokerClientId: brokerClientId,
-              RequestToken: requestToken,
-              JwtToken: jwt,
-            });
-          } finally {
-            localStorage.removeItem("BrokerClientId");
-            navigate("/", { replace: true });
-          }
-        })();
-      }
-    }
-  }, [location, mutateAsync, navigate]);
 
   // Redirect logged-in users away from signin
   if (!loading && token && isAuthPage) {
     return <Navigate to="/" replace />;
   }
 
-  return isLoading ? (
-    <ConnectBroker />
-  ) : (
+  return (
     <>
       <ToastContainer
         position="bottom-right"
@@ -157,7 +123,7 @@ function App() {
           />
           <Route path="/broker" element={<BrokerSection />} />
           <Route path="/add-broker" element={<AddBrokerPage />} />
-          {/* <Route path="/connect-broker/*" element={<ConnectBroker />} /> */}
+          <Route path="/connect-broker/*" element={<ConnectBroker />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
 
