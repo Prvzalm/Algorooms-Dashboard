@@ -126,7 +126,7 @@ function App() {
           />
           <Route path="/broker" element={<BrokerSection />} />
           <Route path="/add-broker" element={<AddBrokerPage />} />
-          <Route path="/connect-broker/*" element={<ConnectBroker />} />
+          <Route path="/connect-broker" element={<ConnectBroker />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
 
