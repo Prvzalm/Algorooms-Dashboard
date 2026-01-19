@@ -1,10 +1,4 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  Outlet,
-} from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, Outlet } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -91,6 +85,7 @@ function App() {
       <Routes>
         {/* Public route */}
         <Route path="/signin" element={<Auth />} />
+        <Route path="/connect-broker/*" element={<ConnectBroker />} />
 
         {/* Protected layout routes */}
         <Route element={<ProtectedLayout />}>
@@ -126,7 +121,6 @@ function App() {
           />
           <Route path="/broker" element={<BrokerSection />} />
           <Route path="/add-broker" element={<AddBrokerPage />} />
-          <Route path="/connect-broker/*" element={<ConnectBroker />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
 

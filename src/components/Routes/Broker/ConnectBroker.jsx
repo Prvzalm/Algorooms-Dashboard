@@ -14,8 +14,10 @@ const ConnectBroker = () => {
       queryKey: localStorage.getItem("brokerAuthqueryString"),
     });
 
-    if (!location.pathname.includes("connect-broker"))
-      return <Navigate to="/" replace />;
+    if (!location.pathname.includes("connect-broker")) {
+      navigate("/", { replace: true });
+      return;
+    }
 
     const params = new URLSearchParams(location.search);
     const queryKey = localStorage.getItem("brokerAuthqueryString");
