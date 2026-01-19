@@ -1,5 +1,5 @@
 import { useTheme } from "../../context/ThemeContext";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   bellHeaderIcon,
   darkModeHeaderIcon,
@@ -8,10 +8,50 @@ import {
 } from "../../assets";
 import { useEffect, useState } from "react";
 import octopusInstance from "../../services/WebSockets/feeds/octopusInstance";
+import { useUpdateBrokerAuthCode } from "../../hooks/brokerHooks";
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const [isBetaEnabled, setIsBetaEnabled] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { mutateAsync } = useUpdateBrokerAuthCode();
+
+  useEffect(() => {
+    console.log({
+      path: location.pathname,
+      search: location.search,
+      queryKey: localStorage.getItem("brokerAuthqueryString"),
+    });
+
+    if (!location.pathname.includes("connect-broker")) return;
+
+    const params = new URLSearchParams(location.search);
+    const queryKey = localStorage.getItem("brokerAuthqueryString");
+
+    if (!queryKey) return;
+
+    const requestToken = params.get(queryKey);
+    console.log(requestToken, "request_Token");
+    const brokerClientId = localStorage.getItem("BrokerClientId");
+    const jwt = localStorage.getItem("Authorization");
+
+    if (!requestToken || !brokerClientId || !jwt) return;
+
+    (async () => {
+      try {
+        await mutateAsync({
+          BrokerClientId: brokerClientId,
+          RequestToken: requestToken,
+          JwtToken: jwt,
+        });
+        navigate("/", { replace: true });
+      } finally {
+        localStorage.removeItem("BrokerClientId");
+        localStorage.removeItem("brokerAuthqueryString");
+      }
+    })();
+  }, [location, location.pathname, location.search, mutateAsync, navigate]);
 
   useEffect(() => {
     octopusInstance.connect();
