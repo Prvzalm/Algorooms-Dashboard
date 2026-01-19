@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { toast } from "react-toastify";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUpdateBrokerAuthCode } from "../../../hooks/brokerHooks";
 
 // This route handles redirect from broker after user login.
@@ -8,18 +8,77 @@ import { useUpdateBrokerAuthCode } from "../../../hooks/brokerHooks";
 // It uses localStorage key 'selected-broker-client-id' set when user clicked Terminal toggle/login.
 
 const ConnectBroker = () => {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const location = useLocation();
   const { mutateAsync, isLoading } = useUpdateBrokerAuthCode();
   const firedRef = useRef(false);
 
   useEffect(() => {
+    if (!pathname.includes("connect-broker")) return;
     if (firedRef.current) return; // guard against double invocation
-    const params = new URLSearchParams(location.search);
+
     const queryKey = localStorage.getItem("brokerAuthqueryString");
-    const requestToken = params.get(queryKey);
     const brokerClientId = localStorage.getItem("BrokerClientId");
     const jwt = localStorage.getItem("Authorization");
+
+    // Get full URL and parse params manually
+    const fullUrl = window.location.href;
+    const searchString = window.location.search;
+    const hashString = window.location.hash;
+
+    console.log("ConnectBroker - Full Debug:", {
+      fullUrl,
+      search: searchString,
+      hash: hashString,
+      queryKey,
+      brokerClientId,
+    });
+
+    // Try to get token using multiple approaches
+    let requestToken = null;
+    let params = null;
+    let parsed = {};
+
+    // Method 1: Try from search params
+    if (searchString) {
+      params = new URLSearchParams(searchString);
+    }
+
+    // Method 2: Try from hash (some brokers use hash-based params)
+    if (!params || !params.toString()) {
+      const hashParams = hashString.split("?")[1];
+      if (hashParams) {
+        params = new URLSearchParams(hashParams);
+      }
+    }
+
+    // Method 3: Parse entire URL after connect-broker
+    if (!params || !params.toString()) {
+      const urlParts = fullUrl.split("/connect-broker")[1];
+      if (urlParts) {
+        const queryPart = urlParts.includes("?")
+          ? urlParts.split("?")[1]
+          : null;
+        if (queryPart) {
+          params = new URLSearchParams(queryPart.split("#")[0]);
+        }
+      }
+    }
+
+    if (params) {
+      parsed = Object.fromEntries(params.entries());
+      console.log("All params found:", parsed);
+
+      // Try using the stored queryKey
+      if (queryKey) {
+        requestToken = parsed?.[queryKey];
+        console.log(`Trying queryKey "${queryKey}":`, requestToken);
+      }
+    } else {
+      console.error("No query params found in URL");
+    }
+
+    console.log("Final requestToken:", requestToken);
 
     // if (!requestToken || !brokerClientId) {
     //   navigate("/", { replace: true });
@@ -42,7 +101,7 @@ const ConnectBroker = () => {
         navigate("/", { replace: true });
       }
     })();
-  }, [location.search, mutateAsync, navigate]);
+  }, [pathname, mutateAsync, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center text-black dark:text-white">

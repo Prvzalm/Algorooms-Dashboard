@@ -32,7 +32,7 @@ import { algoLogo } from "./assets";
 const ProtectedLayout = () => {
   const { token, loading } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
-    localStorage.getItem("sidebar-collapsed") === "true"
+    localStorage.getItem("sidebar-collapsed") === "true",
   );
   const sidebarWidth = isSidebarCollapsed ? "md:ml-16" : "md:ml-64";
 
@@ -123,7 +123,7 @@ function App() {
           />
           <Route path="/broker" element={<BrokerSection />} />
           <Route path="/add-broker" element={<AddBrokerPage />} />
-          <Route path="/connect-broker/*" element={<ConnectBroker />} />
+          <Route path="/connect-broker" element={<ConnectBroker />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
 
