@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUpdateBrokerAuthCode } from "../../../hooks/brokerHooks";
 
 const ConnectBroker = () => {
@@ -14,8 +14,7 @@ const ConnectBroker = () => {
       queryKey: localStorage.getItem("brokerAuthqueryString"),
     });
 
-    if (!location.pathname.includes("connect-broker"))
-      return <Navigate to="/" replace />;
+    if (location.pathname !== "/connect-broker") return;
 
     const params = new URLSearchParams(location.search);
     const queryKey = localStorage.getItem("brokerAuthqueryString");
@@ -23,7 +22,7 @@ const ConnectBroker = () => {
     if (!queryKey) return;
 
     const requestToken = params.get(queryKey);
-    console.log(requestToken, "request_Token");
+    console.log(requestToken, "request_Token")
     const brokerClientId = localStorage.getItem("BrokerClientId");
     const jwt = localStorage.getItem("Authorization");
 
