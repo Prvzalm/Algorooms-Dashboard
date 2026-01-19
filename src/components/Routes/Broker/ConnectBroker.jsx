@@ -14,7 +14,7 @@ const ConnectBroker = () => {
       queryKey: localStorage.getItem("brokerAuthqueryString"),
     });
 
-    if (!location.pathname.includes("connect-broker")) return;
+    if (location.pathname !== "/connect-broker") return;
 
     const params = new URLSearchParams(location.search);
     const queryKey = localStorage.getItem("brokerAuthqueryString");
@@ -41,7 +41,7 @@ const ConnectBroker = () => {
         localStorage.removeItem("brokerAuthqueryString");
       }
     })();
-  }, [location, location.pathname, location.search, mutateAsync, navigate]);
+  }, [location.pathname, location.search]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center text-black dark:text-white">
