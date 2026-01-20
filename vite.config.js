@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
 
+  // 🔹 Dev-only config (unchanged)
   server: {
     proxy: {
       "/api": {
@@ -19,23 +20,15 @@ export default defineConfig({
     },
   },
 
+  // 🔹 IMPORTANT: build output must match CRA
   build: {
     outDir: "build",
     emptyOutDir: true,
+
     assetsDir: "static",
 
     rollupOptions: {
       output: {
-        // 🔹 Controlled chunking
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react")) return "vendor-react";
-            if (id.includes("chart")) return "vendor-charts";
-            if (id.includes("lodash")) return "vendor-lodash";
-            return "vendor";
-          }
-        },
-
         entryFileNames: "static/js/[name].[hash].js",
         chunkFileNames: "static/js/[name].[hash].js",
 
@@ -47,8 +40,5 @@ export default defineConfig({
         },
       },
     },
-
-    // 🔹 Warn when chunks are too big
-    chunkSizeWarningLimit: 500, // KB
   },
 });
