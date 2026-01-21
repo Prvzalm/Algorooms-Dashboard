@@ -25,7 +25,13 @@ const Header = () => {
       setIsBetaEnabled(uiValue === "v2");
     } else {
       // Set default cookie if not exists
-      document.cookie = "ui=v1; path=/";
+      document.cookie = [
+        "ui=v1",
+        "path=/",
+        "SameSite=Lax",
+        "Secure",
+        "Max-Age=31536000",
+      ].join("; ");
     }
   }, []);
 
@@ -33,13 +39,17 @@ const Header = () => {
     const newValue = !isBetaEnabled;
     setIsBetaEnabled(newValue);
 
-    if (newValue) {
-      document.cookie = "ui=v2; path=/";
-      window.location.reload();
-    } else {
-      document.cookie = "ui=v1; path=/";
-      window.location.reload();
-    }
+    const uiValue = newValue ? "v2" : "v1";
+
+    document.cookie = [
+      `ui=${uiValue}`,
+      "path=/",
+      "SameSite=Lax",
+      "Secure",
+      "Max-Age=31536000",
+    ].join("; ");
+
+    window.location.replace(window.location.href);
   };
 
   return (
