@@ -44,7 +44,7 @@ const BrokerSection = () => {
     localStorage.setItem("BrokerClientId", broker.BrokerClientId);
     localStorage.setItem(
       "brokerAuthqueryString",
-      broker.brokerAuthQueryString || "request_token"
+      broker.brokerAuthQueryString || "request_token",
     );
     window.location.href = broker.APILoginUrl;
   };
@@ -75,7 +75,7 @@ const BrokerSection = () => {
           setPendingBrokerId(null);
           setConfirmForBrokerId(null);
         },
-      }
+      },
     );
   };
 
@@ -102,10 +102,10 @@ const BrokerSection = () => {
     if (!openMenuId) return;
     const handler = (e) => {
       const menuNodes = document.querySelectorAll(
-        `[data-broker-menu="${openMenuId}"]`
+        `[data-broker-menu="${openMenuId}"]`,
       );
       const clickedInside = Array.from(menuNodes).some((node) =>
-        node.contains(e.target)
+        node.contains(e.target),
       );
       if (!clickedInside) setOpenMenuId(null);
     };
@@ -190,7 +190,7 @@ const BrokerSection = () => {
               onCancel={() => setConfirmForBrokerId(null)}
               onConfirm={() => {
                 const broker = brokers.find(
-                  (b) => b.BrokerClientId === confirmForBrokerId
+                  (b) => b.BrokerClientId === confirmForBrokerId,
                 );
                 setConfirmForBrokerId(null);
                 if (broker) performToggleTradeEngine(broker, "Start");
@@ -213,7 +213,7 @@ const BrokerSection = () => {
                 setStopConfirmForBroker(null);
                 performToggleTradeEngine(
                   stopConfirmForBroker,
-                  "StopNSquareOff"
+                  "StopNSquareOff",
                 );
               }}
             />
@@ -280,7 +280,7 @@ const BrokerSection = () => {
                             setOpenMenuId((prev) =>
                               prev === broker.BrokerClientId
                                 ? null
-                                : broker.BrokerClientId
+                                : broker.BrokerClientId,
                             );
                           }}
                           disabled={rowPending || deletingBroker || squaringOff}
@@ -328,7 +328,7 @@ const BrokerSection = () => {
                             onChange={() => handleTerminalLogin(broker)}
                             checked={!!broker.BrokerLoginStatus}
                             readOnly
-                            disabled={rowPending}
+                            disabled={rowPending || !!broker.BrokerLoginStatus}
                           />
                           <div
                             className={`w-11 h-6 relative rounded-full transition-colors ${
@@ -432,7 +432,7 @@ const BrokerSection = () => {
                             onChange={() => handleTerminalLogin(broker)}
                             checked={!!broker.BrokerLoginStatus}
                             readOnly
-                            disabled={rowPending}
+                            disabled={rowPending || !!broker.BrokerLoginStatus}
                           />
                           <div
                             className={`w-11 h-6 relative rounded-full transition-colors ${
@@ -497,7 +497,7 @@ const BrokerSection = () => {
                           setOpenMenuId((prev) =>
                             prev === broker.BrokerClientId
                               ? null
-                              : broker.BrokerClientId
+                              : broker.BrokerClientId,
                           );
                         }}
                         disabled={rowPending || deletingBroker || squaringOff}
@@ -555,7 +555,7 @@ const BrokerSection = () => {
                   { BrokerClientId: id },
                   {
                     onSettled: () => setPendingBrokerId(null),
-                  }
+                  },
                 );
               }}
             />
@@ -578,7 +578,7 @@ const BrokerSection = () => {
                   { BrokerClientId: id },
                   {
                     onSettled: () => setPendingBrokerId(null),
-                  }
+                  },
                 );
               }}
             />

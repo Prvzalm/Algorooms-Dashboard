@@ -54,7 +54,7 @@ const BrokerCard = ({ brokers = [] }) => {
         onSettled: () => {
           mutatingRef.current = false;
         },
-      }
+      },
     );
   };
 
@@ -187,13 +187,14 @@ const BrokerCard = ({ brokers = [] }) => {
               className="sr-only peer"
               checked={!!selectedBroker?.isLoggedIn}
               readOnly
+              disabled={!!selectedBroker?.isLoggedIn}
               onChange={() => {
                 if (!selectedBroker?.loginUrl) return;
                 localStorage.setItem("BrokerClientId", selectedBroker.code);
                 // Save expected query param key provided by API (fallback handled earlier)
                 localStorage.setItem(
                   "brokerAuthqueryString",
-                  selectedBroker.brokerAuthQueryString
+                  selectedBroker.brokerAuthQueryString,
                 );
                 window.location.href = selectedBroker.loginUrl;
               }}
