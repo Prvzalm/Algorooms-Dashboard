@@ -6,7 +6,7 @@ import ComingSoonOverlay from "../../common/ComingSoonOverlay";
 const SimulatorPage = () => {
   return (
     <div className="relative">
-      {/* <ComingSoonOverlay /> */}
+      <ComingSoonOverlay />
       <TopInfoBar />
       <div className="flex md:flex-row flex-col gap-4">
         <OptionChainTable />
