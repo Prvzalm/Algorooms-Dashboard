@@ -15,7 +15,7 @@ export const createDefaultStrike = (strikeType = "CE") => ({
     TargetType: "tgpr",
     SLType: "slpr",
     Target: 0,
-    StopLoss: 30,
+    StopLoss: 0,
     Qty: 0,
     isPrePunchSL: false,
     IsPriceDiffrenceConstrant: false,

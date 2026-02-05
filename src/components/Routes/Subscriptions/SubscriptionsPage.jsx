@@ -22,10 +22,50 @@ const SubscriptionsPage = () => {
   const [paymentPayload, setPaymentPayload] = useState(null);
   const { data: pricingData, isLoading } = useBrokerPlans(
     activeTab.toLowerCase(),
-    apiKey
+    apiKey,
   );
   const [payload, setPayload] = useState(null);
   const { data: paymentData } = usePaymentDetails(payload);
+
+  const computeNetPayable = (data) => {
+    const toNumber = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    };
+    if (!data) return 0;
+
+    const basePrice = toNumber(data?.BasePrice ?? data?.Price);
+    const discountedBase = toNumber(
+      data?.DiscountedBasePrice ??
+        data?.DiscountedPrice ??
+        data?.DiscountedAmount ??
+        data?.discountedBase ??
+        basePrice,
+    );
+    const couponAmount = toNumber(
+      data?.CouponDiscountAmount ?? data?.coupon ?? data?.CouponAmount,
+    );
+    const walletAmount = toNumber(data?.WalletAmount ?? data?.wallet);
+    const gstAmount = toNumber(
+      data?.GstTaxationCharge ?? data?.GSTAmount ?? data?.gstAmount,
+    );
+    const netPayableApi = toNumber(
+      data?.NetPaybleAmount ??
+        data?.NetPayableAmount ??
+        data?.NetPaymentAmount ??
+        data?.NetPay,
+    );
+    const fallbackNetPayable = Math.max(
+      0,
+      discountedBase - couponAmount - walletAmount + gstAmount,
+    );
+    return netPayableApi || fallbackNetPayable;
+  };
+
+  const netPayable = useMemo(
+    () => computeNetPayable(paymentData),
+    [paymentData],
+  );
 
   const handlePlanContinue = (plan) => {
     const payload = {
@@ -63,17 +103,6 @@ const SubscriptionsPage = () => {
 
   const tabs = ["Monthly", "Quarterly", "Yearly"];
   const mainTabs = ["Plans", "Backtest Credits"];
-
-  const paymentInfo = {
-    planName: "Unlimited",
-    type: "Quarterly",
-    basePrice: 7497,
-    wallet: 2375,
-    discount: 1124,
-    coupon: 0,
-    tax: 719,
-    netPayable: 4718,
-  };
 
   return (
     <div>
@@ -191,6 +220,7 @@ const SubscriptionsPage = () => {
                           • {plan.maxStrategyAllowedInPhortpholio} strategy
                           portfolio allowed
                         </li>
+                        <li>• Max Brokers allowed: {plan.maxBrokerAllowed}</li>
                         <li>
                           • Brokers allowed: {plan.allowedBrokes.join(", ")}
                         </li>
@@ -233,7 +263,7 @@ const SubscriptionsPage = () => {
           if (paymentResponse) {
             localStorage.setItem(
               "paymentLink",
-              paymentResponse.paymentLink || ""
+              paymentResponse.paymentLink || "",
             );
             localStorage.setItem("orderId", paymentResponse.orderId || "");
             localStorage.setItem("tokenType", paymentResponse.tokenType || "");
@@ -249,7 +279,7 @@ const SubscriptionsPage = () => {
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}
         data={{
-          amount: paymentInfo?.netPayable,
+          amount: netPayable,
           ref: "000085752257",
           time: new Date().toLocaleString(),
           method: "UPI",
@@ -261,7 +291,7 @@ const SubscriptionsPage = () => {
         isOpen={showFailure}
         onClose={() => setShowFailure(false)}
         data={{
-          amount: paymentInfo?.netPayable,
+          amount: netPayable,
           time: new Date().toLocaleString(),
           method: "UPI",
           sender: "Jasnek Singh",

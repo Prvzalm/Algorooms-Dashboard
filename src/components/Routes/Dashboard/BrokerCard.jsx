@@ -91,11 +91,6 @@ const BrokerCard = ({ brokers = [] }) => {
       />
       <StopTradeEngineModal
         open={stopConfirmOpen}
-        title="Stop Trade Engine?"
-        message="Choose how to stop the trade engine."
-        cancelLabel="Cancel"
-        stopLabel="Stop"
-        stopSquareOffLabel="Stop & Square Off"
         loading={isPending}
         onCancel={() => setStopConfirmOpen(false)}
         onStop={() => {

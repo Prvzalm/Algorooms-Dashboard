@@ -25,7 +25,7 @@ const StrategiesPage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(
     // prefer navigation state if provided
-    location?.state?.activeTab || "My Strategies"
+    location?.state?.activeTab || "My Strategies",
   );
   const [activeSubTab, setActiveSubTab] = useState("Strategies");
   // MyStrategiesList manages its own pagination internally
@@ -55,7 +55,7 @@ const StrategiesPage = () => {
   const { brokers: storeBrokers, grandTotalPnl } = useLivePnlData(
     deployedData,
     deployedLoading,
-    deployedError
+    deployedError,
   );
 
   // Trade Engine control state (similar to BrokerSection)
@@ -82,7 +82,7 @@ const StrategiesPage = () => {
 
   const toggleExpand = (code) => {
     setExpandedBrokerIds((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
     );
   };
 
@@ -164,7 +164,7 @@ const StrategiesPage = () => {
             running: originalRunning,
           });
         },
-      }
+      },
     );
   };
 
@@ -189,7 +189,7 @@ const StrategiesPage = () => {
             isLiveMode: originalIsLiveMode,
           });
         },
-      }
+      },
     );
   };
 
@@ -210,14 +210,14 @@ const StrategiesPage = () => {
             return next;
           });
         },
-      }
+      },
     );
   };
 
   const handleRequestEditDeployment = (
     brokerItem,
     rawStrategy,
-    effectiveStrategy
+    effectiveStrategy,
   ) => {
     setEditDeploymentTarget({
       brokerItem,
@@ -229,7 +229,7 @@ const StrategiesPage = () => {
   const handleRequestRemoveDeployment = (
     brokerItem,
     rawStrategy,
-    effectiveStrategy
+    effectiveStrategy,
   ) => {
     setRemoveDeploymentTarget({
       brokerItem,
@@ -288,7 +288,7 @@ const StrategiesPage = () => {
           });
           setRemoveDeploymentTarget(null);
         },
-      }
+      },
     );
   };
 
@@ -343,7 +343,7 @@ const StrategiesPage = () => {
           });
           setRemoveBrokerTarget(null);
         },
-      }
+      },
     );
   };
 
@@ -369,7 +369,7 @@ const StrategiesPage = () => {
           setPendingBrokerId(null);
           setConfirmForBrokerId(null);
         },
-      }
+      },
     );
   };
 
@@ -390,7 +390,7 @@ const StrategiesPage = () => {
   const removeCompositeKey = removeDeploymentTarget
     ? computeStrategyKey(
         removeDeploymentTarget.brokerItem,
-        removeDeploymentTarget.rawStrategy
+        removeDeploymentTarget.rawStrategy,
       )
     : null;
 
@@ -567,7 +567,7 @@ const StrategiesPage = () => {
         onCancel={() => setConfirmForBrokerId(null)}
         onConfirm={() => {
           const brokerItem = live.brokers.find(
-            (b) => b.broker.code === confirmForBrokerId
+            (b) => b.broker.code === confirmForBrokerId,
           );
           setConfirmForBrokerId(null);
           if (brokerItem) performToggleTradeEngine(brokerItem, "Start");
@@ -576,11 +576,6 @@ const StrategiesPage = () => {
 
       <StopTradeEngineModal
         open={!!stopConfirmForBrokerItem}
-        title="Stop Trade Engine?"
-        message="Choose how to stop the trade engine."
-        cancelLabel="Cancel"
-        stopLabel="Stop"
-        stopSquareOffLabel="Stop & Square Off"
         loading={enginePending}
         onCancel={() => setStopConfirmForBrokerItem(null)}
         onStop={() => {

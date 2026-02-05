@@ -98,7 +98,7 @@ const StrategyBuilder = () => {
     useSearchInstrument(
       editInstrumentSearch.segmentType,
       editInstrumentSearch.instrumentName,
-      editInstrumentSearch.shouldFetch
+      editInstrumentSearch.shouldFetch,
     );
   const navigate = useNavigate();
   const [terminalConnectionAccepted, setTerminalConnectionAccepted] =
@@ -108,7 +108,7 @@ const StrategyBuilder = () => {
   const deriveAdvanceFeatures = (
     scripts,
     activeIdx = 0,
-    squareOffAll = false
+    squareOffAll = false,
   ) => {
     if (!Array.isArray(scripts) || !scripts.length) return {};
     const first = scripts[0] || {};
@@ -206,8 +206,8 @@ const StrategyBuilder = () => {
   const handleRemoveEquityInstrument = (instrumentToken) => {
     setSelectedEquityInstruments(
       selectedEquityInstruments.filter(
-        (instrument) => instrument.InstrumentToken !== instrumentToken
-      )
+        (instrument) => instrument.InstrumentToken !== instrumentToken,
+      ),
     );
   };
 
@@ -239,7 +239,7 @@ const StrategyBuilder = () => {
         : parsed;
     if (safeQty === current[idx].Qty) return;
     const updated = current.map((script, sIdx) =>
-      sIdx === idx ? { ...script, Qty: safeQty } : script
+      sIdx === idx ? { ...script, Qty: safeQty } : script,
     );
     setValue("StrategyScriptList", updated, { shouldDirty: true });
     updatePayload({ StrategyScriptList: updated });
@@ -274,7 +274,7 @@ const StrategyBuilder = () => {
         : parsed;
     if (safeQty === current[0].Qty) return;
     const updated = current.map((script, idx) =>
-      idx === 0 ? { ...script, Qty: safeQty } : script
+      idx === 0 ? { ...script, Qty: safeQty } : script,
     );
     setValue("StrategyScriptList", updated, { shouldDirty: true });
     updatePayload({ StrategyScriptList: updated });
@@ -285,7 +285,7 @@ const StrategyBuilder = () => {
     if (!ins) return null;
     const qtyValue = resolveQtyValue(
       watchedScripts[index]?.Qty,
-      defaultLotQty(ins.LotSize)
+      defaultLotQty(ins.LotSize),
     );
 
     return (
@@ -439,14 +439,14 @@ const StrategyBuilder = () => {
     const legCount = Math.max(
       1,
       (previous.LongEquationoptionStrikeList || []).length,
-      (previous.ShortEquationoptionStrikeList || []).length
+      (previous.ShortEquationoptionStrikeList || []).length,
     );
 
     const makeDefaultStrike = (side = "long") =>
       createDefaultStrike(side === "long" ? "CE" : "PE");
 
     const longList = Array.from({ length: legCount }, () =>
-      makeDefaultStrike("long")
+      makeDefaultStrike("long"),
     );
     const shortList = isIndicator
       ? Array.from({ length: legCount }, () => makeDefaultStrike("short"))
@@ -601,10 +601,10 @@ const StrategyBuilder = () => {
         d.StrategyType === "Select"
           ? "time"
           : d.StrategyType
-          ? d.StrategyType.toLowerCase()
-          : hasIndicatorEquations
-          ? "indicator"
-          : "time";
+            ? d.StrategyType.toLowerCase()
+            : hasIndicatorEquations
+              ? "indicator"
+              : "time";
 
       const parsedTpSlType = (() => {
         const raw = d.TpSLType;
@@ -654,8 +654,8 @@ const StrategyBuilder = () => {
           return totalLegs >= 2
             ? "combined"
             : totalLegs === 1
-            ? "options"
-            : null;
+              ? "options"
+              : null;
         })(),
         AdvanceFeatures: d.AdvanceFeatures || {},
         isBtSt: d.isBtSt || false,
@@ -694,7 +694,7 @@ const StrategyBuilder = () => {
       const derivedAdvance = deriveAdvanceFeatures(
         mapped.StrategyScriptList,
         mapped.ActiveLegIndex || 0,
-        mapped.SquareOffAllOptionLegOnSl
+        mapped.SquareOffAllOptionLegOnSl,
       );
       mapped.AdvanceFeatures = {
         ...mapped.AdvanceFeatures,
@@ -722,7 +722,7 @@ const StrategyBuilder = () => {
 
       if (isEquityMultiEdit) {
         const multiSelection = mapped.StrategyScriptList.filter(
-          (script) => script?.InstrumentToken && script?.InstrumentName
+          (script) => script?.InstrumentToken && script?.InstrumentName,
         ).map((script) => ({
           Name: script.InstrumentName,
           InstrumentToken: script.InstrumentToken,
@@ -759,7 +759,7 @@ const StrategyBuilder = () => {
 
     // Find the matching instrument from search results
     const matchedInstrument = editInstrumentData.find(
-      (instrument) => instrument.Name === editInstrumentSearch.instrumentName
+      (instrument) => instrument.Name === editInstrumentSearch.instrumentName,
     );
 
     if (matchedInstrument) {
@@ -902,12 +902,16 @@ const StrategyBuilder = () => {
                         errors.push(
                           `Strike Qty must be > 0 (script ${
                             sIdx + 1
-                          }, ${sideLabel} row ${i + 1}).`
+                          }, ${sideLabel} row ${i + 1}).`,
                         );
                       }
                     }
-                    if (!stc.StopLoss || +stc.StopLoss <= 0) {
-                      stc.StopLoss = 30;
+                    if (
+                      stc.StopLoss === "" ||
+                      stc.StopLoss === null ||
+                      stc.StopLoss === undefined
+                    ) {
+                      stc.StopLoss = 0;
                     }
                     if (stc.reEntry?.isRentry) {
                       if (
@@ -924,7 +928,7 @@ const StrategyBuilder = () => {
                         errors.push(
                           `TradeCycle auto-set to 1 (script ${
                             sIdx + 1
-                          }, ${sideLabel} row ${i + 1}).`
+                          }, ${sideLabel} row ${i + 1}).`,
                         );
                       }
                     }
@@ -933,14 +937,14 @@ const StrategyBuilder = () => {
                 : [];
             sc.LongEquationoptionStrikeList = fixStrikes(
               sc.LongEquationoptionStrikeList,
-              "Long strike"
+              "Long strike",
             );
             sc.ShortEquationoptionStrikeList = fixStrikes(
               sc.ShortEquationoptionStrikeList,
-              "Short strike"
+              "Short strike",
             );
             return sc;
-          }
+          },
         );
       }
 
@@ -951,7 +955,7 @@ const StrategyBuilder = () => {
     if (errors.length) {
       console.warn(
         "Strategy validation issues (non-blocking, server will validate):",
-        errors
+        errors,
       );
     }
 
@@ -1014,7 +1018,7 @@ const StrategyBuilder = () => {
 
             // Find the created strategy by matching name
             const createdStrategy = strategies.find(
-              (strategy) => strategy.StrategyName === valuesNorm.StrategyName
+              (strategy) => strategy.StrategyName === valuesNorm.StrategyName,
             );
 
             if (createdStrategy) {
@@ -1038,11 +1042,11 @@ const StrategyBuilder = () => {
             } else {
               // Fallback if strategy not found in list
               console.warn(
-                "Created strategy not found in user strategies list"
+                "Created strategy not found in user strategies list",
               );
               if (shouldBacktest) {
                 toast.warning(
-                  "Strategy created but couldn't find ID for backtest. Please navigate to backtest manually."
+                  "Strategy created but couldn't find ID for backtest. Please navigate to backtest manually.",
                 );
               }
               if (!shouldBacktest) {
@@ -1052,7 +1056,7 @@ const StrategyBuilder = () => {
           } catch (error) {
             console.error("Error fetching strategies after creation:", error);
             toast.warning(
-              "Strategy created successfully, but couldn't load backtest. Please refresh and try again."
+              "Strategy created successfully, but couldn't load backtest. Please refresh and try again.",
             );
             if (!shouldBacktest) {
               navigateToStrategies();
@@ -1227,7 +1231,7 @@ const StrategyBuilder = () => {
                               min="1"
                               value={resolveQtyValue(
                                 watchedScripts?.[0]?.Qty,
-                                defaultLotQty(selectedInstrument.LotSize)
+                                defaultLotQty(selectedInstrument.LotSize),
                               )}
                               onChange={(e) =>
                                 handleSingleQtyChange(e.target.value)
@@ -1345,8 +1349,8 @@ const StrategyBuilder = () => {
                 ? "Saving..."
                 : "Saving..."
               : editing
-              ? "Save"
-              : "Create"}
+                ? "Save"
+                : "Create"}
           </PrimaryButton>
         </div>
 
@@ -1362,8 +1366,8 @@ const StrategyBuilder = () => {
                 ? "Saving..."
                 : "Saving..."
               : editing
-              ? "Save"
-              : "Create"}
+                ? "Save"
+                : "Create"}
           </PrimaryButton>
         </div>
 
@@ -1405,7 +1409,7 @@ const StrategyBuilder = () => {
                 </div>
               </div>
             </div>,
-            document.body
+            document.body,
           )}
       </form>
 
