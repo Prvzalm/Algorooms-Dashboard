@@ -101,7 +101,7 @@ export const getDefaultPayload = () => ({
     ProfitTranches: 0,
     TrailProfitType: 0,
     strategyTag: "any",
-    RiskDescription: null,
+    RiskDescription: "Strategy V2",
     subscriptionprice: 0,
     subscriptiondays: 0,
     ProductType: 0,

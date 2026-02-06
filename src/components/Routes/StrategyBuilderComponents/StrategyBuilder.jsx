@@ -987,6 +987,7 @@ const StrategyBuilder = () => {
         showBacktestComponent,
         createdStrategyId,
       },
+      isEditing: editing || (valuesNorm?.StrategyId && valuesNorm.StrategyId !== 0),
     });
 
     mutate(payload, {

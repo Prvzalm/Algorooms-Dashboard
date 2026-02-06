@@ -73,6 +73,7 @@ const normalizeIndicatorEquations = (equations) =>
 export function buildStrategyPayload({
     values,
     ui,
+    isEditing = false,
 }) {
     const {
         AdvanceFeatures: _omitAdvanceFeatures,
@@ -254,8 +255,14 @@ export function buildStrategyPayload({
     const strategyIdForPayload = cleanValues.StrategyId || (showBacktestComponent && createdStrategyId ? createdStrategyId : 0);
     const tpSlTypeValue = normalizeTpSlType();
 
+    const resolvedRiskDescription = (() => {
+        if (isEditing) return cleanValues.RiskDescription || "Strategy Edit V2";
+        return cleanValues.RiskDescription || "Strategy V2";
+    })();
+
     const payloadBase = {
         ...cleanValues,
+        RiskDescription: resolvedRiskDescription,
         StrategyType: null,
         StrategySegmentType:
             selectedStrategyTypes[0] === "time" ? "OPTION" : mappedSegment,
